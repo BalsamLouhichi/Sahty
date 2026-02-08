@@ -1,0 +1,930 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}MEDINOVA - Fiches Médicales{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <!-- Google Web Fonts -->
+    <link rel="preconnect" href="https://fonts.gstatic.com">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@400;700&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+
+    <!-- Icon Font Stylesheet -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.4.1/font/bootstrap-icons.css" rel="stylesheet">
+
+    <!-- Custom Styles -->
+    <style>
+        .medical-form-section {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            min-height: 100vh;
+            padding-top: 100px;
+        }
+        
+        .form-card {
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            border: none;
+            margin-bottom: 30px;
+        }
+        
+        .form-card-header {
+            background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+            color: white;
+            border-radius: 15px 15px 0 0 !important;
+            padding: 20px 30px;
+        }
+        
+        .fiche-card {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            border-radius: 10px;
+            border: none;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+        }
+        
+        .fiche-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+        }
+        
+        .fiche-status {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+        
+        .status-actif {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        
+        .status-inactif {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        
+        .status-modifie {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+        
+        .imc-indicator {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+        
+        .imc-normal {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        
+        .imc-surpoids {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+        
+        .imc-obese {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        
+        .imc-maigreur {
+            background-color: #cce5ff;
+            color: #004085;
+        }
+        
+        .btn-medical {
+            padding: 10px 25px;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-medical:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .search-box {
+            max-width: 400px;
+        }
+        
+        .action-buttons .btn {
+            margin-right: 5px;
+            margin-bottom: 5px;
+        }
+        
+        /* Styles pour le modal amélioré */
+        .modal-body .form-label {
+            font-weight: 600;
+            color: #495057;
+            margin-bottom: 8px;
+            display: block;
+        }
+        
+        .modal-body .form-control,
+        .modal-body .form-select {
+            border: 1px solid #ced4da;
+            border-radius: 6px;
+            padding: 10px 15px;
+            font-size: 15px;
+            width: 100%;
+        }
+        
+        .modal-body .form-control:focus,
+        .modal-body .form-select:focus {
+            border-color: #17a2b8;
+            box-shadow: 0 0 0 0.2rem rgba(23, 162, 184, 0.25);
+        }
+        
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        .invalid-feedback {
+            display: block;
+            color: #dc3545;
+            font-size: 0.875rem;
+            margin-top: 5px;
+        }
+        
+        .is-invalid {
+            border-color: #dc3545 !important;
+        }
+        
+        .modal-section {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #17a2b8;
+        }
+        
+        .modal-section-title {
+            color: #17a2b8;
+            font-weight: 600;
+            margin-bottom: 15px;
+            font-size: 1.1rem;
+        }
+        
+        @media (max-width: 768px) {
+            .medical-form-section {
+                padding-top: 80px;
+            }
+            
+            .action-buttons .btn {
+                width: 100%;
+                margin-right: 0;
+            }
+            
+            .modal-dialog {
+                margin: 10px;
+            }
+        }
+    </style>
+{% endblock %}
+
+{% block body %}
+    <!-- Topbar Start -->
+    <div class="container-fluid py-2 border-bottom d-none d-lg-block bg-light">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6 text-center text-lg-start mb-2 mb-lg-0">
+                    <div class="d-inline-flex align-items-center">
+                        <a class="text-decoration-none text-body pe-3" href="tel:+0123456789">
+                            <i class="bi bi-telephone me-2"></i>+01 23 45 67 89
+                        </a>
+                        <span class="text-body">|</span>
+                        <a class="text-decoration-none text-body px-3" href="mailto:info@medinova.fr">
+                            <i class="bi bi-envelope me-2"></i>info@medinova.fr
+                        </a>
+                    </div>
+                </div>
+                <div class="col-md-6 text-center text-lg-end">
+                    <div class="d-inline-flex align-items-center">
+                        <a class="text-body px-2" href="#">
+                            <i class="fab fa-facebook-f"></i>
+                        </a>
+                        <a class="text-body px-2" href="#">
+                            <i class="fab fa-twitter"></i>
+                        </a>
+                        <a class="text-body px-2" href="#">
+                            <i class="fab fa-linkedin-in"></i>
+                        </a>
+                        <a class="text-body px-2" href="#">
+                            <i class="fab fa-instagram"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Topbar End -->
+
+    <!-- Navbar Start -->
+    <div class="container-fluid sticky-top bg-white shadow-sm">
+        <div class="container">
+            <nav class="navbar navbar-expand-lg bg-white navbar-light py-3 py-lg-0">
+                <a href="{{ path('app_home') }}" class="navbar-brand">
+                    <h1 class="m-0 text-uppercase text-primary">
+                        <i class="fa fa-clinic-medical me-2"></i>Medinova
+                    </h1>
+                </a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarCollapse">
+                    <div class="navbar-nav ms-auto py-0">
+                        <a href="{{ path('app_home') }}" class="nav-item nav-link">Accueil</a>
+                        <a href="#" class="nav-item nav-link">Rendez-vous</a>
+                        <a href="{{ path('app_fiche_medicale_index') }}" class="nav-item nav-link active">Fiches Médicales</a>
+                        <a href="#" class="nav-item nav-link">Contact</a>
+                        {% if app.user %}
+                            <div class="nav-item dropdown">
+                                <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown">
+                                    <i class="fas fa-user me-1"></i>{{ app.user.email }}
+                                </a>
+                                <div class="dropdown-menu m-0">
+                                    <a href="{{ path('app_logout') }}" class="dropdown-item">
+                                        <i class="fas fa-sign-out-alt me-2"></i>Déconnexion
+                                    </a>
+                                </div>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </nav>
+        </div>
+    </div>
+    <!-- Navbar End -->
+
+    <!-- Fiches Médicales Liste Start -->
+    <div class="container-fluid medical-form-section">
+        <div class="container">
+            <!-- En-tête -->
+            <div class="row mb-5">
+                <div class="col-lg-12">
+                    <div class="text-center">
+                        <h5 class="d-inline-block text-primary text-uppercase border-bottom border-5 mb-3">
+                            Gestion Médicale
+                        </h5>
+                        <h1 class="display-6 mb-3">Fiches Médicales Patients</h1>
+                        <p class="lead text-muted mb-4">
+                            Gestion complète des dossiers médicaux des patients.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Messages Flash -->
+            {% for message in app.flashes('success') %}
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    <i class="fas fa-check-circle me-2"></i>{{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            {% endfor %}
+            
+            {% for message in app.flashes('error') %}
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <i class="fas fa-exclamation-circle me-2"></i>{{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            {% endfor %}
+
+            <!-- Actions -->
+            <div class="row mb-4">
+                <div class="col-md-8">
+                    <div class="d-flex flex-wrap gap-2">
+                        <a href="{{ path('app_fiche_medicale_index', {'new': true}) }}" class="btn btn-primary btn-medical">
+                            <i class="fas fa-plus-circle me-2"></i>Nouvelle Fiche
+                        </a>
+                        <a href="#" class="btn btn-outline-primary btn-medical">
+                            <i class="fas fa-file-export me-2"></i>Exporter
+                        </a>
+                        <a href="#" class="btn btn-outline-secondary btn-medical">
+                            <i class="fas fa-print me-2"></i>Imprimer
+                        </a>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <form method="get" class="search-box">
+                        <div class="input-group">
+                            <input type="text" name="search" class="form-control" placeholder="Rechercher..." value="{{ app.request.get('search') }}">
+                            <button class="btn btn-outline-primary" type="submit">
+                                <i class="fas fa-search"></i>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Statistiques -->
+            <div class="row mb-4">
+                <div class="col-md-3 col-6">
+                    <div class="card border-0 bg-primary text-white shadow">
+                        <div class="card-body text-center">
+                            <h3 class="mb-0">{{ fiches|length }}</h3>
+                            <p class="mb-0">Fiches Total</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-6">
+                    <div class="card border-0 bg-success text-white shadow">
+                        <div class="card-body text-center">
+                            <h3 class="mb-0">{{ fiches|filter(f => f.statut == 'actif')|length }}</h3>
+                            <p class="mb-0">Actives</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-6">
+                    <div class="card border-0 bg-warning text-white shadow">
+                        <div class="card-body text-center">
+                            <h3 class="mb-0">{{ fiches|filter(f => f.statut == 'modifié')|length }}</h3>
+                            <p class="mb-0">Modifiées</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-6">
+                    <div class="card border-0 bg-info text-white shadow">
+                        <div class="card-body text-center">
+                            <h3 class="mb-0">
+                                {% set withImc = fiches|filter(f => f.imc is not null)|length %}
+                                {{ withImc }}
+                            </h3>
+                            <p class="mb-0">Avec IMC</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Liste des fiches -->
+            {% if fiches is not empty %}
+                <div class="row">
+                    {% for fiche in fiches %}
+                        <div class="col-xl-4 col-lg-6 col-md-6 mb-4">
+                            <div class="card fiche-card h-100">
+                                <div class="card-body position-relative">
+                                    <span class="fiche-status status-{{ fiche.statut }}">
+                                        {{ fiche.statut|default('Non défini') }}
+                                    </span>
+                                    
+                                    <h5 class="card-title text-primary mb-3">
+                                        <i class="fas fa-file-medical me-2"></i>
+                                        Fiche #{{ fiche.id }}
+                                        {% if fiche.patient %}
+                                            <br><small class="text-muted">
+                                                {% if fiche.patient.nom is defined and fiche.patient.prenom is defined %}
+                                                    {{ fiche.patient.nom }} {{ fiche.patient.prenom }}
+                                                {% else %}
+                                                    {{ fiche.patient }}
+                                                {% endif %}
+                                            </small>
+                                        {% endif %}
+                                    </h5>
+                                    
+                                    <div class="fiche-details mb-3">
+                                        {% if fiche.taille and fiche.poids %}
+                                            <div class="mb-2">
+                                                <strong>Taille/Poids:</strong> 
+                                                {{ fiche.taille }} m / {{ fiche.poids }} kg
+                                            </div>
+                                            {% if fiche.imc %}
+                                                <div class="mb-2">
+                                                    <strong>IMC:</strong> 
+                                                    <span class="imc-indicator imc-{{ fiche.categorieImc|lower|replace({' ': '-'}) }}">
+                                                        {{ fiche.imc|number_format(2) }} ({{ fiche.categorieImc }})
+                                                    </span>
+                                                </div>
+                                            {% endif %}
+                                        {% endif %}
+                                        
+                                        {% if fiche.antecedents %}
+                                            <div class="mb-2">
+                                                <strong>Antécédents:</strong>
+                                                <p class="mb-0 text-truncate">{{ fiche.antecedents|slice(0, 100) }}...</p>
+                                            </div>
+                                        {% endif %}
+                                        
+                                        {% if fiche.allergies %}
+                                            <div class="mb-2">
+                                                <strong>Allergies:</strong>
+                                                <p class="mb-0 text-truncate">{{ fiche.allergies|slice(0, 100) }}...</p>
+                                            </div>
+                                        {% endif %}
+                                        
+                                        <div class="mb-2">
+                                            <strong>Créée le:</strong> {{ fiche.creeLe|date('d/m/Y H:i') }}
+                                        </div>
+                                        
+                                        {% if fiche.modifieLe %}
+                                            <div class="mb-2">
+                                                <strong>Modifiée le:</strong> {{ fiche.modifieLe|date('d/m/Y H:i') }}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <div class="action-buttons mt-3">
+                                        <a href="{{ path('app_fiche_medicale_index', {'view': fiche.id}) }}" 
+                                           class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-eye"></i> Voir
+                                        </a>
+                                        <a href="{{ path('app_fiche_medicale_index', {'edit': fiche.id}) }}" 
+                                           class="btn btn-sm btn-outline-warning">
+                                            <i class="fas fa-edit"></i> Modifier
+                                        </a>
+                                        <form action="{{ path('app_fiche_medicale_index') }}" 
+                                              method="post" 
+                                              class="d-inline"
+                                              onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cette fiche médicale ?');">
+                                            <input type="hidden" name="delete_id" value="{{ fiche.id }}">
+                                            <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ fiche.id) }}">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger">
+                                                <i class="fas fa-trash"></i> Supprimer
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+
+                <!-- Message si beaucoup de fiches -->
+{% if fiches|length > 12 %}
+    <div class="alert alert-info mt-4 text-center">
+        <i class="fas fa-info-circle me-2"></i>
+        Affichage de {{ fiches|length }} fiches médicales. 
+        {% if fiches|length > 20 %}
+            <br><small>Utilisez la recherche pour filtrer les résultats.</small>
+        {% endif %}
+    </div>
+{% endif %}
+            {% else %}
+                <div class="text-center py-5">
+                    <div class="empty-state">
+                        <i class="fas fa-file-medical-alt fa-4x text-muted mb-4"></i>
+                        <h3 class="mb-3">Aucune fiche médicale</h3>
+                        <p class="text-muted mb-4">
+                            Vous n'avez pas encore de fiches médicales enregistrées.
+                        </p>
+                        <a href="{{ path('app_fiche_medicale_index', {'new': true}) }}" class="btn btn-primary btn-medical">
+                            <i class="fas fa-plus-circle me-2"></i>Créer votre première fiche
+                        </a>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    <!-- Fiches Médicales Liste End -->
+
+    <!-- Footer -->
+    <div class="container-fluid bg-dark text-light mt-5">
+        <div class="container py-4">
+            <div class="row">
+                <div class="col-md-6 text-center text-md-start">
+                    <p class="mb-md-0">&copy; {{ "now"|date('Y') }} <a class="text-primary" href="#">Medinova</a>. Tous droits réservés.</p>
+                </div>
+                <div class="col-md-6 text-center text-md-end">
+                    <p class="mb-0">
+                        <a class="text-light me-3" href="#">Mentions légales</a>
+                        <a class="text-light me-3" href="#">Confidentialité</a>
+                        <a class="text-light" href="#">Contact</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL POUR CRÉATION/MODIFICATION -->
+    {% if mode == 'new' or mode == 'edit' %}
+    <div class="modal fade show" id="ficheModal" tabindex="-1" style="display: block; background-color: rgba(0,0,0,0.5); position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 1050;">
+        <div class="modal-dialog modal-lg" style="margin-top: 50px;">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title">
+                        <i class="fas fa-{{ mode == 'new' ? 'plus' : 'edit' }} me-2"></i>
+                        {{ mode == 'new' ? 'Nouvelle Fiche Médicale' : 'Modifier Fiche #' ~ fiche.id }}
+                    </h5>
+                    <a href="{{ path('app_fiche_medicale_index') }}" class="btn-close btn-close-white"></a>
+                </div>
+                <div class="modal-body" style="max-height: 70vh; overflow-y: auto;">
+                    {{ form_start(form, {'attr': {'class': 'needs-validation', 'novalidate': 'novalidate'}}) }}
+                    
+                    <!-- AFFICHAGE DU PATIENT EN LECTURE SEULE (sans champ formulaire) -->
+                    {% if fiche.patient %}
+                        <div class="alert alert-info mb-4">
+                            <i class="fas fa-user me-2"></i>
+                            <strong>Patient :</strong> 
+                            {% if fiche.patient.nom is defined and fiche.patient.prenom is defined %}
+                                {{ fiche.patient.nom }} {{ fiche.patient.prenom }}
+                            {% else %}
+                                Patient #{{ fiche.patient.id }}
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                    
+                    <!-- Section Antécédents & Allergies -->
+                    <div class="modal-section">
+                        <h6 class="modal-section-title">
+                            <i class="fas fa-history me-2"></i>Antécédents & Allergies
+                        </h6>
+                        <div class="row">
+                            <div class="col-md-6">
+                                {{ form_row(form.antecedents, {
+                                    'attr': {'class': 'form-control', 'rows': 4, 'placeholder': 'Antécédents médicaux...'},
+                                    'label': 'Antécédents médicaux'
+                                }) }}
+                            </div>
+                            <div class="col-md-6">
+                                {{ form_row(form.allergies, {
+                                    'attr': {'class': 'form-control', 'rows': 4, 'placeholder': 'Allergies connues...'},
+                                    'label': 'Allergies'
+                                }) }}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Section Mesures Physiques -->
+                    <div class="modal-section">
+                        <h6 class="modal-section-title">
+                            <i class="fas fa-weight me-2"></i>Mesures Physiques
+                        </h6>
+                        <div class="row">
+                            <div class="col-md-4">
+                                {{ form_row(form.taille, {
+                                    'attr': {'class': 'form-control', 'placeholder': 'Ex: 1.75'},
+                                    'label': 'Taille (mètres)'
+                                }) }}
+                            </div>
+                            <div class="col-md-4">
+                                {{ form_row(form.poids, {
+                                    'attr': {'class': 'form-control', 'placeholder': 'Ex: 70'},
+                                    'label': 'Poids (kg)'
+                                }) }}
+                            </div>
+                            <div class="col-md-4">
+                                {{ form_row(form.statut, {
+                                    'attr': {'class': 'form-select'},
+                                    'label': 'Statut'
+                                }) }}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Section Traitements -->
+                    <div class="modal-section">
+                        <h6 class="modal-section-title">
+                            <i class="fas fa-stethoscope me-2"></i>Traitements Médicaux
+                        </h6>
+                        <div class="row">
+                            <div class="col-12">
+                                {{ form_row(form.traitement_en_cours, {
+                                    'attr': {'class': 'form-control', 'rows': 3, 'placeholder': 'Traitements en cours...'},
+                                    'label': 'Traitement en cours'
+                                }) }}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Section Diagnostic -->
+                    <div class="modal-section">
+                        <h6 class="modal-section-title">
+                            <i class="fas fa-file-medical me-2"></i>Diagnostic
+                        </h6>
+                        <div class="row">
+                            <div class="col-12">
+                                {{ form_row(form.diagnostic, {
+                                    'attr': {'class': 'form-control', 'rows': 3, 'placeholder': 'Diagnostic principal...'},
+                                    'label': 'Diagnostic'
+                                }) }}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Section Traitement Prescrit -->
+                    <div class="modal-section">
+                        <h6 class="modal-section-title">
+                            <i class="fas fa-prescription me-2"></i>Traitement Prescrit
+                        </h6>
+                        <div class="row">
+                            <div class="col-12">
+                                {{ form_row(form.traitement_prescrit, {
+                                    'attr': {'class': 'form-control', 'rows': 3, 'placeholder': 'Traitements prescrits...'},
+                                    'label': 'Traitement prescrit'
+                                }) }}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Section Observations -->
+                    <div class="modal-section">
+                        <h6 class="modal-section-title">
+                            <i class="fas fa-notes-medical me-2"></i>Observations
+                        </h6>
+                        <div class="row">
+                            <div class="col-12">
+                                {{ form_row(form.observations, {
+                                    'attr': {'class': 'form-control', 'rows': 4, 'placeholder': 'Observations complémentaires...'},
+                                    'label': 'Observations'
+                                }) }}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="modal-footer">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="fas fa-save me-2"></i>
+                            {{ mode == 'new' ? 'Créer la fiche' : 'Mettre à jour' }}
+                        </button>
+                        <a href="{{ path('app_fiche_medicale_index') }}" class="btn btn-secondary btn-lg">
+                            <i class="fas fa-times me-2"></i>Annuler
+                        </a>
+                    </div>
+                    
+                    {{ form_end(form) }}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- MODAL POUR AFFICHAGE DÉTAILLÉ -->
+    {% if mode == 'view' and fiche %}
+    <div class="modal fade show" id="viewModal" tabindex="-1" style="display: block; background-color: rgba(0,0,0,0.5); position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 1050;">
+        <div class="modal-dialog modal-lg" style="margin-top: 50px;">
+            <div class="modal-content">
+                <div class="modal-header bg-info text-white">
+                    <h5 class="modal-title">
+                        <i class="fas fa-file-medical me-2"></i>
+                        Fiche Médicale #{{ fiche.id }}
+                    </h5>
+                    <a href="{{ path('app_fiche_medicale_index') }}" class="btn-close btn-close-white"></a>
+                </div>
+                <div class="modal-body" style="max-height: 70vh; overflow-y: auto;">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="text-primary mb-3">Informations Générales</h6>
+                            <table class="table table-sm">
+                                <tr>
+                                    <th>Statut:</th>
+                                    <td>
+                                        <span class="badge bg-{{ fiche.statut == 'actif' ? 'success' : (fiche.statut == 'modifié' ? 'warning' : 'danger') }}">
+                                            {{ fiche.statut|default('Non défini') }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% if fiche.patient %}
+                                <tr>
+                                    <th>Patient:</th>
+                                    <td>
+                                        {% if fiche.patient.nom is defined and fiche.patient.prenom is defined %}
+                                            {{ fiche.patient.nom }} {{ fiche.patient.prenom }}
+                                        {% else %}
+                                            {{ fiche.patient }}
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endif %}
+                                {% if fiche.taille and fiche.poids %}
+                                <tr>
+                                    <th>Taille/Poids:</th>
+                                    <td>{{ fiche.taille }} m / {{ fiche.poids }} kg</td>
+                                </tr>
+                                <tr>
+                                    <th>IMC:</th>
+                                    <td>
+                                        <span class="badge bg-secondary">
+                                            {{ fiche.imc|number_format(2) }} ({{ fiche.categorieImc }})
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% endif %}
+                                <tr>
+                                    <th>Créée le:</th>
+                                    <td>{{ fiche.creeLe|date('d/m/Y H:i') }}</td>
+                                </tr>
+                                {% if fiche.modifieLe %}
+                                <tr>
+                                    <th>Modifiée le:</th>
+                                    <td>{{ fiche.modifieLe|date('d/m/Y H:i') }}</td>
+                                </tr>
+                                {% endif %}
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-primary mb-3">Détails Médicaux</h6>
+                            {% if fiche.antecedents %}
+                            <div class="mb-3">
+                                <strong>Antécédents:</strong>
+                                <div class="bg-light p-3 rounded mt-1">
+                                    {{ fiche.antecedents|nl2br }}
+                                </div>
+                            </div>
+                            {% endif %}
+                            {% if fiche.allergies %}
+                            <div class="mb-3">
+                                <strong>Allergies:</strong>
+                                <div class="bg-light p-3 rounded mt-1">
+                                    {{ fiche.allergies|nl2br }}
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    {% if fiche.traitement_en_cours or fiche.diagnostic %}
+                    <div class="row mt-4">
+                        {% if fiche.traitement_en_cours %}
+                        <div class="col-md-6">
+                            <div class="card border-warning">
+                                <div class="card-header bg-warning text-white">
+                                    <h6 class="mb-0">
+                                        <i class="fas fa-prescription-bottle me-2"></i>Traitements en cours
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    {{ fiche.traitement_en_cours|nl2br }}
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                        {% if fiche.diagnostic %}
+                        <div class="col-md-6">
+                            <div class="card border-danger">
+                                <div class="card-header bg-danger text-white">
+                                    <h6 class="mb-0">
+                                        <i class="fas fa-diagnoses me-2"></i>Diagnostic
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    {{ fiche.diagnostic|nl2br }}
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                    
+                    {% if fiche.traitement_prescrit %}
+                    <div class="mt-4">
+                        <div class="card border-primary">
+                            <div class="card-header bg-primary text-white">
+                                <h6 class="mb-0">
+                                    <i class="fas fa-file-prescription me-2"></i>Traitement Prescrit
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                {{ fiche.traitement_prescrit|nl2br }}
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if fiche.observations %}
+                    <div class="mt-4">
+                        <div class="card border-info">
+                            <div class="card-header bg-info text-white">
+                                <h6 class="mb-0">
+                                    <i class="fas fa-notes-medical me-2"></i>Observations
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                {{ fiche.observations|nl2br }}
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="modal-footer">
+                    <a href="{{ path('app_fiche_medicale_index', {'edit': fiche.id}) }}" class="btn btn-warning">
+                        <i class="fas fa-edit me-2"></i>Modifier
+                    </a>
+                    <a href="{{ path('app_fiche_medicale_print', {'id': fiche.id}) }}" class="btn btn-info" target="_blank">
+                        <i class="fas fa-print me-2"></i>Imprimer
+                    </a>
+                    <a href="{{ path('app_fiche_medicale_index') }}" class="btn btn-secondary">
+                        <i class="fas fa-times me-2"></i>Fermer
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Tooltips
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl);
+            });
+            
+            // Animation des cartes
+            const cards = document.querySelectorAll('.fiche-card');
+            cards.forEach((card, index) => {
+                card.style.animationDelay = `${index * 0.1}s`;
+            });
+            
+            // Validation du formulaire
+            const forms = document.querySelectorAll('.needs-validation');
+            Array.from(forms).forEach(form => {
+                form.addEventListener('submit', event => {
+                    if (!form.checkValidity()) {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        
+                        // Scroll vers le premier champ invalide
+                        const firstInvalid = form.querySelector(':invalid');
+                        if (firstInvalid) {
+                            firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            firstInvalid.focus();
+                        }
+                    }
+                    
+                    form.classList.add('was-validated');
+                }, false);
+            });
+            
+            // Calcul automatique de l'IMC
+            const tailleInput = document.getElementById('fiche_medicale_taille');
+            const poidsInput = document.getElementById('fiche_medicale_poids');
+            
+            if (tailleInput && poidsInput) {
+                function calculerIMC() {
+                    const taille = parseFloat(tailleInput.value);
+                    const poids = parseFloat(poidsInput.value);
+                    
+                    if (taille > 0 && poids > 0) {
+                        const imc = poids / (taille * taille);
+                        
+                        // Trouver l'élément où afficher l'IMC
+                        let imcDisplay = document.getElementById('imc-calcul');
+                        if (!imcDisplay) {
+                            imcDisplay = document.createElement('div');
+                            imcDisplay.id = 'imc-calcul';
+                            imcDisplay.className = 'alert alert-info mt-2';
+                            poidsInput.parentNode.appendChild(imcDisplay);
+                        }
+                        
+                        let categorie = '';
+                        let couleur = '';
+                        
+                        if (imc < 18.5) {
+                            categorie = 'Maigreur';
+                            couleur = 'primary';
+                        } else if (imc < 25) {
+                            categorie = 'Normal';
+                            couleur = 'success';
+                        } else if (imc < 30) {
+                            categorie = 'Surpoids';
+                            couleur = 'warning';
+                        } else {
+                            categorie = 'Obésité';
+                            couleur = 'danger';
+                        }
+                        
+                        imcDisplay.innerHTML = `
+                            <strong>IMC calculé :</strong> ${imc.toFixed(2)}
+                            <span class="badge bg-${couleur} ms-2">${categorie}</span>
+                        `;
+                    }
+                }
+                
+                tailleInput.addEventListener('input', calculerIMC);
+                poidsInput.addEventListener('input', calculerIMC);
+            }
+            
+            // Auto-focus sur le premier champ dans le modal
+            if (document.getElementById('ficheModal')) {
+                setTimeout(() => {
+                    const firstInput = document.querySelector('#ficheModal input:not([type="hidden"]), #ficheModal select, #ficheModal textarea');
+                    if (firstInput) {
+                        firstInput.focus();
+                    }
+                }, 300);
+            }
+            
+            // Empêcher la fermeture du modal en cliquant à l'extérieur
+            const modals = document.querySelectorAll('.modal');
+            modals.forEach(modal => {
+                modal.addEventListener('click', function(e) {
+                    if (e.target === this) {
+                        // Optionnel: confirmer avant de fermer
+                        if (confirm('Voulez-vous annuler les modifications ?')) {
+                            window.location.href = "{{ path('app_fiche_medicale_index') }}";
+                        }
+                    }
+                });
+            });
+        });
+    </script>
+{% endblock %}

@@ -1,0 +1,250 @@
+<?php
+
+namespace App\Entity;
+
+use App\Repository\FicheMedicaleRepository;
+use Doctrine\DBAL\Types\Types;
+use Doctrine\ORM\Mapping as ORM;
+
+#[ORM\Entity(repositoryClass: FicheMedicaleRepository::class)]
+#[ORM\HasLifecycleCallbacks]
+class FicheMedicale
+{
+    #[ORM\Id]
+    #[ORM\GeneratedValue]
+    #[ORM\Column]
+    private ?int $id = null;
+
+    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    private ?string $antecedents = null;
+
+    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    private ?string $allergies = null;
+
+    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    private ?string $traitement_en_cours = null;
+
+    #[ORM\Column(type: Types::DECIMAL, precision: 5, scale: 2, nullable: true)]
+    private ?string $taille = null;
+
+    #[ORM\Column(type: Types::DECIMAL, precision: 5, scale: 2, nullable: true)]
+    private ?string $poids = null;
+
+    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    private ?string $diagnostic = null;
+
+    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    private ?string $traitement_prescrit = null;
+
+    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    private ?string $observations = null;
+
+    #[ORM\Column(type: Types::DATETIME_MUTABLE, nullable: true)]
+    private ?\DateTimeInterface $cree_le = null;
+
+    #[ORM\Column(type: Types::DATETIME_MUTABLE, nullable: true)]
+    private ?\DateTimeInterface $modifie_le = null;
+
+    #[ORM\Column(length: 20, nullable: true)]
+    private ?string $statut = null;
+
+    #[ORM\ManyToOne]
+    #[ORM\JoinColumn(name: 'patient_id', referencedColumnName: 'id', nullable: true)]
+    private ?Patient $patient = null;
+
+    // GETTERS ET SETTERS
+
+    public function getId(): ?int
+    {
+        return $this->id;
+    }
+
+    public function getAntecedents(): ?string
+    {
+        return $this->antecedents;
+    }
+
+    public function setAntecedents(?string $antecedents): static
+    {
+        $this->antecedents = $antecedents;
+        return $this;
+    }
+
+    public function getAllergies(): ?string
+    {
+        return $this->allergies;
+    }
+
+    public function setAllergies(?string $allergies): static
+    {
+        $this->allergies = $allergies;
+        return $this;
+    }
+
+    public function getTraitementEnCours(): ?string
+    {
+        return $this->traitement_en_cours;
+    }
+
+    public function setTraitementEnCours(?string $traitement_en_cours): static
+    {
+        $this->traitement_en_cours = $traitement_en_cours;
+        return $this;
+    }
+
+    public function getTaille(): ?string
+    {
+        return $this->taille;
+    }
+
+    public function setTaille(?string $taille): static
+    {
+        $this->taille = $taille;
+        return $this;
+    }
+
+    public function getPoids(): ?string
+    {
+        return $this->poids;
+    }
+
+    public function setPoids(?string $poids): static
+    {
+        $this->poids = $poids;
+        return $this;
+    }
+
+    public function getDiagnostic(): ?string
+    {
+        return $this->diagnostic;
+    }
+
+    public function setDiagnostic(?string $diagnostic): static
+    {
+        $this->diagnostic = $diagnostic;
+        return $this;
+    }
+
+    public function getTraitementPrescrit(): ?string
+    {
+        return $this->traitement_prescrit;
+    }
+
+    public function setTraitementPrescrit(?string $traitement_prescrit): static
+    {
+        $this->traitement_prescrit = $traitement_prescrit;
+        return $this;
+    }
+
+    public function getObservations(): ?string
+    {
+        return $this->observations;
+    }
+
+    public function setObservations(?string $observations): static
+    {
+        $this->observations = $observations;
+        return $this;
+    }
+
+    public function getCreeLe(): ?\DateTimeInterface
+    {
+        return $this->cree_le;
+    }
+
+    public function setCreeLe(?\DateTimeInterface $cree_le): static
+    {
+        $this->cree_le = $cree_le;
+        return $this;
+    }
+
+    public function getModifieLe(): ?\DateTimeInterface
+    {
+        return $this->modifie_le;
+    }
+
+    public function setModifieLe(?\DateTimeInterface $modifie_le): static
+    {
+        $this->modifie_le = $modifie_le;
+        return $this;
+    }
+
+    public function getStatut(): ?string
+    {
+        return $this->statut;
+    }
+
+    public function setStatut(?string $statut): static
+    {
+        $this->statut = $statut;
+        return $this;
+    }
+
+    public function getPatient(): ?Patient
+    {
+        return $this->patient;
+    }
+
+    public function setPatient(?Patient $patient): static
+    {
+        $this->patient = $patient;
+        return $this;
+    }
+
+    // LIFECYCLE CALLBACKS - TRÈS IMPORTANT !
+    
+    #[ORM\PrePersist]
+    public function setCreeLeValue(): void
+    {
+        $this->cree_le = new \DateTime();
+        if ($this->statut === null) {
+            $this->statut = 'actif';
+        }
+    }
+
+    #[ORM\PreUpdate]
+    public function setModifieLeValue(): void
+    {
+        $this->modifie_le = new \DateTime();
+    }
+
+    // MÉTHODES UTILITAIRES
+
+    public function getImc(): ?float
+    {
+        if ($this->taille && $this->poids && (float)$this->taille > 0) {
+            $tailleEnMetres = (float)$this->taille;
+            $poidsEnKg = (float)$this->poids;
+            
+            $imc = $poidsEnKg / ($tailleEnMetres * $tailleEnMetres);
+            return round($imc, 2);
+        }
+        
+        return null;
+    }
+
+    public function getCategorieImc(): ?string
+    {
+        $imc = $this->getImc();
+        
+        if ($imc === null) {
+            return null;
+        }
+        
+        if ($imc < 18.5) {
+            return 'Maigreur';
+        } elseif ($imc < 25) {
+            return 'Normal';
+        } elseif ($imc < 30) {
+            return 'Surpoids';
+        } else {
+            return 'Obésité';
+        }
+    }
+
+    // Méthode toString pour affichage
+    public function __toString(): string
+    {
+        return 'Fiche Médicale #' . $this->id;
+    }
+}
