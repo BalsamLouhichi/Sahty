@@ -1,0 +1,182 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Mes Rendez-vous - MEDINOVA{% endblock %}
+
+{% block body %}
+<div class="container-fluid py-5">
+    <div class="container">
+        <div class="text-center mb-5">
+            <h1 class="display-5 text-primary">
+                <i class="fas fa-calendar-check me-2"></i>
+                Mes Rendez-vous
+            </h1>
+            <p class="lead">Consultez l'historique de vos consultations</p>
+        </div>
+
+        {# Vérification de connexion #}
+        {% if not app.user %}
+            <div class="alert alert-warning text-center">
+                <i class="fas fa-exclamation-triangle fa-2x mb-3"></i>
+                <h4>Vous n'êtes pas connecté</h4>
+                <p>Connectez-vous pour voir vos rendez-vous.</p>
+                <i class="fas fa-sign-in-alt me-2"></i> Se connecter
+            </div>
+
+        {# Vérification si rdvs existe #}
+        {% elseif rdvs is not defined %}
+            <div class="alert alert-danger text-center">
+                <i class="fas fa-bug fa-2x mb-3"></i>
+                <h4>Erreur technique</h4>
+                <p>Impossible de charger vos rendez-vous.</p>
+                <a href="{{ path('app_rdv_index') }}" class="btn btn-outline-primary">
+                    <i class="fas fa-calendar-plus me-2"></i> Prendre rendez-vous
+                </a>
+            </div>
+
+        {# Vérification si rdvs est vide #}
+        {% elseif rdvs is empty %}
+            <div class="text-center py-5">
+                <div class="mb-4">
+                    <i class="fas fa-calendar-times text-muted fa-4x"></i>
+                </div>
+                <h3 class="text-muted">Aucun rendez-vous trouvé</h3>
+                <p class="text-muted mb-4">Vous n'avez pas encore pris de rendez-vous.</p>
+                <a href="{{ path('app_rdv_index') }}" class="btn btn-primary btn-lg">
+                    <i class="fas fa-plus-circle me-2"></i> Prendre mon premier rendez-vous
+                </a>
+            </div>
+
+        {# Afficher les rendez-vous #}
+        {% else %}
+            <div class="row justify-content-center">
+                <div class="col-lg-10">
+                    <div class="card shadow">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0">
+                                <i class="fas fa-list me-2"></i>
+                                {{ rdvs|length }} rendez-vous trouvés
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Date</th>
+                                            <th>Heure</th>
+                                            <th>Médecin</th>
+                                            <th>Spécialité</th>
+                                            <th>Statut</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for rdv in rdvs %}
+                                            <tr>
+                                                <td>{{ rdv.date|date('d/m/Y') }}</td>
+                                                <td>{{ rdv.heure|date('H:i') }}</td>
+                                                <td>
+                                                    {% if rdv.medecin %}
+                                                        Dr {{ rdv.medecin.prenom }} {{ rdv.medecin.nom }}
+                                                    {% else %}
+                                                        <span class="text-muted">Non spécifié</span>
+                                                    {% endif %}
+                                                </td>
+                                                <td>
+                                                    {% if rdv.medecin and rdv.medecin.specialite %}
+                                                        {{ rdv.medecin.specialite }}
+                                                    {% else %}
+                                                        <span class="text-muted">-</span>
+                                                    {% endif %}
+                                                </td>
+                                                <td>
+                                                    <span class="badge bg-{{ rdv.statut == 'confirmé' ? 'success' : 'warning' }}">
+                                                        {{ rdv.statut|default('en attente')|capitalize }}
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    <a href="{{ path('app_rdv_show', {'id': rdv.id}) }}" 
+                                                       class="btn btn-sm btn-outline-primary">
+                                                        <i class="fas fa-eye"></i>
+                                                    </a>
+
+                                                    {# Bouton annuler si confirmé #}
+                                                    {% if rdv.statut == 'confirmé' %}
+                                                        <button class="btn btn-sm btn-outline-danger" 
+                                                                data-bs-toggle="modal" 
+                                                                data-bs-target="#annulerModal{{ rdv.id }}">
+                                                            <i class="fas fa-times"></i>
+                                                        </button>
+
+                                                        {# Bouton remplir / voir fiche médicale #}
+                                                        {% if rdv.ficheMedicale is null %}
+                                                            <a href="{{ path('app_fiche_medicale_new', {'id': rdv.id}) }}"
+                                                               class="btn btn-sm btn-warning mt-1">
+                                                                Remplir la fiche
+                                                            </a>
+                                                        {% else %}
+                                                            <a href="{{ path('app_fiche_medicale_show', {'id': rdv.id}) }}"
+                                                               class="btn btn-sm btn-success mt-1">
+                                                                Voir la fiche
+                                                            </a>
+                                                        {% endif %}
+                                                    {% endif %}
+                                                </td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="card-footer text-center">
+                            <a href="{{ path('app_rdv_index') }}" class="btn btn-primary">
+                                <i class="fas fa-calendar-plus me-2"></i> Nouveau rendez-vous
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+{# Modales d'annulation #}
+{% if rdvs is defined %}
+    {% for rdv in rdvs %}
+        {% if rdv.statut == 'confirmé' %}
+            <div class="modal fade" id="annulerModal{{ rdv.id }}" tabindex="-1">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header bg-danger text-white">
+                            <h5 class="modal-title">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                Annuler le rendez-vous
+                            </h5>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <p>Êtes-vous sûr de vouloir annuler ce rendez-vous ?</p>
+                            <ul class="list-unstyled">
+                                <li><strong>Date :</strong> {{ rdv.date|date('d/m/Y') }}</li>
+                                <li><strong>Heure :</strong> {{ rdv.heure|date('H:i') }}</li>
+                                <li><strong>Médecin :</strong> Dr {{ rdv.medecin.prenom }} {{ rdv.medecin.nom }}</li>
+                            </ul>
+                        </div>
+                        <div class="modal-footer">
+                            <form method="post" action="{{ path('app_rdv_annuler', {'id': rdv.id}) }}">
+                                <input type="hidden" name="_token" value="{{ csrf_token('annuler' ~ rdv.id) }}">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                                    <i class="fas fa-times me-2"></i> Non, garder
+                                </button>
+                                <button type="submit" class="btn btn-danger">
+                                    <i class="fas fa-check me-2"></i> Oui, annuler
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+    {% endfor %}
+{% endif %}
+{% endblock %}
