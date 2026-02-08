@@ -2,50 +2,28 @@
 
 namespace App\Entity;
 
-use App\Entity\Utilisateur;
-
 use App\Repository\PatientRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: PatientRepository::class)]
-#[ORM\Table(name: "patient")]
+#[ORM\Table(name: 'patient')]
 class Patient extends Utilisateur
 {
-    #[ORM\Column(length: 1, nullable: true)]
-    private ?string $sexe = null;
-
     #[ORM\Column(length: 10, nullable: true)]
     private ?string $groupeSanguin = null;
 
     #[ORM\Column(length: 20, nullable: true)]
     private ?string $contactUrgence = null;
 
-    /**
-     * @var Collection<int, FicheMedicale>
-     */
-    #[ORM\OneToMany(targetEntity: FicheMedicale::class, mappedBy: 'patient')]
-    private Collection $medecin;
+    #[ORM\Column(length: 10, nullable: true)]
+    private ?string $sexe = null;
 
     public function __construct()
     {
-        $this->medecin = new ArrayCollection();
-    }
-
-    // ------------------------
-    // Getters et Setters
-    // ------------------------
-
-    public function getSexe(): ?string
-    {
-        return $this->sexe;
-    }
-
-    public function setSexe(?string $sexe): static
-    {
-        $this->sexe = $sexe;
-        return $this;
+        parent::__construct();
+        $this->setRole(self::ROLE_SIMPLE_PATIENT);
     }
 
     public function getGroupeSanguin(): ?string
@@ -53,7 +31,7 @@ class Patient extends Utilisateur
         return $this->groupeSanguin;
     }
 
-    public function setGroupeSanguin(?string $groupeSanguin): static
+    public function setGroupeSanguin(?string $groupeSanguin): self
     {
         $this->groupeSanguin = $groupeSanguin;
         return $this;
@@ -64,40 +42,34 @@ class Patient extends Utilisateur
         return $this->contactUrgence;
     }
 
-    public function setContactUrgence(?string $contactUrgence): static
+    public function setContactUrgence(?string $contactUrgence): self
     {
         $this->contactUrgence = $contactUrgence;
         return $this;
     }
 
+    public function getSexe(): ?string
+    {
+        return $this->sexe;
+    }
+
+    public function setSexe(?string $sexe): self
+    {
+        $this->sexe = $sexe;
+        return $this;
+    }
+
     /**
-     * @return Collection<int, FicheMedicale>
+     * Calcul de l'âge du patient
      */
-    public function getMedecin(): Collection
+    public function getAge(): ?int
     {
-        return $this->medecin;
-    }
-
-    public function addMedecin(FicheMedicale $medecin): static
-    {
-        if (!$this->medecin->contains($medecin)) {
-            $this->medecin->add($medecin);
-            $medecin->setPatient($this);
+        if (!$this->getDateNaissance()) {
+            return null;
         }
 
-        return $this;
-    }
-
-    public function removeMedecin(FicheMedicale $medecin): static
-    {
-        if ($this->medecin->removeElement($medecin)) {
-            // set the owning side to null (unless already changed)
-            if ($medecin->getPatient() === $this) {
-                $medecin->setPatient(null);
-            }
-        }
-
-        return $this;
+        $now = new \DateTime();
+        $interval = $now->diff($this->getDateNaissance());
+        return $interval->y;
     }
 }
-
