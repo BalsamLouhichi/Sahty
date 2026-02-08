@@ -89,7 +89,7 @@ class ProfileEditType extends AbstractType
                 ],
                 'constraints' => [
                     new Assert\Length([
-                        'min' => 10,
+                        'min' => 8,
                         'max' => 20,
                         'minMessage' => 'Le téléphone doit contenir au moins {{ limit }} caractères',
                         'maxMessage' => 'Le téléphone ne peut pas dépasser {{ limit }} caractères'
@@ -121,7 +121,7 @@ class ProfileEditType extends AbstractType
                 'mapped' => false,
                 'constraints' => [
                     new Assert\File([
-                        'maxSize' => '1024k',
+                        'maxSize' => '2048k', // Ajouté: limite à 2MB
                         'mimeTypes' => [
                             'image/jpeg',
                             'image/png',
@@ -129,7 +129,7 @@ class ProfileEditType extends AbstractType
                             'image/webp',
                         ],
                         'mimeTypesMessage' => 'Veuillez uploader une image valide (JPEG, PNG, GIF ou WebP)',
-                        'maxSizeMessage' => 'La taille maximale est de 1MB'
+                        'maxSizeMessage' => 'L\'image est trop volumineuse ({{ size }} {{ suffix }}). Maximum autorisé: {{ limit }} {{ suffix }}' // Ajouté
                     ])
                 ],
                 'attr' => [
@@ -169,8 +169,7 @@ class ProfileEditType extends AbstractType
                         new Assert\Range([
                             'min' => 0,
                             'max' => 60,
-                            'minMessage' => 'Les années d\'expérience ne peuvent pas être négatives',
-                            'maxMessage' => 'Les années d\'expérience ne peuvent pas dépasser {{ limit }}'
+                            'notInRangeMessage' => 'Les années d\'expérience doivent être entre {{ min }} et {{ max }}' // CORRIGÉ
                         ])
                     ]
                 ])
@@ -211,7 +210,7 @@ class ProfileEditType extends AbstractType
                     ],
                     'constraints' => [
                         new Assert\Length([
-                            'min' => 10,
+                            'min' => 8,
                             'max' => 20,
                             'minMessage' => 'Le téléphone doit contenir au moins {{ limit }} caractères',
                             'maxMessage' => 'Le téléphone ne peut pas dépasser {{ limit }} caractères'
@@ -233,6 +232,26 @@ class ProfileEditType extends AbstractType
                         new Assert\Length([
                             'max' => 150,
                             'maxMessage' => 'Le nom de l\'établissement ne peut pas dépasser {{ limit }} caractères'
+                        ])
+                    ]
+                ])
+                ->add('numeroUrgence', TextType::class, [
+                    'label' => 'Numéro d\'urgence',
+                    'required' => false,
+                    'attr' => [
+                        'class' => 'form-control',
+                        'placeholder' => 'Numéro d\'urgence'
+                    ],
+                    'constraints' => [
+                        new Assert\Length([
+                            'min' => 8,
+                            'max' => 20,
+                            'minMessage' => 'Le numéro d\'urgence doit contenir au moins {{ limit }} caractères',
+                            'maxMessage' => 'Le numéro d\'urgence ne peut pas dépasser {{ limit }} caractères'
+                        ]),
+                        new Assert\Regex([
+                            'pattern' => '/^[0-9\s\+\-\(\)\.]+$/',
+                            'message' => 'Le numéro d\'urgence ne peut contenir que des chiffres, espaces, +, -, ( et )'
                         ])
                     ]
                 ]);
@@ -263,7 +282,7 @@ class ProfileEditType extends AbstractType
                     ],
                     'constraints' => [
                         new Assert\Length([
-                            'min' => 10,
+                            'min' => 8,
                             'max' => 20,
                             'minMessage' => 'Le contact d\'urgence doit contenir au moins {{ limit }} caractères',
                             'maxMessage' => 'Le contact d\'urgence ne peut pas dépasser {{ limit }} caractères'
@@ -301,8 +320,7 @@ class ProfileEditType extends AbstractType
                         new Assert\Range([
                             'min' => 1,
                             'max' => 999999,
-                            'minMessage' => 'L\'ID doit être au moins {{ limit }}',
-                            'maxMessage' => 'L\'ID ne peut pas dépasser {{ limit }}'
+                            'notInRangeMessage' => 'L\'ID du laboratoire doit être entre {{ min }} et {{ max }}' // CORRIGÉ
                         ])
                     ]
                 ]);
@@ -321,8 +339,7 @@ class ProfileEditType extends AbstractType
                         new Assert\Range([
                             'min' => 1,
                             'max' => 999999,
-                            'minMessage' => 'L\'ID doit être au moins {{ limit }}',
-                            'maxMessage' => 'L\'ID ne peut pas dépasser {{ limit }}'
+                            'notInRangeMessage' => 'L\'ID de la parapharmacie doit être entre {{ min }} et {{ max }}' // CORRIGÉ
                         ])
                     ]
                 ]);

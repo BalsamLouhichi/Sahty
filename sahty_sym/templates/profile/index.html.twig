@@ -120,8 +120,11 @@
                                             <div class="info-item">
                                                 <strong class="d-block mb-1">Date de naissance</strong>
                                                 <span>{{ user.dateNaissance|date('d/m/Y') }}</span>
-                                                {% if user.age %}
-                                                <small class="text-muted d-block">({{ user.age }} ans)</small>
+                                                {% if user.role == 'patient' %}
+                                                    {% set age = user.age %}
+                                                    {% if age %}
+                                                        <small class="text-muted d-block">({{ age }} ans)</small>
+                                                    {% endif %}
                                                 {% endif %}
                                             </div>
                                             {% endif %}
@@ -228,10 +231,10 @@
                                                     <strong class="d-block mb-1">Contact d'urgence</strong>
                                                     <span>{{ user.contactUrgence ?: 'Non renseigné' }}</span>
                                                 </div>
-                                                {% if user.getAge() %}
+                                                {% if user.age %}
                                                 <div class="info-item">
                                                     <strong class="d-block mb-1">Âge</strong>
-                                                    <span>{{ user.getAge() }} ans</span>
+                                                    <span>{{ user.age }} ans</span>
                                                 </div>
                                                 {% endif %}
                                                 
