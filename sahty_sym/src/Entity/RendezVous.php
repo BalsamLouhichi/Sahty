@@ -38,6 +38,7 @@ class RendezVous
     #[ORM\ManyToOne]
     #[ORM\JoinColumn(nullable: false)]
     private ?Medecin $medecin = null;
+    
 
     // ✅ Fiche médicale maintenant facultative
     #[ORM\OneToOne(cascade: ['persist', 'remove'])]

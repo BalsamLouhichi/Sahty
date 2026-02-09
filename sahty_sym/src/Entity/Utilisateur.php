@@ -2,6 +2,7 @@
 
 namespace App\Entity;
 
+
 use App\Repository\UtilisateurRepository;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Security\Core\User\UserInterface;
@@ -135,8 +136,91 @@ class Utilisateur implements UserInterface, PasswordAuthenticatedUserInterface
     public function eraseCredentials(): void {}
 
     public function getUsername(): string
+
+    {
+        return (string) $this->email;
+    }
+
+    /* ================== GETTERS / SETTERS ================== */
+
+    public function getId(): ?int
+    {
+        return $this->id;
+    }
+
+    public function getEmail(): ?string
     {
         return $this->email;
+    }
+
+    public function setEmail(string $email): self
+    {
+        $this->email = $email;
+        return $this;
+
+    }
+
+    /**
+     * Vérifie si l'utilisateur a un rôle Symfony spécifique
+     */
+    public function hasRoleSymfony(string $roleSymfony): bool
+    {
+        return $this->getRoleSymfony() === $roleSymfony;
+    }
+
+    public function getRole(): ?string
+    {
+        return $this->role;
+    }
+    
+    public function setRole(string $role): self 
+    { 
+        // Validation optionnelle du rôle
+        $validRoles = [
+            self::ROLE_SIMPLE_ADMIN,
+            self::ROLE_SIMPLE_MEDECIN,
+            self::ROLE_SIMPLE_PATIENT,
+            self::ROLE_SIMPLE_RESPONSABLE_LABO,
+            self::ROLE_SIMPLE_RESPONSABLE_PARA,
+        ];
+        
+        if (!in_array($role, $validRoles)) {
+            throw new \InvalidArgumentException(sprintf('Rôle "%s" invalide', $role));
+        }
+        
+        $this->role = $role; 
+        return $this; 
+    }
+
+    // Méthodes pour définir des rôles spécifiques (optionnel mais pratique)
+    public function setAdminRole(): self
+    {
+        $this->role = self::ROLE_SIMPLE_ADMIN;
+        return $this;
+    }
+
+    public function setMedecinRole(): self
+    {
+        $this->role = self::ROLE_SIMPLE_MEDECIN;
+        return $this;
+    }
+
+    public function setPatientRole(): self
+    {
+        $this->role = self::ROLE_SIMPLE_PATIENT;
+        return $this;
+    }
+
+    public function setResponsableLaboRole(): self
+    {
+        $this->role = self::ROLE_SIMPLE_RESPONSABLE_LABO;
+        return $this;
+    }
+
+    public function setResponsableParaRole(): self
+    {
+        $this->role = self::ROLE_SIMPLE_RESPONSABLE_PARA;
+        return $this;
     }
 
     /* ================== GETTERS / SETTERS ================== */
@@ -255,6 +339,41 @@ class Utilisateur implements UserInterface, PasswordAuthenticatedUserInterface
     {
         return $this->prenom . ' ' . $this->nom;
     }
+    // Méthodes pour vérifier des rôles spécifiques (optionnel mais pratique)
+    public function isAdmin(): bool
+    {
+        return $this->hasRole(self::ROLE_SIMPLE_ADMIN);
+    }
+
+    public function isMedecin(): bool
+    {
+        return $this->hasRole(self::ROLE_SIMPLE_MEDECIN);
+    }
+
+    public function isPatient(): bool
+    {
+        return $this->hasRole(self::ROLE_SIMPLE_PATIENT);
+    }
+
+    public function isResponsableLabo(): bool
+    {
+        return $this->hasRole(self::ROLE_SIMPLE_RESPONSABLE_LABO);
+    }
+
+    public function isResponsablePara(): bool
+    {
+        return $this->hasRole(self::ROLE_SIMPLE_RESPONSABLE_PARA);
+    }
+
+    
+    /**
+     * Méthode utilitaire pour obtenir le nom complet
+     */
+    public function getNomComplet(): string
+    {
+        return $this->prenom . ' ' . $this->nom;
+    }
+
     public function getAge(): ?int
 {
     if (!$this->getDateNaissance()) {

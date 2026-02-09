@@ -52,6 +52,10 @@ class FicheMedicale
     #[ORM\JoinColumn(name: 'patient_id', referencedColumnName: 'id', nullable: true)]
     private ?Patient $patient = null;
 
+    #[ORM\OneToOne(inversedBy: 'ficheMedicale')]
+    #[ORM\JoinColumn(nullable: true, onDelete: 'CASCADE')]
+    private ?RendezVous $rendezVous = null;
+
     // GETTERS ET SETTERS
 
     public function getId(): ?int
@@ -91,6 +95,8 @@ class FicheMedicale
         $this->traitement_en_cours = $traitement_en_cours;
         return $this;
     }
+
+    
 
     public function getTaille(): ?string
     {
@@ -191,6 +197,17 @@ class FicheMedicale
         return $this;
     }
 
+    public function getRendezVous(): ?RendezVous
+    {
+        return $this->rendezVous;
+    }
+
+    public function setRendezVous(?RendezVous $rendezVous): static
+    {
+        $this->rendezVous = $rendezVous;
+        return $this;
+    }
+
     // LIFECYCLE CALLBACKS - TRÈS IMPORTANT !
     
     #[ORM\PrePersist]
@@ -222,7 +239,11 @@ class FicheMedicale
         
         return null;
     }
-
+public function setImc(?float $imc): static
+{
+    $this->imc = $imc;
+    return $this;
+}
     public function getCategorieImc(): ?string
     {
         $imc = $this->getImc();
@@ -241,7 +262,35 @@ class FicheMedicale
             return 'Obésité';
         }
     }
+public function setCategorieImc(?string $categorie): static
+{
+    $this->categorieImc = $categorie;
+    return $this;
+}
 
+public function calculerImc(): void
+{
+    if ($this->taille && $this->poids && (float)$this->taille > 0) {
+        $tailleEnMetres = (float)$this->taille;
+        $poidsEnKg = (float)$this->poids;
+
+        $imc = $poidsEnKg / ($tailleEnMetres * $tailleEnMetres);
+        $this->setImc(round($imc, 2));
+
+        if ($imc < 18.5) {
+            $this->setCategorieImc('Maigreur');
+        } elseif ($imc < 25) {
+            $this->setCategorieImc('Normal');
+        } elseif ($imc < 30) {
+            $this->setCategorieImc('Surpoids');
+        } else {
+            $this->setCategorieImc('Obésité');
+        }
+    } else {
+        $this->setImc(null);
+        $this->setCategorieImc(null);
+    }
+}
     // Méthode toString pour affichage
     public function __toString(): string
     {
