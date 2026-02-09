@@ -1,0 +1,50 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Détails recommandation - {{ recommandation.name }}{% endblock %}
+
+{% block body %}
+    <div class="container mt-5 pt-5">
+        <h1 class="mb-4">{{ recommandation.name }}</h1>
+
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <dl class="row g-3">
+                    <dt class="col-sm-3 fw-bold">Quiz associé</dt>
+                    <dd class="col-sm-9">{{ recommandation.quiz.name ?? '— Non associé —' }}</dd>
+
+                    <dt class="col-sm-3 fw-bold">Score</dt>
+                    <dd class="col-sm-9">
+                        <span class="badge bg-primary fs-6">
+                            {{ recommandation.min_score }} — {{ recommandation.max_score }}
+                        </span>
+                    </dd>
+
+                    <dt class="col-sm-3 fw-bold">Question concernée</dt>
+                    <dd class="col-sm-9">
+                        {% set idx = recommandation.typeProbleme %}
+                        {% if recommandation.quiz and idx is not null and recommandation.quiz.questions[idx] is defined %}
+                            {{ recommandation.quiz.questions[idx].question }}
+                        {% else %}
+                            <span class="text-muted">Non défini ou question supprimée</span>
+                        {% endif %}
+                    </dd>
+
+                    <dt class="col-sm-3 fw-bold">Description / Conseils</dt>
+                    <dd class="col-sm-9">{{ recommandation.description|nl2br|default('Aucune description') }}</dd>
+
+                    <dt class="col-sm-3 fw-bold">Créée le</dt>
+                    <dd class="col-sm-9">{{ recommandation.createdAt ? recommandation.createdAt|date('d/m/Y H:i') : '—' }}</dd>
+                </dl>
+            </div>
+        </div>
+
+        <div class="mt-4">
+            <a href="{{ path('app_recommandation_index') }}" class="btn btn-secondary">
+                ← Retour à la liste
+            </a>
+            <a href="{{ path('app_recommandation_edit', {id: recommandation.id}) }}" class="btn btn-warning">
+                Modifier
+            </a>
+        </div>
+    </div>
+{% endblock %}

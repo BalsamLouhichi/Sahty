@@ -1,0 +1,129 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ quiz.name|default('Quiz sans nom') }} - Medinova{% endblock %}
+
+{% block body %}
+    {% include 'partials/navbar.html.twig' %}
+
+    <div class="container mt-5 pt-5">
+
+        <!-- En-tête -->
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-5 gap-3">
+            <div>
+                <h1 class="fw-bold text-primary mb-2">{{ quiz.name|default('Quiz sans titre') }}</h1>
+                {% if quiz.description is defined and quiz.description %}
+                    <p class="lead text-muted mb-0">{{ quiz.description }}</p>
+                {% endif %}
+            </div>
+            <div class="d-flex gap-2 flex-wrap">
+                <a href="{{ path('app_quiz_edit', {id: quiz.id}) }}" class="btn btn-outline-warning">
+                    <i class="bi bi-pencil-square me-2"></i> Modifier
+                </a>
+                <a href="{{ path('app_quiz_index') }}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left me-2"></i> Retour à la liste
+                </a>
+            </div>
+        </div>
+
+        <h3 class="mb-4 fw-semibold">Questions du quiz</h3>
+
+        {% set questions = questions|default([]) %}
+
+        {% if questions is empty %}
+            <div class="alert alert-info text-center py-5 shadow-sm">
+                <i class="bi bi-info-circle-fill fs-1 me-3"></i>
+                <div class="d-inline-block text-start">
+                    <h5 class="mb-2">Aucune question pour le moment</h5>
+                    <p class="mb-0">Ce quiz est vide. Ajoutez des questions pour le rendre actif.</p>
+                </div>
+            </div>
+        {% else %}
+            <form method="post" action="{{ path('app_quiz_submit', {id: quiz.id}) }}" class="needs-validation" novalidate>
+                {% for question in questions %}
+                    {% set qIndex = loop.index0 %}
+
+                    <div class="card mb-4 shadow-sm border-0">
+                        <div class="card-header bg-light border-bottom-0 d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">Question {{ loop.index }}</h5>
+                            {% if question.score is defined and question.score is not null %}
+                                <span class="badge bg-secondary">Score max possible : {{ question.score }}</span>
+                            {% endif %}
+                        </div>
+
+                        <div class="card-body">
+                            <p class="lead mb-4 fw-medium">
+                                {{ question.question|default('Question sans texte') }}
+                            </p>
+
+                            {% set options = question.options|default([]) %}
+
+                            {% if options is iterable and options|length > 0 %}
+                                <div class="options">
+                                    {% for optIndex, option in options %}
+                                        <div class="form-check mb-3">
+                                            <input
+                                                class="form-check-input"
+                                                type="radio"
+                                                name="answers[{{ qIndex }}]"
+                                                id="q{{ qIndex }}_opt{{ optIndex }}"
+                                                value="{{ option.score|default(0) }}"
+                                                {% if loop.first %}checked{% endif %}
+                                                required
+                                            >
+                                            <label class="form-check-label" for="q{{ qIndex }}_opt{{ optIndex }}">
+                                                {{ option.text|default('Option sans texte') }}
+                                                {% if option.score is defined and option.score != 0 %}
+                                                    <small class="text-muted ms-2">(score : {{ option.score }})</small>
+                                                {% endif %}
+                                            </label>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                <div class="alert alert-warning small py-2 mb-0">
+                                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                                    Aucune option définie pour cette question.
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endfor %}
+
+                <!-- Bouton soumission -->
+                <div class="text-center mt-5 pt-4">
+                    <button type="submit" class="btn btn-success btn-lg px-5 py-3 shadow">
+                        <i class="bi bi-check-circle-fill me-2"></i>
+                        Soumettre mes réponses et voir les recommandations
+                    </button>
+                </div>
+            </form>
+        {% endif %}
+
+        <!-- Pied de page -->
+        <div class="text-center mt-5 pt-4 pb-5">
+            <a href="{{ path('app_quiz_index') }}" class="btn btn-outline-secondary px-5 py-3">
+                <i class="bi bi-arrow-left-circle me-2"></i>
+                Retour à la liste des quizzes
+            </a>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="{{ asset('js/bootstrap.bundle.min.js') }}"></script>
+    <script>
+        // Validation Bootstrap côté client
+        (function () {
+            'use strict';
+            const forms = document.querySelectorAll('.needs-validation');
+            Array.from(forms).forEach(form => {
+                form.addEventListener('submit', event => {
+                    if (!form.checkValidity()) {
+                        event.preventDefault();
+                        event.stopPropagation();
+                    }
+                    form.classList.add('was-validated');
+                }, false);
+            });
+        })();
+    </script>
+{% endblock %}

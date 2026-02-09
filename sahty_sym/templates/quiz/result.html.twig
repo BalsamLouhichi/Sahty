@@ -1,0 +1,61 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Résultat - {{ quiz.name }}{% endblock %}
+
+{% block body %}
+<div class="container mt-5 pt-5">
+    <h1 class="text-center mb-5">Résultat du quiz : {{ quiz.name }}</h1>
+
+    <div class="card shadow-lg mb-5">
+        <div class="card-body text-center py-5">
+            <h2 class="display-4 fw-bold mb-4">
+                Score : {{ score }} / {{ total_questions * 5 }} {# ← adapte selon ton max par question #}
+            </h2>
+            <p class="lead mb-4">
+                Vous avez répondu à {{ total_questions }} questions.
+            </p>
+        </div>
+    </div>
+
+    {% if recommandations is empty %}
+        <div class="alert alert-warning text-center">
+            <i class="bi bi-exclamation-triangle-fill me-2 fs-4"></i>
+            Aucune recommandation ne correspond à votre score pour le moment.
+        </div>
+    {% else %}
+        <h3 class="mb-4 text-center">Recommandations personnalisées</h3>
+        <div class="row g-4">
+            {% for reco in recommandations %}
+                <div class="col-md-6 col-lg-4">
+                    <div class="card h-100 shadow-sm border-primary">
+                        <div class="card-body">
+                            <h5 class="card-title text-primary">{{ reco.name }}</h5>
+                            <p class="card-text">
+                                <strong>Score concerné :</strong> {{ reco.min_score }} — {{ reco.max_score }}<br>
+                                <strong>Type :</strong> 
+                                {% set idx = reco.typeProbleme %}
+                                {% if idx is not null and reco.quiz.questions[idx] is defined %}
+                                    {{ reco.quiz.questions[idx].question|slice(0, 80) ~ '...' }}
+                                {% else %}
+                                    Inconnu
+                                {% endif %}
+                            </p>
+                            <hr>
+                            <p class="card-text">{{ reco.description|nl2br }}</p>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <div class="text-center mt-5">
+        <a href="{{ path('app_quiz_show', {id: quiz.id}) }}" class="btn btn-outline-primary btn-lg px-5 me-3">
+            Refaire le quiz
+        </a>
+        <a href="{{ path('app_quiz_index') }}" class="btn btn-outline-secondary btn-lg px-5">
+            Retour aux quizzes
+        </a>
+    </div>
+</div>
+{% endblock %}

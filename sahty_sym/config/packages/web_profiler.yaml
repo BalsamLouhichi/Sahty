@@ -1,10 +1,9 @@
+# config/packages/web_profiler.yaml
+
 when@dev:
     web_profiler:
-        toolbar: true
-
-    framework:
-        profiler:
-            collect_serializer_data: true
+        toolbar: false               # ← désactive la barre en haut de page
+        intercept_redirects: false   # ← empêche d'intercepter les redirections
 
 when@test:
     framework:

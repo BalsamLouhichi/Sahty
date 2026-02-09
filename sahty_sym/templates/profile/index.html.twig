@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mon Profil - MEDINOVA</title>
+    <link href="{{ asset('css/bootstrap.min.css') }}" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #f8f9fa; }
+        .profile-card { border: none; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+        .profile-header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 15px 15px 0 0; }
+        .profile-avatar { width: 120px; height: 120px; border-radius: 50%; border: 5px solid white; object-fit: cover; }
+        .info-card { border-left: 4px solid #667eea; }
+        .role-badge { background: #667eea; color: white; padding: 5px 15px; border-radius: 20px; }
+        .info-item { margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid #eee; }
+        .info-item:last-child { border-bottom: none; }
+        .icon-circle { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+        .icon-medecin { background: linear-gradient(135deg, #4CAF50 0%, #8BC34A 100%); }
+        .icon-patient { background: linear-gradient(135deg, #2196F3 0%, #03A9F4 100%); }
+        .icon-labo { background: linear-gradient(135deg, #FF9800 0%, #FFC107 100%); }
+        .icon-para { background: linear-gradient(135deg, #9C27B0 0%, #E91E63 100%); }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+        <div class="container">
+            <a class="navbar-brand" href="{{ path('app_home') }}">
+                <i class="fas fa-stethoscope me-2"></i>MEDINOVA
+            </a>
+            <div class="navbar-nav ms-auto">
+                <div class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
+                        <i class="fas fa-user-circle me-2"></i>
+                        {{ app.user.prenom }}
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="{{ path('app_profile') }}"><i class="fas fa-user me-2"></i>Mon Profil</a></li>
+                        <li><a class="dropdown-item" href="{{ path('app_profile_edit') }}"><i class="fas fa-edit me-2"></i>Modifier Profil</a></li>
+                        <li><a class="dropdown-item" href="{{ path('app_profile_change_password') }}"><i class="fas fa-key me-2"></i>Changer mot de passe</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="{{ path('app_logout') }}"><i class="fas fa-sign-out-alt me-2"></i>Déconnexion</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container py-5">
+        <div class="row justify-content-center">
+            <div class="col-lg-10">
+                <!-- Messages flash -->
+                {% for message in app.flashes('success') %}
+                    <div class="alert alert-success alert-dismissible fade show">
+                        <i class="fas fa-check-circle me-2"></i>{{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+                
+                {% for message in app.flashes('error') %}
+                    <div class="alert alert-danger alert-dismissible fade show">
+                        <i class="fas fa-exclamation-triangle me-2"></i>{{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+
+                <!-- Carte de profil -->
+                <div class="card profile-card">
+                    <div class="profile-header p-5 text-center">
+                        <div class="d-flex justify-content-center mb-3">
+                            {% if user.photoProfil %}
+                                <img src="{{ asset(user.photoProfil) }}" class="profile-avatar" alt="Photo de profil">
+                            {% else %}
+                                <div class="profile-avatar d-flex align-items-center justify-content-center bg-white text-primary" style="font-size: 3rem;">
+                                    <i class="fas fa-user"></i>
+                                </div>
+                            {% endif %}
+                        </div>
+                        <h2 class="mb-2">{{ user.prenom }} {{ user.nom }}</h2>
+                        <span class="role-badge">
+                            {% if user.role == 'medecin' %}
+                                <i class="fas fa-user-md me-1"></i> MÉDECIN
+                            {% elseif user.role == 'patient' %}
+                                <i class="fas fa-user-injured me-1"></i> PATIENT
+                            {% elseif user.role == 'responsable_labo' %}
+                                <i class="fas fa-flask me-1"></i> RESPONSABLE LABORATOIRE
+                            {% elseif user.role == 'responsable_para' %}
+                                <i class="fas fa-pills me-1"></i> RESPONSABLE PHARMACIE
+                            {% else %}
+                                {{ user.role|upper }}
+                            {% endif %}
+                        </span>
+                    </div>
+                    
+                    <div class="card-body p-5">
+                        <div class="row">
+                            <!-- Informations personnelles -->
+                            <div class="col-md-6 mb-4">
+                                <div class="card h-100 info-card">
+                                    <div class="card-body">
+                                        <h5 class="card-title mb-4">
+                                            <div class="d-flex align-items-center">
+                                                <div class="icon-circle bg-primary text-white me-3">
+                                                    <i class="fas fa-id-card"></i>
+                                                </div>
+                                                <span>Informations personnelles</span>
+                                            </div>
+                                        </h5>
+                                        <div class="mt-3">
+                                            <div class="info-item">
+                                                <strong class="d-block mb-1">Email</strong>
+                                                <span>{{ user.email }}</span>
+                                            </div>
+                                            <div class="info-item">
+                                                <strong class="d-block mb-1">Téléphone</strong>
+                                                <span>{{ user.telephone ?: 'Non renseigné' }}</span>
+                                            </div>
+                                            {% if user.dateNaissance %}
+                                            <div class="info-item">
+                                                <strong class="d-block mb-1">Date de naissance</strong>
+                                                <span>{{ user.dateNaissance|date('d/m/Y') }}</span>
+                                                {% if user.age %}
+                                                <small class="text-muted d-block">({{ user.age }} ans)</small>
+                                                {% endif %}
+                                            </div>
+                                            {% endif %}
+                                            <div class="info-item">
+                                                <strong class="d-block mb-1">Membre depuis</strong>
+                                                <span>{{ user.creeLe|date('d/m/Y') }}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Informations spécifiques au rôle -->
+                            <div class="col-md-6 mb-4">
+                                <div class="card h-100 info-card">
+                                    <div class="card-body">
+                                        <h5 class="card-title mb-4">
+                                            <div class="d-flex align-items-center">
+                                                {% if user.role == 'medecin' %}
+                                                <div class="icon-circle icon-medecin text-white me-3">
+                                                    <i class="fas fa-user-md"></i>
+                                                </div>
+                                                {% elseif user.role == 'patient' %}
+                                                <div class="icon-circle icon-patient text-white me-3">
+                                                    <i class="fas fa-user-injured"></i>
+                                                </div>
+                                                {% elseif user.role == 'responsable_labo' %}
+                                                <div class="icon-circle icon-labo text-white me-3">
+                                                    <i class="fas fa-flask"></i>
+                                                </div>
+                                                {% elseif user.role == 'responsable_para' %}
+                                                <div class="icon-circle icon-para text-white me-3">
+                                                    <i class="fas fa-pills"></i>
+                                                </div>
+                                                {% else %}
+                                                <div class="icon-circle bg-primary text-white me-3">
+                                                    <i class="fas fa-user-tag"></i>
+                                                </div>
+                                                {% endif %}
+                                                <span>
+                                                    {% if user.role == 'medecin' %}Informations médicales
+                                                    {% elseif user.role == 'patient' %}Informations de santé
+                                                    {% elseif user.role == 'responsable_labo' %}Informations laboratoire
+                                                    {% elseif user.role == 'responsable_para' %}Informations pharmacie
+                                                    {% else %}Informations professionnelles
+                                                    {% endif %}
+                                                </span>
+                                            </div>
+                                        </h5>
+                                        <div class="mt-3">
+                                            {% if user.role == 'medecin' %}
+                                                <div class="info-item">
+                                                    <strong class="d-block mb-1">Spécialité</strong>
+                                                    <span>{{ user.specialite ?: 'Non renseignée' }}</span>
+                                                </div>
+                                                <div class="info-item">
+                                                    <strong class="d-block mb-1">Années d'expérience</strong>
+                                                    <span>{{ user.anneeExperience ? user.anneeExperience ~ ' ans' : 'Non renseignées' }}</span>
+                                                </div>
+                                                <div class="info-item">
+                                                    <strong class="d-block mb-1">Grade</strong>
+                                                    <span>{{ user.grade ?: 'Non renseigné' }}</span>
+                                                </div>
+                                                {% if user.adresseCabinet %}
+                                                <div class="info-item">
+                                                    <strong class="d-block mb-1">Adresse du cabinet</strong>
+                                                    <span>{{ user.adresseCabinet }}</span>
+                                                </div>
+                                                {% endif %}
+                                                {% if user.telephoneCabinet %}
+                                                <div class="info-item">
+                                                    <strong class="d-block mb-1">Téléphone cabinet</strong>
+                                                    <span>{{ user.telephoneCabinet }}</span>
+                                                </div>
+                                                {% endif %}
+                                                {% if user.nomEtablissement %}
+                                                <div class="info-item">
+                                                    <strong class="d-block mb-1">Établissement</strong>
+                                                    <span>{{ user.nomEtablissement }}</span>
+                                                </div>
+                                                {% endif %}
+                                                {% if user.numeroUrgence %}
+                                                <div class="info-item">
+                                                    <strong class="d-block mb-1">Numéro urgence</strong>
+                                                    <span>{{ user.numeroUrgence }}</span>
+                                                </div>
+                                                {% endif %}
+                                                
+                                            {% elseif user.role == 'patient' %}
+                                                <div class="info-item">
+                                                    <strong class="d-block mb-1">Sexe</strong>
+                                                    <span>
+                                                        {% if user.sexe == 'M' %}Masculin
+                                                        {% elseif user.sexe == 'F' %}Féminin
+                                                        {% else %}Non renseigné
+                                                        {% endif %}
+                                                    </span>
+                                                </div>
+                                                <div class="info-item">
+                                                    <strong class="d-block mb-1">Groupe sanguin</strong>
+                                                    <span>{{ user.groupeSanguin ?: 'Non renseigné' }}</span>
+                                                </div>
+                                                <div class="info-item">
+                                                    <strong class="d-block mb-1">Contact d'urgence</strong>
+                                                    <span>{{ user.contactUrgence ?: 'Non renseigné' }}</span>
+                                                </div>
+                                                {% if user.getAge() %}
+                                                <div class="info-item">
+                                                    <strong class="d-block mb-1">Âge</strong>
+                                                    <span>{{ user.getAge() }} ans</span>
+                                                </div>
+                                                {% endif %}
+                                                
+                                            {% elseif user.role == 'responsable_labo' %}
+                                                <div class="info-item">
+                                                    <strong class="d-block mb-1">ID Laboratoire</strong>
+                                                    <span>{{ user.laboratoireId ?: 'Non renseigné' }}</span>
+                                                </div>
+                                                <div class="info-item">
+                                                    <strong class="d-block mb-1">Statut</strong>
+                                                    <span class="badge bg-info">Responsable Laboratoire</span>
+                                                </div>
+                                                
+                                            {% elseif user.role == 'responsable_para' %}
+                                                <div class="info-item">
+                                                    <strong class="d-block mb-1">ID Parapharmacie</strong>
+                                                    <span>{{ user.parapharmacieId ?: 'Non renseigné' }}</span>
+                                                </div>
+                                                <div class="info-item">
+                                                    <strong class="d-block mb-1">Statut</strong>
+                                                    <span class="badge bg-info">Responsable Parapharmacie</span>
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Section Documents et Fichiers (spécifique aux médecins) -->
+                        {% if user.role == 'medecin' and user.documentPdf %}
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h5 class="card-title">
+                                            <i class="fas fa-file-pdf text-danger me-2"></i>Documents professionnels
+                                        </h5>
+                                        <div class="mt-3">
+                                            <div class="d-flex align-items-center">
+                                                <i class="fas fa-file-pdf fa-2x text-danger me-3"></i>
+                                                <div>
+                                                    <strong>Document PDF</strong>
+                                                    <div class="mt-1">
+                                                        <a href="{{ asset(user.documentPdf) }}" target="_blank" class="btn btn-sm btn-outline-danger">
+                                                            <i class="fas fa-eye me-1"></i>Voir le document
+                                                        </a>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <!-- Section Disponibilités (spécifique aux médecins) -->
+                        {% if user.role == 'medecin' and user.disponibilite %}
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h5 class="card-title">
+                                            <i class="fas fa-calendar-check text-success me-2"></i>Disponibilités
+                                        </h5>
+                                        <div class="mt-3">
+                                            <p class="mb-0">{{ user.disponibilite }}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        <!-- Actions -->
+                        <div class="text-center mt-5 pt-3 border-top">
+                            <a href="{{ path('app_profile_edit') }}" class="btn btn-primary me-3">
+                                <i class="fas fa-edit me-2"></i>Modifier mon profil
+                            </a>
+                            <a href="{{ path('app_profile_change_password') }}" class="btn btn-outline-primary me-3">
+                                <i class="fas fa-key me-2"></i>Changer le mot de passe
+                            </a>
+                            <a href="{{ path('app_home') }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-home me-2"></i>Retour à l'accueil
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

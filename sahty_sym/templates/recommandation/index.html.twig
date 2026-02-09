@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestion des Recommandations - Medinova</title>
+    <link href="{{ asset('css/bootstrap.min.css') }}" rel="stylesheet">
+    <link href="{{ asset('css/style.css') }}" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .card-stat { transition: transform 0.2s; }
+        .card-stat:hover { transform: translateY(-5px); }
+        .bg-gradient-primary { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important; }
+        .bg-gradient-info    { background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%) !important; }
+        .bg-gradient-warning { background: linear-gradient(135deg, #f7971e 0%, #ffd200 100%) !important; }
+        .bg-gradient-danger  { background: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%) !important; }
+    </style>
+</head>
+<body class="bg-light">
+
+    {% include 'partials/navbar.html.twig' %}
+
+    <div class="container mt-5 pt-4">
+
+        <!-- En-tête -->
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-center mb-5 gap-3">
+            <h1 class="fw-bold text-dark">Gestion des Recommandations</h1>
+            <a href="{{ path('app_recommandation_new') }}" class="btn btn-success btn-lg shadow">
+                <i class="bi bi-plus-lg me-2"></i> Ajouter une Recommandation
+            </a>
+        </div>
+
+        {% set recoList = recommandations.results is defined ? recommandations.results : recommandations %}
+
+        {% if recoList is empty %}
+            <div class="alert alert-info text-center py-5 shadow-sm">
+                <i class="bi bi-info-circle-fill fs-1 me-3"></i>
+                Aucune recommandation n'a encore été créée.
+            </div>
+        {% else %}
+
+            {# ====================== CALCULS STATISTIQUES ====================== #}
+            {% set quizCounts = {} %}
+            {% set scoreRanges = {'0-20': 0, '21-40': 0, '41-60': 0, '61-80': 0, '81-100': 0} %}
+            {% set totalMin = 0 %}
+            {% set totalMax = 0 %}
+
+            {% for reco in recoList %}
+                {% set quizName = reco.quiz.name ?? 'Sans quiz' %}
+                {% set quizCounts = quizCounts|merge({ (quizName): (quizCounts[quizName] ?? 0) + 1 }) %}
+
+                {% set totalMin = totalMin + reco.minScore %}
+                {% set totalMax = totalMax + reco.maxScore %}
+
+                {% set mid = (reco.minScore + reco.maxScore) / 2 %}
+                {% if mid <= 20 %}
+                    {% set scoreRanges = scoreRanges|merge({'0-20': scoreRanges['0-20'] + 1}) %}
+                {% elseif mid <= 40 %}
+                    {% set scoreRanges = scoreRanges|merge({'21-40': scoreRanges['21-40'] + 1}) %}
+                {% elseif mid <= 60 %}
+                    {% set scoreRanges = scoreRanges|merge({'41-60': scoreRanges['41-60'] + 1}) %}
+                {% elseif mid <= 80 %}
+                    {% set scoreRanges = scoreRanges|merge({'61-80': scoreRanges['61-80'] + 1}) %}
+                {% else %}
+                    {% set scoreRanges = scoreRanges|merge({'81-100': scoreRanges['81-100'] + 1}) %}
+                {% endif %}
+            {% endfor %}
+
+            {% set totalRecos = recoList|length %}
+            {% set avgScore = totalRecos > 0 ? ((totalMin + totalMax) / 2 / totalRecos)|round(1) : 0 %}
+
+            {# ====================== VALEURS POUR LES GRAPHIQUES ====================== #}
+            {% set quizValues = [] %}
+            {% for count in quizCounts %}
+                {% set quizValues = quizValues|merge([count]) %}
+            {% endfor %}
+
+            {% set scoreValues = [] %}
+            {% for count in scoreRanges %}
+                {% set scoreValues = scoreValues|merge([count]) %}
+            {% endfor %}
+
+            {# ====================== CARTES STATISTIQUES (toujours visibles) ====================== #}
+            <div class="row g-4 mb-5">
+                <div class="col-lg-3 col-md-6">
+                    <div class="card card-stat shadow-lg border-0 bg-gradient-primary text-white h-100">
+                        <div class="card-body text-center">
+                            <h5 class="mb-3">Total</h5>
+                            <div class="display-4 fw-bold">{{ totalRecos }}</div>
+                            <p class="small mt-2 opacity-75">recommandations</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-3 col-md-6">
+                    <div class="card card-stat shadow-lg border-0 bg-gradient-warning text-dark h-100">
+                        <div class="card-body text-center">
+                            <h5 class="mb-3">Score moyen</h5>
+                            <div class="display-4 fw-bold">{{ avgScore }}</div>
+                            <p class="small mt-2 opacity-75">moyenne des plages</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-3 col-md-6">
+                    <div class="card card-stat shadow-lg border-0 bg-gradient-info text-white h-100">
+                        <div class="card-body text-center">
+                            <h5 class="mb-3">Quiz utilisés</h5>
+                            <div class="display-4 fw-bold">{{ quizCounts|length }}</div>
+                            <p class="small mt-2 opacity-75">quiz différents</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-3 col-md-6">
+                    <div class="card card-stat shadow-lg border-0 bg-gradient-danger text-white h-100">
+                        <div class="card-body text-center">
+                            <h5 class="mb-3">Score le plus haut</h5>
+                            <div class="display-4 fw-bold">
+                                {{ recoList|reduce((carry, reco) => max(carry, reco.maxScore), 0) }}
+                            </div>
+                            <p class="small mt-2 opacity-75">max observé</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {# ====================== BOUTON STATISTIQUES ====================== #}
+            <div class="text-center mb-5">
+                <button id="toggleStatsBtn" class="btn btn-primary btn-lg px-5 py-3 shadow">
+                    <i class="bi bi-bar-chart-fill me-2"></i> Afficher les Statistiques
+                </button>
+            </div>
+
+            {# ====================== SECTION GRAPHIQUES (cachée au départ) ====================== #}
+            <div id="statsSection" class="row g-4 mb-5 d-none">
+
+                <div class="col-lg-6">
+                    <div class="card shadow-lg border-0 h-100">
+                        <div class="card-header bg-primary text-white fw-bold">Répartition par Quiz</div>
+                        <div class="card-body">
+                            <canvas id="quizPieChart" height="200"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-6">
+                    <div class="card shadow-lg border-0 h-100">
+                        <div class="card-header bg-success text-white fw-bold">Répartition des plages de score</div>
+                        <div class="card-body">
+                            <canvas id="scoreBarChart" height="200"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-12">
+                    <div class="card shadow-lg border-0">
+                        <div class="card-header bg-info text-white fw-bold text-center">
+                            Plages de score (vue circulaire)
+                        </div>
+                        <div class="card-body text-center">
+                            <div style="max-width: 500px; margin: 0 auto;">
+                                <canvas id="scoreDoughnutChart" height="220"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {# ====================== TABLEAU ====================== #}
+            <div class="card shadow-lg border-0 mb-5">
+                <div class="card-header bg-dark text-white fw-bold">Liste des recommandations</div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover table-striped mb-0 align-middle">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Nom</th>
+                                    <th>Quiz</th>
+                                    <th>Question / Problème</th>
+                                    <th>Score</th>
+                                    <th class="text-center">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for reco in recoList %}
+                                <tr>
+                                    <td class="fw-bold">{{ reco.id }}</td>
+                                    <td>{{ reco.name }}</td>
+                                    <td>{{ reco.quiz.name ?? '<span class="text-muted">— Non associé —</span>' }}</td>
+                                    <td>{{ reco.typeProbleme ?: '<span class="text-muted">—</span>' }}</td>
+                                    <td class="text-center">
+                                        <span class="badge bg-primary fs-6 px-3 py-2">
+                                            {{ reco.minScore }} — {{ reco.maxScore }}
+                                        </span>
+                                    </td>
+                                    <td class="text-center">
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{{ path('app_recommandation_edit', {id: reco.id}) }}" class="btn btn-outline-primary" title="Modifier">
+                                                <i class="bi bi-pencil-square"></i>
+                                            </a>
+                                            <form method="post" action="{{ path('app_recommandation_delete', {id: reco.id}) }}" style="display:inline;" onsubmit="return confirm('Confirmer la suppression ?');">
+                                                <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ reco.id) }}">
+                                                <button type="submit" class="btn btn-outline-danger" title="Supprimer">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            {# Pagination (si paginée) #}
+            {% if recommandations.results is defined and recommandations.current_page is defined %}
+                <nav aria-label="Pagination">
+                    <ul class="pagination justify-content-center mt-4">
+                        <li class="page-item {{ recommandations.current_page <= 1 ? 'disabled' : '' }}">
+                            <a class="page-link" href="?page={{ recommandations.current_page - 1 }}">&laquo;</a>
+                        </li>
+                        {% for p in 1..recommandations.total_pages %}
+                            <li class="page-item {{ p == recommandations.current_page ? 'active' : '' }}">
+                                <a class="page-link" href="?page={{ p }}">{{ p }}</a>
+                            </li>
+                        {% endfor %}
+                        <li class="page-item {{ recommandations.current_page >= recommandations.total_pages ? 'disabled' : '' }}">
+                            <a class="page-link" href="?page={{ recommandations.current_page + 1 }}">&raquo;</a>
+                        </li>
+                    </ul>
+                </nav>
+            {% endif %}
+
+        {% endif %}
+
+        <div class="text-center my-5">
+            <a href="{{ path('home') }}" class="btn btn-outline-secondary btn-lg">
+                <i class="bi bi-arrow-left me-2"></i> Retour à l'accueil
+            </a>
+        </div>
+
+    </div>
+
+    <script src="{{ asset('js/bootstrap.bundle.min.js') }}"></script>
+
+    <script>
+        const colors = ['#4e73df', '#1cc88a', '#36b9cc', '#f6c23e', '#e74a3b', '#858796', '#5a5c69', '#224abe', '#2e59d9', '#17a2b8'];
+        let chartsInitialized = false;
+
+        function initCharts() {
+            if (chartsInitialized) return;
+            chartsInitialized = true;
+
+            new Chart(document.getElementById('quizPieChart'), {
+                type: 'pie',
+                data: {
+                    labels: {{ quizCounts|keys|json_encode|raw }},
+                    datasets: [{ data: {{ quizValues|json_encode|raw }}, backgroundColor: colors.slice(0, {{ quizCounts|length }}), borderWidth: 1 }]
+                },
+                options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
+            });
+
+            new Chart(document.getElementById('scoreBarChart'), {
+                type: 'bar',
+                data: {
+                    labels: {{ scoreRanges|keys|json_encode|raw }},
+                    datasets: [{ label: 'Nombre', data: {{ scoreValues|json_encode|raw }}, backgroundColor: 'rgba(54, 162, 235, 0.7)', borderColor: 'rgba(54, 162, 235, 1)', borderWidth: 1 }]
+                },
+                options: { responsive: true, scales: { y: { beginAtZero: true } } }
+            });
+
+            new Chart(document.getElementById('scoreDoughnutChart'), {
+                type: 'doughnut',
+                data: {
+                    labels: {{ scoreRanges|keys|json_encode|raw }},
+                    datasets: [{ data: {{ scoreValues|json_encode|raw }}, backgroundColor: colors.slice(0, {{ scoreRanges|length }}), borderWidth: 1 }]
+                },
+                options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
+            });
+        }
+
+        document.getElementById('toggleStatsBtn').addEventListener('click', function() {
+            const section = document.getElementById('statsSection');
+            if (section.classList.contains('d-none')) {
+                section.classList.remove('d-none');
+                this.innerHTML = '<i class="bi bi-eye-slash-fill me-2"></i> Masquer les Statistiques';
+                this.classList.remove('btn-primary');
+                this.classList.add('btn-outline-primary');
+                initCharts();
+            } else {
+                section.classList.add('d-none');
+                this.innerHTML = '<i class="bi bi-bar-chart-fill me-2"></i> Afficher les Statistiques';
+                this.classList.remove('btn-outline-primary');
+                this.classList.add('btn-primary');
+            }
+        });
+    </script>
+</body>
+</html>

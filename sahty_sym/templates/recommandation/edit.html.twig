@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modifier Recommandation - {{ recommandation.name }} - Sahty</title>
+
+    <link href="{{ asset('css/bootstrap.min.css') }}" rel="stylesheet">
+    <link href="{{ asset('css/style.css') }}" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+</head>
+<body>
+
+{% include 'partials/navbar.html.twig' %}
+
+<div class="container mt-5 pt-5">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="fw-bold text-primary">
+            Modifier la Recommandation : {{ recommandation.name }}
+        </h1>
+        <a href="{{ path('app_recommandation_index') }}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-2"></i> Retour à la liste
+        </a>
+    </div>
+
+    <div class="card shadow-sm border-0">
+        <div class="card-body p-5">
+
+            {# ✅ HTML5 validation désactivée #}
+            {{ form_start(form, {'attr': {'novalidate': 'novalidate'}}) }}
+
+            <div class="row g-4">
+
+                <!-- Colonne principale -->
+                <div class="col-md-8">
+
+                    <div class="mb-4">
+                        {{ form_label(form.name) }}
+                        {{ form_widget(form.name, {
+                            'required': false,
+                            'attr': {
+                                'class': 'form-control-lg',
+                                'placeholder': 'Ex : Recommandation pour stress élevé'
+                            }
+                        }) }}
+                        <div class="text-danger small mt-1">
+                            {{ form_errors(form.name) }}
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        {{ form_label(form.description) }}
+                        {{ form_widget(form.description, {
+                            'required': false,
+                            'attr': {
+                                'rows': 6,
+                                'placeholder': 'Conseils détaillés, ressources, actions recommandées...'
+                            }
+                        }) }}
+                        <div class="text-danger small mt-1">
+                            {{ form_errors(form.description) }}
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        {{ form_label(form.type_probleme) }}
+                        {{ form_widget(form.type_probleme, {
+                            'required': false,
+                            'attr': {
+                                'class': 'form-select',
+                                'id': 'recommandation_type_probleme'
+                            }
+                        }) }}
+                        <small class="form-text text-muted">
+                            {{ form_help(form.type_probleme) }}
+                        </small>
+                        <div class="text-danger small mt-1">
+                            {{ form_errors(form.type_probleme) }}
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Colonne latérale -->
+                <div class="col-md-4">
+
+                    <div class="card bg-light border-0 p-4 mb-4">
+                        <h5 class="text-muted mb-3">Plage de score</h5>
+
+                        <div class="mb-3">
+                            {{ form_label(form.min_score) }}
+                            {{ form_widget(form.min_score, {
+                                'required': false,
+                                'attr': {'placeholder': 'Ex : 8'}
+                            }) }}
+                            <div class="text-danger small mt-1">
+                                {{ form_errors(form.min_score) }}
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form_label(form.max_score) }}
+                            {{ form_widget(form.max_score, {
+                                'required': false,
+                                'attr': {'placeholder': 'Ex : 20'}
+                            }) }}
+                            <div class="text-danger small mt-1">
+                                {{ form_errors(form.max_score) }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        {{ form_label(form.quiz) }}
+                        {{ form_widget(form.quiz, {
+                            'required': false,
+                            'attr': {
+                                'class': 'form-select',
+                                'id': 'recommandation_quiz'
+                            }
+                        }) }}
+                        <div class="text-danger small mt-1">
+                            {{ form_errors(form.quiz) }}
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <div class="mt-5 d-flex justify-content-end gap-3">
+                <a href="{{ path('app_recommandation_index') }}" class="btn btn-outline-secondary btn-lg px-5">
+                    Annuler
+                </a>
+                <button type="submit" class="btn btn-primary btn-lg px-5">
+                    <i class="bi bi-save-fill me-2"></i> Enregistrer les modifications
+                </button>
+            </div>
+
+            {{ form_end(form) }}
+
+        </div>
+    </div>
+
+    <div class="text-center mt-5">
+        <a href="{{ path('home') }}" class="btn btn-outline-secondary btn-lg px-5">
+            <i class="bi bi-arrow-left-circle me-2"></i> Retour à l'accueil
+        </a>
+    </div>
+
+</div>
+
+<!-- Scripts -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="{{ asset('js/bootstrap.bundle.min.js') }}"></script>
+
+<script>
+    $(document).ready(function () {
+
+        const $quizSelect = $('#recommandation_quiz');
+        const $typeProblemeSelect = $('#recommandation_type_probleme');
+
+        if ($quizSelect.val()) {
+            $quizSelect.trigger('change');
+        }
+
+        $quizSelect.on('change', function () {
+
+            const quizId = $(this).val();
+
+            $typeProblemeSelect.html('<option value="">Chargement...</option>');
+            $typeProblemeSelect.prop('disabled', true);
+
+            if (quizId) {
+                $.ajax({
+                    url: '/recommandation/get-questions/' + quizId,
+                    method: 'GET',
+                    dataType: 'json',
+                    success: function (data) {
+                        $typeProblemeSelect.html('<option value="">— Choisir une question —</option>');
+                        $.each(data, function (i, q) {
+                            $typeProblemeSelect.append(
+                                $('<option></option>').val(q.text).text(q.text)
+                            );
+                        });
+
+                        const currentValue = '{{ form.vars.value.type_probleme ?? '' }}';
+                        if (currentValue) {
+                            $typeProblemeSelect.val(currentValue);
+                        }
+
+                        $typeProblemeSelect.prop('disabled', false);
+                    },
+                    error: function () {
+                        $typeProblemeSelect.html('<option value="">Erreur de chargement</option>');
+                    }
+                });
+            } else {
+                $typeProblemeSelect.html('<option value="">— Choisissez d’abord un quiz —</option>');
+            }
+        });
+    });
+</script>
+
+</body>
+</html>

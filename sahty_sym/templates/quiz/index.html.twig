@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Liste des Quizzes - Medinova</title>
+    <link href="{{ asset('css/bootstrap.min.css') }}" rel="stylesheet">
+    <link href="{{ asset('css/style.css') }}" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+</head>
+<body>
+    {% include 'partials/navbar.html.twig' %}
+
+    <div class="container mt-5 pt-5">
+        <!-- En-tête -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2 class="fw-bold text-primary mb-0">Gestion des Quizzes</h2>
+            <a href="{{ path('app_quiz_new') }}" class="btn btn-success btn-lg px-4">
+                <i class="bi bi-plus-lg me-2"></i> Ajouter un Quiz
+            </a>
+        </div>
+
+        <!-- Formulaire de recherche + filtres -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-body">
+                <form method="get" class="row g-3">
+                    <!-- Recherche texte -->
+                    <div class="col-md-4">
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-search"></i></span>
+                            <input type="text" name="search" class="form-control" placeholder="Rechercher par nom..." value="{{ app.request.query.get('search') }}">
+                        </div>
+                    </div>
+
+                    <!-- Filtre nombre de questions min -->
+                    <div class="col-md-3">
+                        <div class="input-group">
+                            <span class="input-group-text">Nb questions ≥</span>
+                            <input type="number" name="min_questions" class="form-control" placeholder="0" value="{{ app.request.query.get('min_questions') }}" min="0">
+                        </div>
+                    </div>
+
+                    <!-- Boutons -->
+                    <div class="col-md-5 d-flex gap-2">
+                        <button type="submit" class="btn btn-primary flex-fill">
+                            <i class="bi bi-filter"></i> Filtrer
+                        </button>
+                        <a href="{{ path('app_quiz_index') }}" class="btn btn-outline-secondary flex-fill">
+                            <i class="bi bi-x-lg"></i> Réinitialiser
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Message vide -->
+        {% if quizzes is empty or (quizzes.results is defined and quizzes.results is empty) %}
+            <div class="alert alert-info text-center py-4">
+                <i class="bi bi-info-circle-fill me-2 fs-4"></i>
+                Aucun quiz ne correspond aux critères.
+            </div>
+        {% else %}
+            <!-- Tableau avec tri -->
+            <div class="table-responsive">
+                <table class="table table-hover table-bordered align-middle">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>
+                                <a href="?sort=id&direction={{ app.request.query.get('sort') == 'id' and app.request.query.get('direction') == 'asc' ? 'desc' : 'asc' }}&{{ app.request.getQueryString()|replace({'sort': null, 'direction': null, 'page': null}) }}" class="text-white text-decoration-none">
+                                    ID {% if app.request.query.get('sort') == 'id' %}<i class="bi bi-sort-{{ app.request.query.get('direction') == 'asc' ? 'up' : 'down' }}"></i>{% endif %}
+                                </a>
+                            </th>
+                            <th>
+                                <a href="?sort=name&direction={{ app.request.query.get('sort') == 'name' and app.request.query.get('direction') == 'asc' ? 'desc' : 'asc' }}&{{ app.request.getQueryString()|replace({'sort': null, 'direction': null, 'page': null}) }}" class="text-white text-decoration-none">
+                                    Nom du Quiz {% if app.request.query.get('sort') == 'name' %}<i class="bi bi-sort-{{ app.request.query.get('direction') == 'asc' ? 'up' : 'down' }}"></i>{% endif %}
+                                </a>
+                            </th>
+                            <th>Description</th>
+                            <th>
+                                <a href="?sort=questions_count&direction={{ app.request.query.get('sort') == 'questions_count' and app.request.query.get('direction') == 'asc' ? 'desc' : 'asc' }}&{{ app.request.getQueryString()|replace({'sort': null, 'direction': null, 'page': null}) }}" class="text-white text-decoration-none">
+                                    Nb questions {% if app.request.query.get('sort') == 'questions_count' %}<i class="bi bi-sort-{{ app.request.query.get('direction') == 'asc' ? 'up' : 'down' }}"></i>{% endif %}
+                                </a>
+                            </th>
+                            <th>
+                                <a href="?sort=createdAt&direction={{ app.request.query.get('sort') == 'createdAt' and app.request.query.get('direction') == 'asc' ? 'desc' : 'asc' }}&{{ app.request.getQueryString()|replace({'sort': null, 'direction': null, 'page': null}) }}" class="text-white text-decoration-none">
+                                    Créé le {% if app.request.query.get('sort') == 'createdAt' %}<i class="bi bi-sort-{{ app.request.query.get('direction') == 'asc' ? 'up' : 'down' }}"></i>{% endif %}
+                                </a>
+                            </th>
+                            <th>
+                                <a href="?sort=updatedAt&direction={{ app.request.query.get('sort') == 'updatedAt' and app.request.query.get('direction') == 'asc' ? 'desc' : 'asc' }}&{{ app.request.getQueryString()|replace({'sort': null, 'direction': null, 'page': null}) }}" class="text-white text-decoration-none">
+                                    Modifié le {% if app.request.query.get('sort') == 'updatedAt' %}<i class="bi bi-sort-{{ app.request.query.get('direction') == 'asc' ? 'up' : 'down' }}"></i>{% endif %}
+                                </a>
+                            </th>
+                            <th class="text-center">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% set quizList = quizzes.results is defined ? quizzes.results : quizzes %}
+                        {% for quiz in quizList %}
+                            <tr>
+                                <td class="fw-bold">{{ quiz.id }}</td>
+                                <td>{{ quiz.name }}</td>
+                                <td>
+                                    {{ quiz.description|length > 80 ? quiz.description|slice(0, 80) ~ '...' : quiz.description }}
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge bg-info">{{ quiz.questions|length }}</span>
+                                </td>
+                                <td>{{ quiz.createdAt ? quiz.createdAt|date('d/m/Y H:i') : '-' }}</td>
+                                <td>{{ quiz.updatedAt ? quiz.updatedAt|date('d/m/Y H:i') : '-' }}</td>
+                                <td class="text-center">
+                                    <div class="btn-group btn-group-sm">
+                                            
+                                        </a>
+                                        <a href="{{ path('app_quiz_edit', {id: quiz.id}) }}" class="btn btn-outline-warning" title="Modifier">
+                                            <i class="bi bi-pencil-square"></i>
+                                        </a>
+                                        <form method="post" action="{{ path('app_quiz_delete', {id: quiz.id}) }}" style="display:inline;" onsubmit="return confirm('Voulez-vous vraiment supprimer ce quiz ?');">
+                                            <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ quiz.id) }}">
+                                            <button type="submit" class="btn btn-outline-danger" title="Supprimer">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            {% if quizzes.results is defined and quizzes.current_page is defined %}
+                <nav aria-label="Pagination quizzes">
+                    <ul class="pagination justify-content-center mt-4">
+                        <li class="page-item {{ quizzes.current_page <= 1 ? 'disabled' : '' }}">
+                            <a class="page-link" href="?page={{ quizzes.current_page - 1 }}&{{ app.request.getQueryString()|replace({'page': null}) }}" aria-label="Précédent">
+                                <span aria-hidden="true">&laquo;</span>
+                            </a>
+                        </li>
+                        {% for p in 1..quizzes.total_pages %}
+                            <li class="page-item {{ p == quizzes.current_page ? 'active' : '' }}">
+                                <a class="page-link" href="?page={{ p }}&{{ app.request.getQueryString()|replace({'page': null}) }}">{{ p }}</a>
+                            </li>
+                        {% endfor %}
+                        <li class="page-item {{ quizzes.current_page >= quizzes.total_pages ? 'disabled' : '' }}">
+                            <a class="page-link" href="?page={{ quizzes.current_page + 1 }}&{{ app.request.getQueryString()|replace({'page': null}) }}" aria-label="Suivant">
+                                <span aria-hidden="true">&raquo;</span>
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+            {% endif %}
+        {% endif %}
+
+        <!-- Bouton retour global -->
+        <div class="text-center mt-5">
+            <a href="{{ path('home') }}" class="btn btn-outline-secondary btn-lg px-5">
+                <i class="bi bi-arrow-left-circle me-2"></i> Retour à l'accueil
+            </a>
+        </div>
+    </div>
+
+    <script src="{{ asset('js/bootstrap.bundle.min.js') }}"></script>
+</body>
+</html>

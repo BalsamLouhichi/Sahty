@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Ajouter une Recommandation</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link href="{{ asset('css/bootstrap.min.css') }}" rel="stylesheet">
+    <link href="{{ asset('css/style.css') }}" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+</head>
+<body>
+
+{% include 'partials/navbar.html.twig' %}
+
+<div class="container mt-5 pt-5">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="fw-bold text-primary">Ajouter une Recommandation</h1>
+        <a href="{{ path('app_recommandation_index') }}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Retour
+        </a>
+    </div>
+
+    <div class="card shadow-sm border-0">
+        <div class="card-body p-5">
+
+            {# IMPORTANT : désactivation HTML5 #}
+            {{ form_start(form, {'attr': {'novalidate': 'novalidate'}}) }}
+
+            <div class="row g-4">
+
+                <!-- Colonne principale -->
+                <div class="col-md-8">
+
+                    <div class="mb-4">
+                        {{ form_label(form.name, null, {'label_attr': {'class': 'form-label'}}) }}
+                        {{ form_widget(form.name, {'attr': {'class': 'form-control'}}) }}
+                        <div class="text-danger small mt-1">
+                            {{ form_errors(form.name) }}
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        {{ form_label(form.description, null, {'label_attr': {'class': 'form-label'}}) }}
+                        {{ form_widget(form.description, {'attr': {'class': 'form-control', 'rows': 5}}) }}
+                        <div class="text-danger small mt-1">
+                            {{ form_errors(form.description) }}
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        {{ form_label(form.type_probleme, null, {'label_attr': {'class': 'form-label'}}) }}
+                        {{ form_widget(form.type_probleme, {'attr': {'class': 'form-select', 'id': 'recommandation_type_probleme'}}) }}
+                        <div class="text-danger small mt-1">
+                            {{ form_errors(form.type_probleme) }}
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Colonne droite -->
+                <div class="col-md-4">
+
+                    <div class="card bg-light border-0 p-4 mb-4">
+                        <h5 class="text-muted mb-3">Plage de score</h5>
+
+                        <div class="mb-3">
+                            {{ form_label(form.min_score, null, {'label_attr': {'class': 'form-label'}}) }}
+                            {{ form_widget(form.min_score, {'attr': {'class': 'form-control'}}) }}
+                            <div class="text-danger small mt-1">
+                                {{ form_errors(form.min_score) }}
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form_label(form.max_score, null, {'label_attr': {'class': 'form-label'}}) }}
+                            {{ form_widget(form.max_score, {'attr': {'class': 'form-control'}}) }}
+                            <div class="text-danger small mt-1">
+                                {{ form_errors(form.max_score) }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        {{ form_label(form.quiz, null, {'label_attr': {'class': 'form-label'}}) }}
+                        {{ form_widget(form.quiz, {'attr': {'class': 'form-select', 'id': 'recommandation_quiz'}}) }}
+                        <div class="text-danger small mt-1">
+                            {{ form_errors(form.quiz) }}
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <div class="mt-5 d-flex justify-content-end gap-3">
+                <a href="{{ path('app_recommandation_index') }}" class="btn btn-outline-secondary btn-lg">
+                    Annuler
+                </a>
+                <button type="submit" class="btn btn-success btn-lg">
+                    <i class="bi bi-check-circle-fill me-2"></i> Créer
+                </button>
+            </div>
+
+            {{ form_end(form) }}
+
+        </div>
+    </div>
+</div>
+
+<script src="{{ asset('js/bootstrap.bundle.min.js') }}"></script>
+
+</body>
+</html>
