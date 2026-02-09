@@ -3,6 +3,7 @@
 namespace App\Controller;
 
 use App\Entity\RendezVous;
+use App\Entity\FicheMedicale;
 use App\Form\RendezVousType;
 use App\Repository\MedecinRepository;
 use Doctrine\ORM\EntityManagerInterface;
@@ -44,7 +45,10 @@ class RDVController extends AbstractController
 
             $this->addFlash('success', '✅ Rendez-vous confirmé avec succès');
 
-            return $this->redirectToRoute('app_rdv_mes_rdv');
+            // REDIRIGER VERS LA CRÉATION DE FICHE MÉDICALE
+            return $this->redirectToRoute('app_fiche_medicale_new_for_rdv', [
+                'rdvId' => $rdv->getId()
+            ]);
         }
 
         // 5️⃣ Affichage du formulaire

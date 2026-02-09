@@ -251,4 +251,67 @@ class FicheMedicaleController extends AbstractController
             'fichesAvecIMC' => 0,
         ]);
     }
+    #[Route('/fiche/new/for-rdv/{rdvId}', name: 'app_fiche_medicale_new_for_rdv', methods: ['GET', 'POST'])]
+public function newForRdv(
+    Request $request,
+    int $rdvId,
+    EntityManagerInterface $entityManager
+): Response
+{
+    // Récupérer le rendez-vous
+    $rdv = $entityManager->getRepository(RendezVous::class)->find($rdvId);
+    
+    if (!$rdv) {
+        $this->addFlash('error', 'Rendez-vous non trouvé !');
+        return $this->redirectToRoute('app_rdv_mes_rdv');
+    }
+    
+    // Vérifier que l'utilisateur est bien le patient du rendez-vous
+    if ($this->getUser()->getId() !== $rdv->getPatient()->getId()) {
+        $this->addFlash('error', 'Accès non autorisé !');
+        return $this->redirectToRoute('app_rdv_mes_rdv');
+    }
+    
+    // Vérifier si une fiche existe déjà pour ce rendez-vous
+    if ($rdv->getFicheMedicale()) {
+        $this->addFlash('info', 'Une fiche médicale existe déjà pour ce rendez-vous.');
+        return $this->redirectToRoute('app_fiche_medicale_index', ['view' => $rdv->getFicheMedicale()->getId()]);
+    }
+    
+    // Créer une nouvelle fiche
+    $fiche = new FicheMedicale();
+    
+    // Pré-remplir avec le patient du rendez-vous
+    $fiche->setPatient($rdv->getPatient());
+    
+    $form = $this->createForm(FicheMedicaleType::class, $fiche);
+    $form->handleRequest($request);
+    
+    if ($form->isSubmitted() && $form->isValid()) {
+        // Associer la fiche au rendez-vous
+        $rdv->setFicheMedicale($fiche);
+        
+        // Sauvegarder
+        $entityManager->persist($fiche);
+        $entityManager->flush();
+        
+        $this->addFlash('success', 'Fiche médicale créée avec succès et associée à votre rendez-vous !');
+        return $this->redirectToRoute('app_rdv_mes_rdv');
+    }
+    
+    // Utiliser le template existant avec des variables supplémentaires
+    $fiches = []; // Vide car on est en mode création
+    return $this->render('fiche_medicale/index.html.twig', [
+        'fiches' => $fiches,
+        'mode' => 'new',
+        'fiche' => $fiche,
+        'form' => $form->createView(),
+        'totalFiches' => 0,
+        'fichesActives' => 0,
+        'fichesModifiees' => 0,
+        'fichesAvecIMC' => 0,
+        'isFromRdv' => true, // Nouvelle variable pour indiquer que ça vient d'un rdv
+        'rdv' => $rdv, // Passer le rendez-vous au template
+    ]);
+}
 }
