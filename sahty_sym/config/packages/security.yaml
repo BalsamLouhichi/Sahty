@@ -58,7 +58,7 @@ security:
     # Note: Only the first access control that matches will be used
     access_control:
         # Admin panel for events accessible to non-admin users who can create/manage their own events
-        - { path: ^/admin/evenements, roles: [ROLE_ADMIN, ROLE_MEDECIN, ROLE_RESPONSABLE_LABO, ROLE_RESPONSABLE_PARA] }
+        - { path: ^/admin/evenements, roles: [ROLE_ADMIN, ROLE_MEDECIN, ROLE_RESPONSABLE_LABO, ROLE_RESPONSABLE_PARA, ROLE_PATIENT] }
         # Strict admin-only access for other admin routes
         - { path: ^/admin, roles: ROLE_ADMIN }
         - { path: ^/(inscription/evenement|profile|mes-inscriptions), roles: ROLE_USER }
