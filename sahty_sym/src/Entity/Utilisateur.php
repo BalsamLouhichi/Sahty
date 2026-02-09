@@ -3,7 +3,11 @@
 namespace App\Entity;
 
 use App\Repository\UtilisateurRepository;
+use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
+use App\Entity\GroupeCible;
 use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 
@@ -73,9 +77,14 @@ class Utilisateur implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(name: 'cree_le', type: 'datetime')]
     protected \DateTime $creeLe;
 
+    #[ORM\ManyToMany(targetEntity: GroupeCible::class)]
+    #[ORM\JoinTable(name: 'utilisateur_groupe')]
+    private Collection $groupes;
+
     public function __construct()
     {
         $this->creeLe = new \DateTime(); // Utilisez DateTime
+        $this->groupes = new ArrayCollection();
     }
 
     /* ================== SECURITY ================== */
@@ -255,14 +264,43 @@ class Utilisateur implements UserInterface, PasswordAuthenticatedUserInterface
     {
         return $this->prenom . ' ' . $this->nom;
     }
+
     public function getAge(): ?int
-{
-    if (!$this->getDateNaissance()) {
-        return null;
+    {
+        if (!$this->getDateNaissance()) {
+            return null;
+        }
+
+        $now = new \DateTime();
+        $interval = $now->diff($this->getDateNaissance());
+        return $interval->y;
     }
 
-    $now = new \DateTime();
-    $interval = $now->diff($this->getDateNaissance());
-    return $interval->y;
-}
+    /**
+     * Groupes cibles auxquels appartient l'utilisateur
+     * @return Collection|GroupeCible[]
+     */
+    public function getGroupes(): Collection
+    {
+        return $this->groupes;
+    }
+
+    public function addGroupe(GroupeCible $groupe): self
+    {
+        if (!$this->groupes->contains($groupe)) {
+            $this->groupes->add($groupe);
+        }
+
+        return $this;
+    }
+
+    public function removeGroupe(GroupeCible $groupe): self
+    {
+        if ($this->groupes->contains($groupe)) {
+            $this->groupes->removeElement($groupe);
+        }
+
+        return $this;
+    }
+
 }

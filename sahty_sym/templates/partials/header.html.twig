@@ -43,34 +43,49 @@
             </button>
             <div class="collapse navbar-collapse" id="navbarCollapse">
                 <div class="navbar-nav ms-auto py-0">
-                    <a href="#" class="nav-item nav-link active">Home</a>
-                    <a href="#" class="nav-item nav-link">About</a>
-                    <a href="#" class="nav-item nav-link">Service</a>
-                    <a href="#" class="nav-item nav-link">Pricing</a>
-                    {# <a href="{{ path('app_home') }}" class="nav-item nav-link active">Home</a>
-                    <a href="{{ path('app_about') }}" class="nav-item nav-link">About</a>
-                    <a href="{{ path('app_service') }}" class="nav-item nav-link">Service</a>
-                    <a href="{{ path('app_price') }}" class="nav-item nav-link">Pricing</a> #}
+                    <a href="{{ path('app_home') }}" class="nav-item nav-link active">Accueil</a>
+                    <a href="#" class="nav-item nav-link">À propos</a>
+                    <a href="#" class="nav-item nav-link">Services</a>
+                    <a href="#" class="nav-item nav-link">Tarifs</a>
+                    
+                    {# Admin/Medical staff events management panel #}
+                    {% if is_granted('ROLE_ADMIN') or is_granted('ROLE_MEDECIN') or is_granted('ROLE_RESPONSABLE_LABO') or is_granted('ROLE_RESPONSABLE_PARA') or is_granted('ROLE_PATIENT') %}
+                    <a href="{{ path('admin_evenement_list') }}" class="nav-item nav-link">Gestion Événements</a>
+                    {% endif %}
+                    
                     <div class="nav-item dropdown">
                         <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown">Pages</a>
                         <div class="dropdown-menu m-0">
-                            <a href="#" class="dropdown-item">Blog Grid</a>
-                            <a href="#" class="dropdown-item">Blog Detail</a>
-                            <a href="#" class="dropdown-item">The Team</a>
-                            <a href="#" class="dropdown-item">Testimonial</a>
-                            <a href="#" class="dropdown-item">Appointment</a>
-                            <a href="#" class="dropdown-item">Search</a>
-                            {# <a href="{{ path('app_blog') }}" class="dropdown-item">Blog Grid</a>
-                            <a href="{{ path('app_blog_detail') }}" class="dropdown-item">Blog Detail</a>
-                            <a href="{{ path('app_team') }}" class="dropdown-item">The Team</a>
-                            <a href="{{ path('app_testimonial') }}" class="dropdown-item">Testimonial</a>
-                            <a href="{{ path('app_appointment') }}" class="dropdown-item">Appointment</a>
-                            <a href="{{ path('app_search') }}" class="dropdown-item">Search</a> #}
+                            <a href="#" class="dropdown-item">Blog</a>
+                            <a href="#" class="dropdown-item">Détails Blog</a>
+                            <a href="#" class="dropdown-item">L'équipe</a>
+                            <a href="#" class="dropdown-item">Témoignages</a>
+                            <a href="#" class="dropdown-item">Rendez-vous</a>
+                            <a href="#" class="dropdown-item">Recherche</a>
                         </div>
                     </div>
                     <a href="#" class="nav-item nav-link">Contact</a>
                     
-                    {# <a href="{{ path('app_contact') }}" class="nav-item nav-link">Contact</a> #}
+                    <!-- User Authentication Section -->
+                    {% if app.user %}
+                    <div class="nav-item dropdown">
+                        <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown">
+                            <i class="fa fa-user me-1"></i>{{ app.user.prenom }} {{ app.user.nom }}
+                        </a>
+                        <div class="dropdown-menu dropdown-menu-end">
+                            <a href="{{ path('app_profile') }}" class="dropdown-item">
+                                <i class="fa fa-user-circle me-2"></i>Mon Profil
+                            </a>
+                            <hr class="dropdown-divider">
+                            <a href="{{ path('app_logout') }}" class="dropdown-item text-danger">
+                                <i class="fa fa-sign-out-alt me-2"></i>Déconnexion
+                            </a>
+                        </div>
+                    </div>
+                    {% else %}
+                    <a href="{{ path('app_signup') }}" class="nav-item nav-link">S'inscrire</a>
+                    <a href="{{ path('app_login') }}" class="nav-item nav-link btn btn-primary text-white px-3">Se connecter</a>
+                    {% endif %}
                 </div>
             </div>
         </nav>

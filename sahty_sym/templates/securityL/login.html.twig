@@ -141,8 +141,8 @@
                         <div class="input-group-custom">
                             <i class="fas fa-user input-icon"></i>
                             <input type="email" 
-                                   name="_username" 
-                                   value="{{ last_username|default('') }}" 
+                                   name="email" 
+                                   value="{{ last_email|default('') }}" 
                                    required 
                                    autofocus 
                                    class="form-control" 
@@ -156,7 +156,7 @@
                         <div class="input-group-custom">
                             <i class="fas fa-key input-icon"></i>
                             <input type="password" 
-                                   name="_password" 
+                                   name="password" 
                                    required 
                                    class="form-control" 
                                    id="inputPassword" 
@@ -227,6 +227,36 @@
                 loginCard.style.opacity = '1';
                 loginCard.style.transform = 'translateY(0)';
             }, 100);
+
+            // Form submission handler to trim whitespace
+            const form = document.querySelector('form');
+            if (form) {
+                form.addEventListener('submit', function(e) {
+                    const emailInput = document.querySelector('input[name="email"]');
+                    const passwordInput = document.querySelector('input[name="password"]');
+                    
+                    // Trim whitespace
+                    if (emailInput) {
+                        emailInput.value = emailInput.value.trim();
+                        
+                        // Validate email format
+                        if (!emailInput.value.includes('@')) {
+                            e.preventDefault();
+                            alert('Veuillez entrer une adresse email valide.');
+                            return;
+                        }
+                    }
+                    
+                    if (passwordInput) {
+                        // Don't trim password as spaces might be intentional
+                        if (!passwordInput.value) {
+                            e.preventDefault();
+                            alert('Veuillez entrer votre mot de passe.');
+                            return;
+                        }
+                    }
+                });
+            }
         });
     </script>
 </body>

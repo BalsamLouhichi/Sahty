@@ -1,66 +1,79 @@
 security:
-    enable_authenticator_manager: true  # Nécessaire pour Symfony 5.4+
-    
+    # https://symfony.com/doc/current/security.html#registering-the-user-hashing-passwords
     password_hashers:
         Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface: 'auto'
-        App\Entity\Utilisateur:
-            algorithm: auto
-
+        App\Entity\Utilisateur: 'auto'
+    
+    # Role hierarchy - define which roles inherit from others
+    role_hierarchy:
+        ROLE_ADMIN: [ROLE_USER]
+        ROLE_MEDECIN: [ROLE_USER]
+        ROLE_PATIENT: [ROLE_USER]
+        ROLE_RESPONSABLE_LABO: [ROLE_USER]
+        ROLE_RESPONSABLE_PARA: [ROLE_USER]
+    
+    # https://symfony.com/doc/current/security.html#loading-the-user-the-user-provider
     providers:
+        # Custom user provider for case-insensitive email matching
         app_user_provider:
-            entity:
-                class: App\Entity\Utilisateur
-                property: email
-
+            id: App\Security\UtilisateurUserProvider
+    
     firewalls:
         dev:
             pattern: ^/(_(profiler|wdt)|css|images|js)/
             security: false
-
+        
         main:
-            pattern: ^/
             lazy: true
             provider: app_user_provider
-            
-            # Configuration du formulaire de login
+
+            # Form login configuration
             form_login:
-                login_path: app_login              # Nom de la route, pas le chemin
-                check_path: app_login              # Même route pour la validation
-                username_parameter: _username      # Nom du paramètre dans le formulaire
-                password_parameter: _password      # Nom du paramètre dans le formulaire
-                enable_csrf: true                  # Activer la protection CSRF
-                csrf_parameter: _csrf_token        # Nom du paramètre CSRF
-                csrf_token_id: authenticate        # ID du token CSRF
-                default_target_path: app_home      # Redirection après login réussi
-                failure_path: app_login            # Redirection en cas d'échec
-                use_referer: true                  # Utiliser la page précédente si définie
+                login_path: app_login
+                check_path: app_login
+                default_target_path: home
+                always_use_default_target_path: false
+                username_parameter: email
+                password_parameter: password
+                csrf_parameter: _csrf_token
+                csrf_token_id: authenticate
+                use_referer: true
             
-            # Configuration de la déconnexion
+            # Logout configuration
             logout:
-                path: app_logout                   # Nom de la route
-                target: app_home                   # Redirection après logout
+                path: app_logout
+                target: app_home
+                invalidate_session: true
+                delete_cookies:
+                    PHPSESSID: ~
             
-            # Option "Se souvenir de moi"
+            # remember_me cookie
             remember_me:
                 secret: '%kernel.secret%'
-                lifetime: 604800                   # 1 semaine en secondes
+                lifetime: 604800
                 path: /
-                always_remember_me: false
-                remember_me_parameter: _remember_me
+                name: REMEMBERME
 
+    # Easy way to control access for large sections of your site
+    # Note: Only the first access control that matches will be used
     access_control:
-        # Pages publiques (accessibles sans connexion)
-        - { path: ^/login$, roles: PUBLIC_ACCESS, methods: [GET, POST] }
-        - { path: ^/signup$, roles: PUBLIC_ACCESS }
-        - { path: ^/register$, roles: PUBLIC_ACCESS }
-        - { path: ^/$, roles: PUBLIC_ACCESS }      # Page d'accueil
+        # Admin panel for events accessible to non-admin users who can create/manage their own events
+        - { path: ^/admin/evenements, roles: [ROLE_ADMIN, ROLE_MEDECIN, ROLE_RESPONSABLE_LABO, ROLE_RESPONSABLE_PARA] }
+        # Strict admin-only access for other admin routes
+        - { path: ^/admin, roles: ROLE_ADMIN }
+        - { path: ^/(inscription/evenement|profile|mes-inscriptions), roles: ROLE_USER }
+
         
-        # Pages protégées par rôle
-        - { path: ^/admin/, roles: ROLE_ADMIN }
-        - { path: ^/medecin/, roles: ROLE_MEDECIN }
-        - { path: ^/patient/, roles: ROLE_PATIENT }
-        - { path: ^/laboratoire/, roles: ROLE_RESPONSABLE_LABO }
-        - { path: ^/parapharmacie/, roles: ROLE_RESPONSABLE_PARA }
-        
-        # Toutes les autres pages nécessitent une connexion
-        - { path: ^/, roles: IS_AUTHENTICATED_FULLY }
+
+when@test:
+    security:
+        password_hashers:
+            # By default, password hashers are resource intensive and take time. This is
+            # important to generate secure password hashes. In tests however, secure hashes
+            # are not important, waste resources and increase test times. The following
+            # reduces the work factor to the lowest possible values.
+            Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface:
+                algorithm: auto
+                cost: 4 # Lowest possible value for bcrypt
+                time_cost: 3 # Lowest possible value for argon
+                memory_cost: 10 # Lowest possible value for argon

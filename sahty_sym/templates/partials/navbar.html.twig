@@ -10,12 +10,22 @@
                 <li class="nav-item"><a class="nav-link" href="#about">About</a></li>
                 <li class="nav-item"><a class="nav-link" href="#services">Services</a></li>
                 <li class="nav-item"><a class="nav-link" href="#appointment">Appointment</a></li>
+                
+                {# Admin eventos panel accessible to admin and medical staff who can manage their own events #}
+                {% if is_granted('ROLE_ADMIN') or is_granted('ROLE_MEDECIN') or is_granted('ROLE_RESPONSABLE_LABO') or is_granted('ROLE_RESPONSABLE_PARA') or is_granted('ROLE_PATIENT') %}
+                <li class="nav-item"><a class="nav-link" href="{{ path('admin_evenement_list') }}">Gestion Événements</a></li>
+                {% endif %}
             </ul>
 
-            <!-- Boutons S'inscrire et Se connecter -->
+            <!-- Boutons S'inscrire, Se connecter, Logout -->
             <div class="d-flex ms-3">
-                <a href="/signup" class="btn btn-outline-primary me-2">S'inscrire</a>
-                <a href="/login" class="btn btn-primary">Se connecter</a>
+                {% if app.user %}
+                    <span class="me-3 align-self-center">{{ app.user.prenom }} {{ app.user.nom }}</span>
+                    <a href="{{ path('app_logout') }}" class="btn btn-danger">Logout</a>
+                {% else %}
+                    <a href="/signup" class="btn btn-outline-primary me-2">S'inscrire</a>
+                    <a href="/login" class="btn btn-primary">Se connecter</a>
+                {% endif %}
             </div>
         </div>
     </div>

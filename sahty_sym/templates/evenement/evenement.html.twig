@@ -1,0 +1,355 @@
+{# templates/evenement/evenement.html.twig #}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}Medinova{% endblock %}</title>
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+
+    {# Google Fonts #}
+    <link rel="preconnect" href="https://fonts.gstatic.com">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+
+
+    {# FontAwesome #}
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.0/css/all.min.css" rel="stylesheet">
+
+
+    {# Vendor CSS (VERY IMPORTANT) #}
+    <link href="{{ asset('lib/owlcarousel/assets/owl.carousel.min.css') }}" rel="stylesheet">
+    <link href="{{ asset('lib/tempusdominus/css/tempusdominus-bootstrap-4.min.css') }}" rel="stylesheet">
+
+
+    {# Bootstrap #}
+    <link href="{{ asset('css/bootstrap.min.css') }}" rel="stylesheet">
+
+
+    {# Main Template CSS #}
+    <link href="{{ asset('css/style.css') }}" rel="stylesheet">
+
+
+    {% block stylesheets %}{% endblock %}
+</head>
+
+
+<body>
+
+    {# Header #}
+    {% include 'partials/header.html.twig' %}
+
+
+    <!-- Main Content -->
+    <div class="container-fluid py-5"
+         style="background-color: var(--light); min-height: calc(100vh - 76px);">
+
+        <div class="container">
+
+            {# ========== YOUR DYNAMIC CONTENT ========== #}
+
+            <!-- Header -->
+            <div class="row mb-5">
+                <div class="col-md-8">
+
+                    <h1 class="display-6 fw-bold mb-3 text-dark">
+                        <i class="fas fa-calendar-check text-primary me-2"></i>
+                        Gestion des Événements
+                    </h1>
+
+                    <p class="text-muted mb-0">
+                        Gérez vos webinaires, ateliers et conférences médicales
+                    </p>
+
+                </div>
+
+                <div class="col-md-4 d-flex align-items-center justify-content-end">
+
+                    <div class="btn-group">
+
+                        <a href="{{ path('admin_evenement_add') }}"
+                           class="btn btn-primary">
+                            <i class="fas fa-plus-circle me-2"></i>
+                            Nouvel Événement
+                        </a>
+
+                        <a href="{{ path('admin_evenement_calendar') }}"
+                           class="btn btn-outline-secondary ms-2">
+                            <i class="fas fa-calendar-alt me-2"></i>
+                            Calendrier
+                        </a>
+
+                    </div>
+
+                </div>
+            </div>
+
+
+            {# Filters #}
+            <div class="card mb-4 border-0 shadow-sm">
+                <div class="card-body p-4">
+
+                    <form method="get" action="{{ path('admin_evenement_list') }}">
+
+                        <div class="row g-3">
+
+                            <!-- Type -->
+                            <div class="col-md-3">
+                                <label class="form-label fw-semibold text-secondary">
+                                    Type d'événement
+                                </label>
+
+                                <select name="type"
+                                        class="form-select form-select-sm">
+
+                                    <option value="">Tous</option>
+
+                                    <option value="webinaire"
+                                        {{ app.request.get('type') == 'webinaire' ? 'selected' }}>
+                                        Webinaire
+                                    </option>
+
+                                    <option value="atelier"
+                                        {{ app.request.get('type') == 'atelier' ? 'selected' }}>
+                                        Atelier
+                                    </option>
+                                    <option value="dépistage"
+                                        {{ app.request.get('type') == 'depistage' ? 'selected' }}>
+                                        Dépistage
+                                    </option>
+                                    <option value="conférence"
+                                        {{ app.request.get('type') == 'conference' ? 'selected' }}>
+                                        Conférence
+                                    </option>
+                                    <option value="groupe de parole"
+                                        {{ app.request.get('type') == 'groupe_parole' ? 'selected' }}>
+                                        Groupe de parole
+                                    </option>
+
+                                </select>
+                            </div>
+
+                            <!-- Search -->
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold text-secondary">
+                                    Recherche
+                                </label>
+
+                                <div class="input-group input-group-sm">
+
+                                    <span class="input-group-text bg-white">
+                                        <i class="fas fa-search"></i>
+                                    </span>
+
+                                    <input type="text"
+                                           name="recherche"
+                                           value="{{ app.request.get('recherche') }}"
+                                           class="form-control"
+                                           placeholder="Rechercher...">
+
+                                </div>
+                            </div>
+
+                            <!-- Button -->
+                            <div class="col-md-2 d-flex align-items-end">
+
+                                <button class="btn btn-sm btn-primary w-100">
+                                    <i class="fas fa-filter me-1"></i>
+                                    Filtrer
+                                </button>
+
+                            </div>
+
+                        </div>
+
+                    </form>
+
+                </div>
+            </div>
+
+
+            {# Events Table #}
+            <div class="card border-0 shadow-sm">
+
+                <div class="card-body p-0">
+
+                    <div class="table-responsive">
+
+                        <table class="table table-hover mb-0">
+
+                            <thead class="table-light">
+
+                            <tr>
+                                <th class="ps-4">Événement</th>
+                                <th>Date</th>
+                                <th>Type</th>
+                                <th>Groupes Cibles</th>
+                                <th>Places</th>
+                                <th>Statut</th>
+                                <th class="text-end pe-4">Actions</th>
+                            </tr>
+
+                            </thead>
+
+                            <tbody>
+
+                            {% set user = app.user %}
+                            {% set is_admin = is_granted('ROLE_ADMIN') %}
+
+                            {% for evenement in evenements %}
+
+                                <tr>
+
+                                    <td class="ps-4 fw-semibold">
+                                        {{ evenement.titre }}
+                                    </td>
+
+                                    <td>
+                                        {{ evenement.dateDebut|date('d/m/Y H:i') }}
+                                    </td>
+
+                                    <td>
+                                        <span class="badge bg-primary bg-opacity-10 text-dark fw-semibold">
+    {{ evenement.type|title }}
+</span>
+
+                                    </td>
+                                    <td>
+    {% if evenement.groupeCibles|length > 0 %}
+        {% for groupe in evenement.groupeCibles %}
+            <span class="badge bg-secondary me-1">{{ groupe.nom }}</span>
+        {% endfor %}
+    {% else %}
+        <span class="text-muted">—</span>
+    {% endif %}
+</td>
+
+
+                                    <td>
+                                        {# {{ evenement.nombreParticipants }}
+                                        / #}
+                                        {{ evenement.placesMax ?? '∞' }}
+                                    </td>
+
+                                    <td>
+    {% if evenement.statut == 'en_attente_approbation' %}
+        <span class="badge bg-warning" title="En attente d'approbation par l'admin">
+            <i class="fas fa-clock me-1"></i>En attente
+        </span>
+    {% elseif evenement.statut == 'planifie' %}
+        <span class="badge bg-success">
+            {{ evenement.statut|title }}
+        </span>
+    {% else %}
+        <span class="badge bg-secondary">
+            {{ evenement.statut|title }}
+        </span>
+    {% endif %}
+</td>
+
+                                    <td class="text-end pe-4">
+
+                                        {# Utiliser les permissions calculées côté contrôleur pour l'affichage #}
+                                        {% set perms = actions[evenement.id] ?? {'can_edit': false, 'can_delete': false, 'can_inscribe': false} %}
+
+                                        <div class="btn-group btn-group-sm">
+
+                                            <a href="{{ path('admin_evenement_view', {id: evenement.id}) }}" class="btn btn-outline-primary">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+
+                                            {% if perms.can_edit %}
+                                                <a href="{{ path('admin_evenement_update',{id:evenement.id}) }}" class="btn btn-outline-warning">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                            {% endif %}
+
+                                            {% if perms.can_inscribe %}
+                                                <a href="{{ path('admin_evenement_inscrire', {'id': evenement.id}) }}" class="btn btn-outline-success" title="S'inscrire à cet événement">
+                                                    <i class="fas fa-user-plus me-1"></i>
+                                                    S'inscrire
+                                                </a>
+                                            {% endif %}
+
+                                            {% if perms.can_delete %}
+                                                <a href="{{ path('admin_evenement_delete', {'id': evenement.id}) }}" class="btn btn-outline-danger" onclick="event.preventDefault(); if(confirm('Voulez-vous vraiment supprimer cet événement ?')) { document.getElementById('delete-form-{{ evenement.id }}').submit(); }">
+                                                    <i class="fas fa-trash"></i>
+                                                </a>
+
+                                                <form id="delete-form-{{ evenement.id }}" action="{{ path('admin_evenement_delete', {'id': evenement.id}) }}" method="post" style="display: none;">
+                                                    <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ evenement.id) }}">
+                                                </form>
+                                            {% endif %}
+
+                                        </div>
+
+                                    </td>
+
+                                </tr>
+
+                            {% else %}
+
+                                <tr>
+                                    <td colspan="7" class="text-center py-4 text-muted">
+                                        Aucun événement
+                                    </td>
+                                </tr>
+
+                            {% endfor %}
+
+                            </tbody>
+
+                        </table>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+        </div>
+    </div>
+
+
+    
+
+
+
+    <!-- Footer -->
+    {% include 'partials/footer.html.twig' %}
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Confirmation avant suppression
+            const deleteForms = document.querySelectorAll('form[onsubmit*="confirm"]');
+            deleteForms.forEach(form => {
+                form.addEventListener('submit', function(e) {
+                    if (!confirm('Êtes-vous sûr de vouloir supprimer cet événement ? Cette action est irréversible.')) {
+                        e.preventDefault();
+                    }
+                });
+            });
+
+            // Tri automatique sur changement de sélection
+            const sortSelect = document.querySelector('select[name="tri"]');
+            if (sortSelect) {
+                sortSelect.addEventListener('change', function() {
+                    // Inverser l'ordre si on clique sur le même tri
+                    const currentTri = '{{ tri }}';
+                    const newTri = this.value;
+                    const ordreInput = this.form.querySelector('input[name="ordre"]');
+                    
+                    if (currentTri === newTri) {
+                        ordreInput.value = ordreInput.value === 'ASC' ? 'DESC' : 'ASC';
+                    } else {
+                        ordreInput.value = 'ASC';
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>

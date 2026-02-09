@@ -222,19 +222,43 @@
 
     // Validation de la confirmation du mot de passe
     document.querySelector('form').addEventListener('submit', function(e) {
-        const password = document.querySelector('input[name="{{ form.password.vars.full_name }}"]').value;
-        const confirmPassword = document.querySelector('input[name="confirm_password"]').value;
+        const passwordInput = document.querySelector('input[name="{{ form.password.vars.full_name }}"]');
+        const confirmPasswordInput = document.querySelector('input[name="confirm_password"]');
+        const roleSelect = document.querySelector('select[name="{{ form.role.vars.full_name }}"]');
         
-        if (password !== confirmPassword) {
-            e.preventDefault();
-            alert('Les mots de passe ne correspondent pas !');
-            return false;
-        }
-
-        // Validation du rôle sélectionné
-        if (!roleSelect.value) {
+        // Get password values (don't trim - spaces might be intentional in passwords)
+        const password = passwordInput ? passwordInput.value : '';
+        const confirmPassword = confirmPasswordInput ? confirmPasswordInput.value : '';
+        
+        // Validate role selected
+        if (!roleSelect || !roleSelect.value) {
             e.preventDefault();
             alert('Veuillez sélectionner un rôle !');
+            roleSelect?.focus();
+            return false;
+        }
+        
+        // Validate passwords match
+        if (password !== confirmPassword) {
+            e.preventDefault();
+            alert('Les mots de passe ne correspondent pas ! Assurez-vous qu\'ils sont identiques.');
+            confirmPasswordInput?.focus();
+            return false;
+        }
+        
+        // Validate password is not empty
+        if (!password) {
+            e.preventDefault();
+            alert('Veuillez entrer un mot de passe !');
+            passwordInput?.focus();
+            return false;
+        }
+        
+        // Validate password length
+        if (password.length < 6) {
+            e.preventDefault();
+            alert('Le mot de passe doit contenir au moins 6 caractères !');
+            passwordInput?.focus();
             return false;
         }
     });

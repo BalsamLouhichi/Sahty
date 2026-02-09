@@ -33,6 +33,19 @@ class UtilisateurRepository extends ServiceEntityRepository implements PasswordU
         $this->getEntityManager()->flush();
     }
 
+    /**
+     * Find user by email (case-insensitive)
+     * This is used by Symfony's user provider for authentication
+     */
+    public function findOneByEmail(string $email): ?Utilisateur
+    {
+        return $this->createQueryBuilder('u')
+            ->where('LOWER(u.email) = LOWER(:email)')
+            ->setParameter('email', trim($email))
+            ->getQuery()
+            ->getOneOrNullResult();
+    }
+
     //    /**
     //     * @return Utilisateur[] Returns an array of Utilisateur objects
     //     */
