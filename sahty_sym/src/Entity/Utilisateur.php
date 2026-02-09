@@ -136,8 +136,9 @@ class Utilisateur implements UserInterface, PasswordAuthenticatedUserInterface
     public function eraseCredentials(): void {}
 
     public function getUsername(): string
+
     {
-        return $this->email;
+        return (string) $this->email;
     }
 
     /* ================== GETTERS / SETTERS ================== */
@@ -156,12 +157,15 @@ class Utilisateur implements UserInterface, PasswordAuthenticatedUserInterface
     {
         $this->email = $email;
         return $this;
+
     }
 
-    public function setPassword(string $password): self
+    /**
+     * Vérifie si l'utilisateur a un rôle Symfony spécifique
+     */
+    public function hasRoleSymfony(string $roleSymfony): bool
     {
-        $this->password = $password;
-        return $this;
+        return $this->getRoleSymfony() === $roleSymfony;
     }
 
     public function getRole(): ?string
@@ -219,88 +223,122 @@ class Utilisateur implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
-    public function getNom(): ?string
-    {
-        return $this->nom;
+    /* ================== GETTERS / SETTERS ================== */
+
+    public function getId(): ?int { return $this->id; }
+
+    public function getEmail(): ?string { return $this->email; }
+    public function setEmail(string $email): self { $this->email = $email; return $this; }
+
+    public function setPassword(string $password): self { $this->password = $password; return $this; }
+
+    public function getRole(): ?string { return $this->role; }
+    
+    public function setRole(string $role): self 
+    { 
+        // Validation optionnelle du rôle
+        $validRoles = [
+            self::ROLE_SIMPLE_ADMIN,
+            self::ROLE_SIMPLE_MEDECIN,
+            self::ROLE_SIMPLE_PATIENT,
+            self::ROLE_SIMPLE_RESPONSABLE_LABO,
+            self::ROLE_SIMPLE_RESPONSABLE_PARA,
+        ];
+        
+        if (!in_array($role, $validRoles)) {
+            throw new \InvalidArgumentException(sprintf('Rôle "%s" invalide', $role));
+        }
+        
+        $this->role = $role; 
+        return $this; 
     }
 
-    public function setNom(string $nom): self
+    // Méthodes pour définir des rôles spécifiques (optionnel mais pratique)
+    public function setAdminRole(): self
     {
-        $this->nom = $nom;
+        $this->role = self::ROLE_SIMPLE_ADMIN;
         return $this;
     }
 
-    public function getPrenom(): ?string
+    public function setMedecinRole(): self
     {
-        return $this->prenom;
-    }
-
-    public function setPrenom(string $prenom): self
-    {
-        $this->prenom = $prenom;
+        $this->role = self::ROLE_SIMPLE_MEDECIN;
         return $this;
     }
 
-    public function getTelephone(): ?string
+    public function setPatientRole(): self
     {
-        return $this->telephone;
-    }
-
-    public function setTelephone(?string $telephone): self
-    {
-        $this->telephone = $telephone;
+        $this->role = self::ROLE_SIMPLE_PATIENT;
         return $this;
     }
 
-    public function getDateNaissance(): ?\DateTimeInterface
+    public function setResponsableLaboRole(): self
     {
-        return $this->dateNaissance;
-    }
-
-    public function setDateNaissance(?\DateTimeInterface $dateNaissance): self
-    {
-        $this->dateNaissance = $dateNaissance;
+        $this->role = self::ROLE_SIMPLE_RESPONSABLE_LABO;
         return $this;
     }
 
-    public function isEstActif(): bool
+    public function setResponsableParaRole(): self
     {
-        return $this->estActif;
-    }
-
-    public function getEstActif(): bool
-    {
-        return $this->estActif;
-    }
-
-    public function setEstActif(bool $estActif): self
-    {
-        $this->estActif = $estActif;
+        $this->role = self::ROLE_SIMPLE_RESPONSABLE_PARA;
         return $this;
     }
 
-    public function getPhotoProfil(): ?string
+    // Méthodes pour vérifier des rôles spécifiques (optionnel mais pratique)
+    public function isAdmin(): bool
     {
-        return $this->photoProfil;
+        return $this->hasRole(self::ROLE_SIMPLE_ADMIN);
     }
 
-    public function setPhotoProfil(?string $photoProfil): self
+    public function isMedecin(): bool
     {
-        $this->photoProfil = $photoProfil;
-        return $this;
+        return $this->hasRole(self::ROLE_SIMPLE_MEDECIN);
     }
 
-    public function getCreeLe(): ?\DateTimeInterface
+    public function isPatient(): bool
     {
-        return $this->creeLe;
+        return $this->hasRole(self::ROLE_SIMPLE_PATIENT);
     }
 
-    public function setCreeLe(\DateTimeInterface $creeLe): self
+    public function isResponsableLabo(): bool
     {
-        $this->creeLe = $creeLe;
-        return $this;
+        return $this->hasRole(self::ROLE_SIMPLE_RESPONSABLE_LABO);
     }
 
+    public function isResponsablePara(): bool
+    {
+        return $this->hasRole(self::ROLE_SIMPLE_RESPONSABLE_PARA);
+    }
+
+    public function getNom(): ?string { return $this->nom; }
+    public function setNom(string $nom): self { $this->nom = $nom; return $this; }
+
+    public function getPrenom(): ?string { return $this->prenom; }
+    public function setPrenom(string $prenom): self { $this->prenom = $prenom; return $this; }
+
+    public function getTelephone(): ?string { return $this->telephone; }
+    public function setTelephone(?string $telephone): self { $this->telephone = $telephone; return $this; }
+
+    public function getDateNaissance(): ?\DateTimeInterface { return $this->dateNaissance; }
+    public function setDateNaissance(?\DateTimeInterface $date): self { $this->dateNaissance = $date; return $this; }
+
+    public function isEstActif(): bool { return $this->estActif; }
+    public function setEstActif(bool $actif): self { $this->estActif = $actif; return $this; }
+
+    public function getPhotoProfil(): ?string { return $this->photoProfil; }
+    public function setPhotoProfil(?string $photoProfil): self { $this->photoProfil = $photoProfil; return $this; }
+
+    // SOLUTION 2: Méthodes avec \DateTime
+    public function getCreeLe(): \DateTime { return $this->creeLe; }
+    public function setCreeLe(\DateTime $creeLe): self { $this->creeLe = $creeLe; return $this; }
+
+    /**
+     * Méthode utilitaire pour obtenir le nom complet
+     */
+    public function getNomComplet(): string
+    {
+        return $this->prenom . ' ' . $this->nom;
+    }
     // Méthodes pour vérifier des rôles spécifiques (optionnel mais pratique)
     public function isAdmin(): bool
     {
@@ -335,6 +373,7 @@ class Utilisateur implements UserInterface, PasswordAuthenticatedUserInterface
     {
         return $this->prenom . ' ' . $this->nom;
     }
+
     public function getAge(): ?int
 {
     if (!$this->getDateNaissance()) {
