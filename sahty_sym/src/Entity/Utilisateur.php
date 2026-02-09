@@ -142,14 +142,32 @@ class Utilisateur implements UserInterface, PasswordAuthenticatedUserInterface
 
     /* ================== GETTERS / SETTERS ================== */
 
-    public function getId(): ?int { return $this->id; }
+    public function getId(): ?int
+    {
+        return $this->id;
+    }
 
-    public function getEmail(): ?string { return $this->email; }
-    public function setEmail(string $email): self { $this->email = $email; return $this; }
+    public function getEmail(): ?string
+    {
+        return $this->email;
+    }
 
-    public function setPassword(string $password): self { $this->password = $password; return $this; }
+    public function setEmail(string $email): self
+    {
+        $this->email = $email;
+        return $this;
+    }
 
-    public function getRole(): ?string { return $this->role; }
+    public function setPassword(string $password): self
+    {
+        $this->password = $password;
+        return $this;
+    }
+
+    public function getRole(): ?string
+    {
+        return $this->role;
+    }
     
     public function setRole(string $role): self 
     { 
@@ -198,28 +216,6 @@ class Utilisateur implements UserInterface, PasswordAuthenticatedUserInterface
     public function setResponsableParaRole(): self
     {
         $this->role = self::ROLE_SIMPLE_RESPONSABLE_PARA;
-        return $this;
-    }
-
-    public function eraseCredentials()
-    {
-       
-    }
-
-    // Getters et Setters ajoutés
-    public function getId(): ?int
-    {
-        return $this->id;
-    }
-
-    public function getEmail(): ?string
-    {
-        return $this->email;
-    }
-
-    public function setEmail(string $email): self
-    {
-        $this->email = $email;
         return $this;
     }
 

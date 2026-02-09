@@ -1,0 +1,535 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Modifier Rendez-vous - MEDINOVA{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+            padding: 20px;
+        }
+
+        .modify-container {
+            max-width: 800px;
+            margin: 40px auto;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Header Card */
+        .page-header {
+            background: white;
+            border-radius: 24px;
+            padding: 35px;
+            margin-bottom: 25px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+            text-align: center;
+        }
+
+        .page-header h1 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+            display: inline-flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .page-header h1 i {
+            -webkit-text-fill-color: #667eea;
+        }
+
+        .page-header p {
+            color: #666;
+            font-size: 1.1rem;
+            margin-top: 10px;
+        }
+
+        /* Current Appointment Info */
+        .current-info-card {
+            background: linear-gradient(135deg, #f8f9ff 0%, #f0f3ff 100%);
+            border-radius: 20px;
+            padding: 25px;
+            margin-bottom: 25px;
+            border: 2px solid #e8ecff;
+        }
+
+        .current-info-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+            color: #667eea;
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+
+        .current-info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .current-info-item {
+            background: white;
+            padding: 15px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .current-info-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.1rem;
+            flex-shrink: 0;
+        }
+
+        .current-info-details h4 {
+            color: #999;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+
+        .current-info-details p {
+            color: #333;
+            font-weight: 700;
+            font-size: 1rem;
+            margin: 0;
+        }
+
+        /* Form Card */
+        .form-card {
+            background: white;
+            border-radius: 24px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+        }
+
+        .form-section {
+            margin-bottom: 30px;
+        }
+
+        .form-section-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding-bottom: 12px;
+            border-bottom: 3px solid #f0f3ff;
+        }
+
+        .form-section-title i {
+            color: #667eea;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        .form-label {
+            display: block;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 0.95rem;
+        }
+
+        .form-label i {
+            color: #667eea;
+            margin-right: 8px;
+        }
+
+        .form-control,
+        .form-select {
+            width: 100%;
+            padding: 14px 18px;
+            border: 2px solid #e8ecff;
+            border-radius: 12px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            background: white;
+            font-family: inherit;
+        }
+
+        .form-control:focus,
+        .form-select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+        }
+
+        textarea.form-control {
+            min-height: 120px;
+            resize: vertical;
+        }
+
+        /* Grid Layout for Date/Time */
+        .date-time-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .date-time-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Alert Messages */
+        .alert {
+            padding: 18px 24px;
+            border-radius: 16px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            font-weight: 600;
+            animation: slideDown 0.4s ease;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .alert-success {
+            background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+            color: #155724;
+            border-left: 5px solid #28a745;
+        }
+
+        .alert-error {
+            background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+            color: #721c24;
+            border-left: 5px solid #dc3545;
+        }
+
+        .alert i {
+            font-size: 1.4rem;
+        }
+
+        /* Action Buttons */
+        .form-actions {
+            display: flex;
+            gap: 15px;
+            margin-top: 35px;
+            padding-top: 25px;
+            border-top: 2px solid #f0f3ff;
+        }
+
+        @media (max-width: 768px) {
+            .form-actions {
+                flex-direction: column;
+            }
+        }
+
+        .btn {
+            padding: 16px 32px;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 1rem;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            text-decoration: none;
+            flex: 1;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 35px rgba(102, 126, 234, 0.5);
+        }
+
+        .btn-secondary {
+            background: white;
+            color: #667eea;
+            border: 2px solid #667eea;
+        }
+
+        .btn-secondary:hover {
+            background: #f8f9ff;
+        }
+
+        /* Warning Box */
+        .warning-box {
+            background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+            border: 2px solid #ffc107;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 25px;
+            display: flex;
+            gap: 15px;
+        }
+
+        .warning-icon {
+            width: 40px;
+            height: 40px;
+            background: #ffc107;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.3rem;
+            flex-shrink: 0;
+        }
+
+        .warning-content h4 {
+            color: #856404;
+            font-weight: 700;
+            margin-bottom: 8px;
+            font-size: 1.1rem;
+        }
+
+        .warning-content p {
+            color: #856404;
+            margin: 0;
+            line-height: 1.6;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .page-header h1 {
+                font-size: 2rem;
+            }
+
+            .form-card {
+                padding: 25px;
+            }
+
+            .current-info-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+{% endblock %}
+
+{% block body %}
+<div class="modify-container">
+    <!-- Page Header -->
+    <div class="page-header">
+        <h1>
+            <i class="fas fa-edit"></i>
+            Modifier mon Rendez-vous
+        </h1>
+        <p>Mettez à jour les informations de votre consultation</p>
+    </div>
+
+    <!-- Alerts -->
+    {% for type, messages in app.flashes %}
+        {% for message in messages %}
+            <div class="alert alert-{{ type }}">
+                <i class="fas fa-{{ type == 'success' ? 'check-circle' : 'exclamation-triangle' }}"></i>
+                <span>{{ message }}</span>
+            </div>
+        {% endfor %}
+    {% endfor %}
+
+    <!-- Current Appointment Info -->
+    <div class="current-info-card">
+        <div class="current-info-header">
+            <i class="fas fa-info-circle"></i>
+            Informations actuelles du rendez-vous
+        </div>
+        <div class="current-info-grid">
+            <div class="current-info-item">
+                <div class="current-info-icon">
+                    <i class="fas fa-user-md"></i>
+                </div>
+                <div class="current-info-details">
+                    <h4>Médecin</h4>
+                    <p>Dr. {{ rdv.medecin.prenom }} {{ rdv.medecin.nom }}</p>
+                </div>
+            </div>
+            <div class="current-info-item">
+                <div class="current-info-icon">
+                    <i class="fas fa-calendar"></i>
+                </div>
+                <div class="current-info-details">
+                    <h4>Date</h4>
+                    <p>{{ rdv.dateRdv|date('d/m/Y') }}</p>
+                </div>
+            </div>
+            <div class="current-info-item">
+                <div class="current-info-icon">
+                    <i class="fas fa-clock"></i>
+                </div>
+                <div class="current-info-details">
+                    <h4>Heure</h4>
+                    <p>{{ rdv.heureRdv|date('H:i') }}</p>
+                </div>
+            </div>
+            <div class="current-info-item">
+                <div class="current-info-icon">
+                    <i class="fas fa-stethoscope"></i>
+                </div>
+                <div class="current-info-details">
+                    <h4>Spécialité</h4>
+                    <p>{{ rdv.medecin.specialite }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Warning Box -->
+    <div class="warning-box">
+        <div class="warning-icon">
+            <i class="fas fa-exclamation-triangle"></i>
+        </div>
+        <div class="warning-content">
+            <h4>⚠️ Important</h4>
+            <p>
+                En modifiant votre rendez-vous, assurez-vous de choisir un créneau disponible. 
+                Si vous changez de médecin, vérifiez que votre fiche médicale contient les informations nécessaires.
+            </p>
+        </div>
+    </div>
+
+    <!-- Modification Form -->
+    <div class="form-card">
+        {{ form_start(form) }}
+
+        <!-- Médecin Section -->
+        <div class="form-section">
+            <h3 class="form-section-title">
+                <i class="fas fa-user-md"></i>
+                Sélection du Médecin
+            </h3>
+            <div class="form-group">
+                <label class="form-label">
+                    <i class="fas fa-stethoscope"></i>
+                    Choisir un médecin
+                </label>
+                {{ form_widget(form.medecin, {'attr': {'class': 'form-select'}}) }}
+            </div>
+        </div>
+
+        <!-- Date & Heure Section -->
+        <div class="form-section">
+            <h3 class="form-section-title">
+                <i class="fas fa-calendar-alt"></i>
+                Date et Heure
+            </h3>
+            <div class="date-time-grid">
+                <div class="form-group">
+                    <label class="form-label">
+                        <i class="fas fa-calendar-day"></i>
+                        Date du rendez-vous
+                    </label>
+                    {{ form_widget(form.dateRdv, {'attr': {'class': 'form-control', 'min': 'now'|date('Y-m-d')}}) }}
+                </div>
+                <div class="form-group">
+                    <label class="form-label">
+                        <i class="fas fa-clock"></i>
+                        Heure du rendez-vous
+                    </label>
+                    {{ form_widget(form.heureRdv, {'attr': {'class': 'form-control'}}) }}
+                </div>
+            </div>
+        </div>
+
+        <!-- Motif Section -->
+        <div class="form-section">
+            <h3 class="form-section-title">
+                <i class="fas fa-notes-medical"></i>
+                Motif de Consultation
+            </h3>
+            <div class="form-group">
+                <label class="form-label">
+                    <i class="fas fa-file-medical-alt"></i>
+                    Décrivez votre motif (optionnel)
+                </label>
+                {{ form_widget(form.raison, {'attr': {'class': 'form-control', 'placeholder': 'Ex: Consultation de routine, douleur abdominale, suivi médical...'}}) }}
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-save"></i>
+                Enregistrer les modifications
+            </button>
+            <a href="{{ path('app_rdv_mes_rdv') }}" class="btn btn-secondary">
+                <i class="fas fa-times"></i>
+                Annuler
+            </a>
+        </div>
+
+        {{ form_end(form) }}
+    </div>
+</div>
+
+<script>
+    // Auto-dismiss alerts
+    document.querySelectorAll('.alert').forEach(alert => {
+        setTimeout(() => {
+            alert.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+            alert.style.opacity = '0';
+            alert.style.transform = 'translateX(100%)';
+            setTimeout(() => alert.remove(), 500);
+        }, 5000);
+    });
+
+    // Form validation
+    document.querySelector('form').addEventListener('submit', function(e) {
+        const dateInput = document.querySelector('input[type="date"]');
+        const timeInput = document.querySelector('input[type="time"]');
+        
+        if (!dateInput.value || !timeInput.value) {
+            e.preventDefault();
+            alert('⚠️ Veuillez remplir tous les champs obligatoires');
+            return false;
+        }
+
+        // Vérifier que la date est dans le futur
+        const selectedDateTime = new Date(dateInput.value + ' ' + timeInput.value);
+        const now = new Date();
+        
+        if (selectedDateTime < now) {
+            e.preventDefault();
+            alert('❌ La date et l\'heure doivent être dans le futur');
+            return false;
+        }
+
+        return confirm('✅ Confirmer la modification du rendez-vous ?');
+    });
+</script>
+{% endblock %}

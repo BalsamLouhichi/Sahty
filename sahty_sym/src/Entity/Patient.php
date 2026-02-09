@@ -17,24 +17,27 @@ class Patient extends Utilisateur
     #[ORM\Column(length: 20, nullable: true)]
     private ?string $contactUrgence = null;
 
+    #[ORM\Column(length: 10, nullable: true)]
+    private ?string $sexe = null;
+
     /**
      * @var Collection<int, FicheMedicale>
      */
-    #[ORM\OneToMany(targetEntity: FicheMedicale::class, mappedBy: 'patient')]
-    private Collection $medecin;
+    #[ORM\OneToMany(targetEntity: FicheMedicale::class, mappedBy: 'patient', fetch: 'EXTRA_LAZY', orphanRemoval: true)]
+    private Collection $ficheMedicales;
 
-    public function __construct()
-    {
-        $this->medecin = new ArrayCollection();
-    }
-
-    #[ORM\Column(length: 10, nullable: true)]
-    private ?string $sexe = null;
+    /**
+     * @var Collection<int, RendezVous>
+     */
+    #[ORM\OneToMany(targetEntity: RendezVous::class, mappedBy: 'patient', fetch: 'EXTRA_LAZY')]
+    private Collection $rendezVous;
 
     public function __construct()
     {
         parent::__construct();
         $this->setRole(self::ROLE_SIMPLE_PATIENT);
+        $this->ficheMedicales = new ArrayCollection();
+        $this->rendezVous = new ArrayCollection();
     }
 
     public function getGroupeSanguin(): ?string
@@ -59,39 +62,6 @@ class Patient extends Utilisateur
         return $this;
     }
 
-    /**
-     * @return Collection<int, FicheMedicale>
-     */
-    public function getMedecin(): Collection
-    {
-        return $this->medecin;
-    }
-
-    public function addMedecin(FicheMedicale $medecin): static
-    {
-        if (!$this->medecin->contains($medecin)) {
-            $this->medecin->add($medecin);
-            $medecin->setPatient($this);
-        }
-
-        return $this;
-    }
-
-    public function removeMedecin(FicheMedicale $medecin): static
-    {
-        if ($this->medecin->removeElement($medecin)) {
-            // set the owning side to null (unless already changed)
-            if ($medecin->getPatient() === $this) {
-                $medecin->setPatient(null);
-            }
-        }
-
-        return $this;
-    }
-
-
-
-
     public function getSexe(): ?string
     {
         return $this->sexe;
@@ -100,6 +70,60 @@ class Patient extends Utilisateur
     public function setSexe(?string $sexe): self
     {
         $this->sexe = $sexe;
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, FicheMedicale>
+     */
+    public function getFicheMedicales(): Collection
+    {
+        return $this->ficheMedicales;
+    }
+
+    public function addFicheMedicale(FicheMedicale $ficheMedicale): static
+    {
+        if (!$this->ficheMedicales->contains($ficheMedicale)) {
+            $this->ficheMedicales->add($ficheMedicale);
+            $ficheMedicale->setPatient($this);
+        }
+        return $this;
+    }
+
+    public function removeFicheMedicale(FicheMedicale $ficheMedicale): static
+    {
+        if ($this->ficheMedicales->removeElement($ficheMedicale)) {
+            if ($ficheMedicale->getPatient() === $this) {
+                $ficheMedicale->setPatient(null);
+            }
+        }
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, RendezVous>
+     */
+    public function getRendezVous(): Collection
+    {
+        return $this->rendezVous;
+    }
+
+    public function addRendezVous(RendezVous $rendezVous): static
+    {
+        if (!$this->rendezVous->contains($rendezVous)) {
+            $this->rendezVous->add($rendezVous);
+            $rendezVous->setPatient($this);
+        }
+        return $this;
+    }
+
+    public function removeRendezVous(RendezVous $rendezVous): static
+    {
+        if ($this->rendezVous->removeElement($rendezVous)) {
+            if ($rendezVous->getPatient() === $this) {
+                $rendezVous->setPatient(null);
+            }
+        }
         return $this;
     }
 
