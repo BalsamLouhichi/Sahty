@@ -99,49 +99,20 @@ class EvenementRepository extends ServiceEntityRepository
     }
     
     public function getEvenementsTries(string $tri = 'dateDebut', string $ordre = 'ASC', ?string $statut = null): array
-    {
-        $qb = $this->createQueryBuilder('e');
-        
-        
-        if ($statut !== null) {
-            $qb->andWhere('e.statut = :statut')
-               ->setParameter('statut', $statut);
-        }
-        
-    
-        switch ($tri) {
-            case 'dateDebut':
-                $qb->orderBy('e.dateDebut', $ordre);
-                break;
-                
-            case 'dateFin':
-                $qb->orderBy('e.dateFin', $ordre);
-                break;
-                
-            case 'participants':
-              
-                $qb->leftJoin('e.inscriptions', 'i')
-                   ->addSelect('COUNT(i.id) as HIDDEN nbParticipants')
-                   ->groupBy('e.id')
-                   ->orderBy('nbParticipants', $ordre);
-                break;
-                
-            case 'tauxRemplissage':
-                
-                $qb->leftJoin('e.inscriptions', 'i')
-                   ->addSelect('COUNT(i.id) as HIDDEN nbParticipants')
-                   ->addSelect('CASE WHEN e.placesMax > 0 THEN (COUNT(i.id) * 100.0 / e.placesMax) ELSE 0 END as HIDDEN tauxRemplissage')
-                   ->groupBy('e.id')
-                   ->orderBy('tauxRemplissage', $ordre);
-                break;
-                
-            default:
-                $qb->orderBy('e.dateDebut', 'ASC');
-                break;
-        }
-        
-        return $qb->getQuery()->getResult();
+{
+    $qb = $this->createQueryBuilder('e');
+
+    if ($statut) {
+        $qb->andWhere('e.statut = :statut')
+           ->setParameter('statut', $statut);
     }
+
+    $orderField = $tri === 'dateFin' ? 'e.dateFin' : 'e.dateDebut';
+    $qb->orderBy($orderField, $ordre);
+
+    return $qb->getQuery()->getResult();
+}
+
 
     
     public function getEvenementsParStatut(string $statut, string $tri = 'dateDebut', string $ordre = 'ASC'): array
@@ -195,7 +166,7 @@ class EvenementRepository extends ServiceEntityRepository
             ->getResult();
     }
 
-    public function findByFilters(?string $type, ?string $search): array
+   public function findByFilters(?string $type = null, ?string $statut = null, ?string $recherche = null): array
 {
     $qb = $this->createQueryBuilder('e');
 
@@ -204,14 +175,21 @@ class EvenementRepository extends ServiceEntityRepository
            ->setParameter('type', $type);
     }
 
-    if ($search) {
-        $qb->andWhere('e.titre LIKE :search OR e.description LIKE :search')
-           ->setParameter('search', '%' . $search . '%');
+    if ($statut) {
+        $qb->andWhere('e.statut = :statut')
+           ->setParameter('statut', $statut);
+    }
+
+    if ($recherche) {
+        $qb->andWhere('e.titre LIKE :recherche OR e.description LIKE :recherche')
+           ->setParameter('recherche', '%' . $recherche . '%');
     }
 
     return $qb->orderBy('e.dateDebut', 'ASC')
               ->getQuery()
               ->getResult();
 }
+
+
 
 }

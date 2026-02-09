@@ -24,3 +24,7 @@ app_signup:
     path: /signup
     controller: App\Controller\SignupController::signup
     methods: [GET, POST]
+dashboard_admin:
+    path: /admin/dashboard
+    controller: App\Controller\EvenementController::dashboard
+    methods: GET

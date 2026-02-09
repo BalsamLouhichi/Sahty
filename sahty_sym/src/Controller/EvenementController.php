@@ -14,8 +14,6 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 
-// Routes accessible à /evenements et /admin/evenements
-// Permet aux médecins et autres rôles d'accéder à la gestion des événements depuis le panel admin
 #[Route(['/evenements', '/admin/evenements'], name: 'admin_')]
 class EvenementController extends AbstractController
 {
@@ -38,68 +36,25 @@ class EvenementController extends AbstractController
         $tri = $request->query->get('tri', 'dateDebut');
         $ordre = $request->query->get('ordre', 'ASC');
 
-        // Récupérer les événements selon le rôle
-        if (!$isAdmin) {
-            if (!$user) {
-                // Utilisateur non connecté : uniquement les événements sans groupes cibles
-                $allEvenements = $this->evenementRepository->findByFilters($type, $recherche);
-                $evenements = array_filter($allEvenements, function($evenement) {
-                    return $evenement->getGroupeCibles()->isEmpty();
-                });
-            } else {
-                // Utilisateur connecté
-                $userGroups = $user->getGroupes();
-                $allEvenements = $this->evenementRepository->findByFilters($type, $recherche);
-                
-                $evenements = array_filter($allEvenements, function($evenement) use ($user, $userGroups) {
-                    // L'utilisateur peut voir ses propres événements
-                    if ($evenement->getCreateur() === $user) {
-                        return true;
-                    }
-                    
-                    // Si l'événement n'a pas de groupes cibles, visible par tous
-                    $eventGroups = $evenement->getGroupeCibles();
-                    if ($eventGroups->isEmpty()) {
-                        return true;
-                    }
-                    
-                    // Vérifier si l'utilisateur appartient à un des groupes cibles
-                    foreach ($eventGroups as $eventGroup) {
-                        if ($userGroups->contains($eventGroup)) {
-                            return true;
-                        }
-                    }
-                    
-                    return false;
-                });
-            }
-            
-            $evenements = array_values($evenements);
-        } else {
-            // Admin voit tout
-            $evenements = $this->evenementRepository->findByFilters($type, $recherche);
-        }
+        $evenements = $this->evenementRepository->findByFilters($type, $statut, $recherche);
 
-        // Filtrage par statut
-        if ($statut) {
-            $evenements = array_filter($evenements, fn($e) => $e->getStatut() === $statut);
-        }
-
-        // Tri
-        if (!$type && !$recherche) {
+        if (empty($type) && empty($statut) && empty($recherche)) {
             $evenements = $this->evenementRepository->getEvenementsTries($tri, $ordre, $statut);
         } else {
             usort($evenements, function($a, $b) use ($tri, $ordre) {
                 $valA = $tri === 'dateFin' ? $a->getDateFin() : $a->getDateDebut();
                 $valB = $tri === 'dateFin' ? $b->getDateFin() : $b->getDateDebut();
+                
                 if ($valA == $valB) return 0;
+                if ($valA === null) return 1;
+                if ($valB === null) return -1;
+                
                 return ($valA < $valB ? -1 : 1) * ($ordre === 'ASC' ? 1 : -1);
             });
         }
 
         $statutsDisponibles = $this->evenementRepository->getStatutsDisponibles();
 
-        // Calcul des statistiques
         $totalParticipants = 0;
         $totalTauxRemplissage = 0;
         $evenementsAVenir = 0;
@@ -124,22 +79,18 @@ class EvenementController extends AbstractController
             'revenusGeneres' => 0,
         ];
 
-        // Calculer les permissions d'affichage (édition/suppression/inscription) par événement
         $actions = [];
         foreach ($evenements as $evt) {
             $canEdit = $isAdmin || ($user && $evt->getCreateur() === $user);
 
-            // Suppression : si inscrit(s) et non-admin, désactiver la suppression
             $inscriptionsCount = $em->getRepository(InscriptionEvenement::class)->count(['evenement' => $evt]);
             $canDelete = ($isAdmin || ($user && $evt->getCreateur() === $user)) && ($isAdmin || $inscriptionsCount == 0);
 
-            // Inscription : déléguer à la méthode canUserSubscribe pour la logique métier
             $canInscrire = false;
             if ($user && !$isAdmin) {
                 $subscribeCheck = $this->canUserSubscribe($user, $evt, $em);
                 $canInscrire = $subscribeCheck['can_subscribe'];
             } elseif ($user && $isAdmin) {
-                // admin can always see inscription control (but action may be restricted server-side)
                 $canInscrire = true;
             }
 
@@ -172,7 +123,6 @@ class EvenementController extends AbstractController
             return $this->redirectToRoute('app_login');
         }
         
-        // Vérifier les permissions de création
         $allowedRoles = ['ROLE_ADMIN', 'ROLE_MEDECIN', 'ROLE_RESPONSABLE_LABO', 'ROLE_RESPONSABLE_PARA', 'ROLE_PATIENT'];
         $hasPermission = false;
         
@@ -189,7 +139,6 @@ class EvenementController extends AbstractController
 
         $evenement = new Evenement();
         
-        // Définir le statut initial selon le rôle
         if ($this->isGranted('ROLE_PATIENT')) {
             $evenement->setStatut('en_attente_approbation');
         } else {
@@ -204,6 +153,32 @@ class EvenementController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
+            // CONTROLE DE SAISIE AJOUTÉ
+            if ($evenement->getDateFin() < $evenement->getDateDebut()) {
+                $this->addFlash('error', 'La date de fin doit être postérieure à la date de début.');
+                return $this->render('evenement/new.html.twig', [
+                    'form' => $form->createView(),
+                    'is_patient' => $this->isGranted('ROLE_PATIENT'),
+                ]);
+            }
+
+            if ($evenement->getPlacesMax() !== null && $evenement->getPlacesMax() <= 0) {
+                $this->addFlash('error', 'Le nombre de places doit être supérieur à zéro.');
+                return $this->render('evenement/new.html.twig', [
+                    'form' => $form->createView(),
+                    'is_patient' => $this->isGranted('ROLE_PATIENT'),
+                ]);
+            }
+
+            if ($evenement->getTarif() !== null && $evenement->getTarif() < 0) {
+                $this->addFlash('error', 'Le tarif ne peut pas être négatif.');
+                return $this->render('evenement/new.html.twig', [
+                    'form' => $form->createView(),
+                    'is_patient' => $this->isGranted('ROLE_PATIENT'),
+                ]);
+            }
+            // FIN DU CONTROLE DE SAISIE
+
             $evenement->setCreeLe(new \DateTime());
             $evenement->setCreateur($user);
 
@@ -216,7 +191,7 @@ class EvenementController extends AbstractController
                 $this->addFlash('info', 'Votre événement est en attente d\'approbation par un administrateur.');
             }
 
-            return $this->redirectToRoute('evenement_list');
+            return $this->redirectToRoute('admin_evenement_list');
         }
 
         return $this->render('evenement/new.html.twig', [
@@ -231,7 +206,6 @@ class EvenementController extends AbstractController
         $user = $this->getUser();
         $isAdmin = $this->isGranted('ROLE_ADMIN');
         
-        // Vérifier les permissions
         if (!$isAdmin) {
             if ($evenement->getCreateur() !== $user) {
                 throw new AccessDeniedException('Vous ne pouvez modifier que vos propres événements.');
@@ -239,7 +213,7 @@ class EvenementController extends AbstractController
             
             if ($this->isGranted('ROLE_PATIENT') && $evenement->getStatut() === 'approuve') {
                 $this->addFlash('warning', 'Les événements approuvés ne peuvent plus être modifiés. Contactez un administrateur.');
-                return $this->redirectToRoute('evenement_view', ['id' => $evenement->getId()]);
+                return $this->redirectToRoute('admin_evenement_view', ['id' => $evenement->getId()]);
             }
         }
 
@@ -252,6 +226,35 @@ class EvenementController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
+            // CONTROLE DE SAISIE AJOUTÉ
+            if ($evenement->getDateFin() < $evenement->getDateDebut()) {
+                $this->addFlash('error', 'La date de fin doit être postérieure à la date de début.');
+                return $this->render('evenement/edit.html.twig', [
+                    'evenement' => $evenement,
+                    'form' => $form->createView(),
+                    'is_admin' => $isAdmin,
+                ]);
+            }
+
+            if ($evenement->getPlacesMax() !== null && $evenement->getPlacesMax() <= 0) {
+                $this->addFlash('error', 'Le nombre de places doit être supérieur à zéro.');
+                return $this->render('evenement/edit.html.twig', [
+                    'evenement' => $evenement,
+                    'form' => $form->createView(),
+                    'is_admin' => $isAdmin,
+                ]);
+            }
+
+            if ($evenement->getTarif() !== null && $evenement->getTarif() < 0) {
+                $this->addFlash('error', 'Le tarif ne peut pas être négatif.');
+                return $this->render('evenement/edit.html.twig', [
+                    'evenement' => $evenement,
+                    'form' => $form->createView(),
+                    'is_admin' => $isAdmin,
+                ]);
+            }
+            // FIN DU CONTROLE DE SAISIE
+
             $evenement->setModifieLe(new \DateTime());
             
             if ($isAdmin && $evenement->getStatut() === 'en_attente_approbation') {
@@ -263,7 +266,7 @@ class EvenementController extends AbstractController
             
             $em->flush();
 
-            return $this->redirectToRoute('evenement_list');
+            return $this->redirectToRoute('admin_evenement_list');
         }
 
         return $this->render('evenement/edit.html.twig', [
@@ -274,8 +277,15 @@ class EvenementController extends AbstractController
     }
 
     #[Route('/{id}/supprimer', name: 'evenement_delete', methods: ['POST'])]
-    public function delete(Request $request, Evenement $evenement, EntityManagerInterface $em): Response
+    public function delete(Request $request, $id, EntityManagerInterface $em, EvenementRepository $evenementRepository): Response
     {
+        $evenement = $evenementRepository->find($id);
+        
+        if (!$evenement) {
+            $this->addFlash('warning', 'Cet événement n\'existe pas ou a déjà été supprimé.');
+            return $this->redirectToRoute('admin_evenement_list');
+        }
+        
         $user = $this->getUser();
         $isAdmin = $this->isGranted('ROLE_ADMIN');
         
@@ -288,79 +298,42 @@ class EvenementController extends AbstractController
             
         if ($inscriptionsCount > 0 && !$isAdmin) {
             $this->addFlash('danger', 'Impossible de supprimer cet événement car il a déjà des inscriptions. Contactez un administrateur.');
-            return $this->redirectToRoute('evenement_view', ['id' => $evenement->getId()]);
+            return $this->redirectToRoute('admin_evenement_view', ['id' => $evenement->getId()]);
         }
 
         if ($this->isCsrfTokenValid('delete'.$evenement->getId(), $request->request->get('_token'))) {
-            $this->evenementRepository->supprimerEvenement($evenement);
+            $evenementRepository->supprimerEvenement($evenement);
             $this->addFlash('success', 'Événement supprimé avec succès.');
         }
 
-        return $this->redirectToRoute('evenement_list');
+        return $this->redirectToRoute('admin_evenement_list');
     }
 
     #[Route('/{id}', name: 'evenement_view', methods: ['GET'])]
     public function view(Evenement $evenement, Request $request, EntityManagerInterface $em): Response
     {
         $user = $this->getUser();
-        $debug = $request->query->get('debug_perms') === '1';
         
-        // Roles allowed to view all events (admin + trusted staff)
-        $isPrivilegedViewer = $this->isGranted('ROLE_ADMIN') || $this->isGranted('ROLE_MEDECIN') || $this->isGranted('ROLE_RESPONSABLE_LABO') || $this->isGranted('ROLE_RESPONSABLE_PARA');
-
-        // Vérifier si l'utilisateur peut voir cet événement
-        // Les administrateurs et le personnel privilégié voient tout
-        $canView = true;
-        if (!$isPrivilegedViewer && !$debug) {
-            // L'utilisateur non-admin
-            $eventGroups = $evenement->getGroupeCibles();
-            if (!$user) {
-                // Utilisateur non connecté : peut voir les événements ouverts à tous
-                if (!$eventGroups->isEmpty()) {
-                    $canView = false;
-                }
-            } else {
-                // Utilisateur connecté : vérifier qu'il est créateur ou dans les groupes cibles
-                if ($evenement->getCreateur() !== $user) {
-                    $userGroups = $user->getGroupes();
-                    if (!$eventGroups->isEmpty()) {
-                        $canView = false;
-                        foreach ($eventGroups as $eventGroup) {
-                            if ($userGroups->contains($eventGroup)) {
-                                $canView = true;
-                                break;
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        // If debug mode is enabled, do not throw; continue to render page so template debug panel can show values.
-
         $nombreParticipants = $this->evenementRepository->getNombreParticipants($evenement);
         $tauxRemplissage = $this->evenementRepository->getTauxRemplissage($evenement);
         $revenusGeneres = $nombreParticipants * ($evenement->getTarif() ?? 0);
         
-        // Vérifier si l'utilisateur est déjà inscrit
         $userInscription = null;
         if ($user) {
             try {
                 $userInscription = $em->getRepository(InscriptionEvenement::class)
                     ->findOneBy(['evenement' => $evenement, 'utilisateur' => $user]);
             } catch (\Throwable $e) {
-                // Base de données incomplète (colonne manquante) — afficher la page sans planter
                 $this->addFlash('warning', 'Problème base de données : colonne manquante. Affichage limité.');
                 $userInscription = null;
             }
         }
 
-        // Vérifier si l'utilisateur peut s'inscrire (logique serveur)
         $canSubscribe = $user ? $this->canUserSubscribe($user, $evenement, $em) : [
             'can_subscribe' => false,
             'message' => 'Vous devez être connecté pour vous inscrire.'
         ];
 
-        // Calculer permissions côté serveur pour la vue (édition/suppression/inscription)
         $isAdmin = $this->isGranted('ROLE_ADMIN');
         $isCreator = $user && $evenement->getCreateur() && $evenement->getCreateur() === $user;
 
@@ -375,6 +348,9 @@ class EvenementController extends AbstractController
             'can_delete' => (bool) $canDelete,
             'can_inscribe' => (bool) $canInscribe,
         ];
+        
+        $participants = $em->getRepository(InscriptionEvenement::class)
+            ->findBy(['evenement' => $evenement], ['dateInscription' => 'DESC']);
 
         return $this->render('evenement/view.html.twig', [
             'evenement' => $evenement,
@@ -384,6 +360,7 @@ class EvenementController extends AbstractController
             'user_inscription' => $userInscription,
             'can_subscribe' => $canSubscribe,
             'perms' => $perms,
+            'participants' => $participants,
         ]);
     }
 
@@ -397,7 +374,6 @@ class EvenementController extends AbstractController
             return $this->redirectToRoute('app_login');
         }
 
-        // Vérification stricte de l'accès à l'événement (même logique que view())
         if (!$this->isGranted('ROLE_ADMIN')) {
             if ($evenement->getCreateur() !== $user) {
                 $userGroups = $user->getGroupes();
@@ -419,35 +395,31 @@ class EvenementController extends AbstractController
             }
         }
 
-        // Vérifier si l'utilisateur peut s'inscrire
         $canSubscribe = $this->canUserSubscribe($user, $evenement, $em);
         
         if (!$canSubscribe['can_subscribe']) {
             $this->addFlash('warning', $canSubscribe['message']);
-            return $this->redirectToRoute('evenement_view', ['id' => $evenement->getId()]);
+            return $this->redirectToRoute('admin_evenement_view', ['id' => $evenement->getId()]);
         }
 
-        // Vérifier si déjà inscrit
         $existing = $em->getRepository(InscriptionEvenement::class)
             ->findOneBy(['evenement' => $evenement, 'utilisateur' => $user]);
 
         if ($existing) {
             $this->addFlash('warning', 'Vous êtes déjà inscrit à cet événement.');
-            return $this->redirectToRoute('evenement_view', ['id' => $evenement->getId()]);
+            return $this->redirectToRoute('admin_evenement_view', ['id' => $evenement->getId()]);
         }
 
-        // Vérifier les places disponibles
         if ($evenement->getPlacesMax() !== null) {
             $inscriptionsCount = $em->getRepository(InscriptionEvenement::class)
                 ->count(['evenement' => $evenement]);
                 
             if ($inscriptionsCount >= $evenement->getPlacesMax()) {
                 $this->addFlash('danger', 'Désolé, cet événement est complet.');
-                return $this->redirectToRoute('evenement_view', ['id' => $evenement->getId()]);
+                return $this->redirectToRoute('admin_evenement_view', ['id' => $evenement->getId()]);
             }
         }
 
-        // Créer l'inscription
         $inscription = new InscriptionEvenement();
         $inscription->setEvenement($evenement);
         $inscription->setUtilisateur($user);
@@ -456,7 +428,6 @@ class EvenementController extends AbstractController
         $inscription->setPresent(false);
         $inscription->setCreeLe(new \DateTime());
         
-        // Déterminer le groupe cible si applicable
         $userGroups = $user->getGroupes();
         $eventGroups = $evenement->getGroupeCibles();
         
@@ -473,14 +444,14 @@ class EvenementController extends AbstractController
         $em->flush();
 
         $this->addFlash('success', 'Inscription réussie !');
-        return $this->redirectToRoute('evenement_view', ['id' => $evenement->getId()]);
+        return $this->redirectToRoute('admin_evenement_view', ['id' => $evenement->getId()]);
     }
 
     #[Route('/{id}/inscrire', name: 'evenement_inscrire_get', methods: ['GET'])]
     public function inscrireGet(Evenement $evenement): Response
     {
         $this->addFlash('info', 'Veuillez utiliser le formulaire d\'inscription sur la page de l\'événement.');
-        return $this->redirectToRoute('evenement_view', ['id' => $evenement->getId()]);
+        return $this->redirectToRoute('admin_evenement_view', ['id' => $evenement->getId()]);
     }
 
     #[Route('/{id}/desinscrire', name: 'evenement_desinscrire', methods: ['POST'])]
@@ -501,7 +472,7 @@ class EvenementController extends AbstractController
             $this->addFlash('success', 'Vous avez été désinscrit de cet événement.');
         }
 
-        return $this->redirectToRoute('evenement_view', ['id' => $evenement->getId()]);
+        return $this->redirectToRoute('admin_evenement_view', ['id' => $evenement->getId()]);
     }
 
     #[Route('/{id}/approuver', name: 'evenement_approuver', methods: ['POST'])]
@@ -516,7 +487,7 @@ class EvenementController extends AbstractController
             $this->addFlash('success', 'Événement approuvé avec succès.');
         }
 
-        return $this->redirectToRoute('evenement_view', ['id' => $evenement->getId()]);
+        return $this->redirectToRoute('admin_evenement_view', ['id' => $evenement->getId()]);
     }
 
     #[Route('/{id}/participants', name: 'evenement_participants', methods: ['GET'])]
@@ -576,12 +547,8 @@ class EvenementController extends AbstractController
         return $this->render('evenement/settings.html.twig');
     }
 
-    /**
-     * Vérifie si un utilisateur peut s'inscrire à un événement
-     */
     private function canUserSubscribe(Utilisateur $user, Evenement $evenement, EntityManagerInterface $em): array
     {
-        // Vérifier le statut de l'événement
         if (!in_array($evenement->getStatut(), ['planifie', 'approuve'])) {
             return [
                 'can_subscribe' => false,
@@ -589,7 +556,6 @@ class EvenementController extends AbstractController
             ];
         }
 
-        // Vérifier si l'utilisateur est le créateur
         if ($evenement->getCreateur() === $user) {
             return [
                 'can_subscribe' => false,
@@ -597,7 +563,6 @@ class EvenementController extends AbstractController
             ];
         }
 
-        // Vérifier les groupes cibles
         $eventGroups = $evenement->getGroupeCibles();
         $userGroups = $user->getGroupes();
         
@@ -618,7 +583,6 @@ class EvenementController extends AbstractController
             }
         }
 
-        // Vérifier la date
         $now = new \DateTime();
         if ($evenement->getDateDebut() <= $now) {
             return [
@@ -632,4 +596,66 @@ class EvenementController extends AbstractController
             'message' => ''
         ];
     }
+
+   #[Route('/admin/dashboard', name: 'dashboard', methods: ['GET'])]
+public function dashboard(EntityManagerInterface $em): Response
+{
+    $this->denyAccessUnlessGranted('ROLE_ADMIN');
+
+    $user = $this->getUser();
+    $now = new \DateTime();
+    $lastWeek = clone $now;
+    $lastWeek->modify('-7 days');
+
+  
+    $totalEvenements = $this->evenementRepository->count([]);
+    
+    $evenementsAVenir = $this->evenementRepository->createQueryBuilder('e')
+        ->where('e.dateDebut > :now')
+        ->setParameter('now', $now)
+        ->getQuery()
+        ->getSingleScalarResult();
+
+    $evenementsSemaine = $this->evenementRepository->createQueryBuilder('e')
+        ->where('e.creeLe >= :lastWeek')
+        ->setParameter('lastWeek', $lastWeek)
+        ->getQuery()
+        ->getSingleScalarResult();
+
+    $totalInscriptions = $em->getRepository(InscriptionEvenement::class)->count([]);
+
+    // Événements récents
+    $evenementsRecents = $this->evenementRepository->createQueryBuilder('e')
+        ->orderBy('e.creeLe', 'DESC')
+        ->setMaxResults(6)
+        ->getQuery()
+        ->getResult();
+
+    // Événements à venir
+    $evenementsProchains = $this->evenementRepository->createQueryBuilder('e')
+        ->where('e.dateDebut > :now')
+        ->setParameter('now', $now)
+        ->orderBy('e.dateDebut', 'ASC')
+        ->setMaxResults(5)
+        ->getQuery()
+        ->getResult();
+
+    // Statistiques par type
+    $evenementsParType = $this->evenementRepository->createQueryBuilder('e')
+        ->select('e.type, COUNT(e.id) as count')
+        ->groupBy('e.type')
+        ->getQuery()
+        ->getResult();
+
+    return $this->render('evenement/dashboard.html.twig', [
+        'totalEvenements' => $totalEvenements,
+        'evenementsAVenir' => $evenementsAVenir,
+        'evenementsSemaine' => $evenementsSemaine,
+        'totalInscriptions' => $totalInscriptions,
+        'evenementsRecents' => $evenementsRecents,
+        'evenementsProchains' => $evenementsProchains,
+        'evenementsParType' => $evenementsParType,
+        'user' => $user,
+    ]);
+}
 }

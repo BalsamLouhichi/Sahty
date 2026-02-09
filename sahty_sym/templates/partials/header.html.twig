@@ -7,11 +7,11 @@
             <div class="col-md-6 text-center text-lg-start mb-2 mb-lg-0">
                 <div class="d-inline-flex align-items-center">
                     <a class="text-decoration-none text-body pe-3" href="#!">
-                        <i class="bi bi-telephone me-2"></i>+012 345 6789
+                        <i class="bi bi-telephone me-2"></i>+216 70 000 000
                     </a>
                     <span class="text-body">|</span>
                     <a class="text-decoration-none text-body px-3" href="#!">
-                        <i class="bi bi-envelope me-2"></i>info@example.com
+                        <i class="bi bi-envelope me-2"></i>contact@sahty.tn
                     </a>
                 </div>
             </div>
@@ -35,7 +35,7 @@
         <nav class="navbar navbar-expand-lg bg-white navbar-light py-3 py-lg-0">
             <a href="{{ path('app_home') }}" class="navbar-brand">
                 <h1 class="m-0 text-uppercase text-primary">
-                    <i class="fa fa-clinic-medical me-2"></i>Medinova
+                    <i class="fa fa-heartbeat me-2"></i>Sahty
                 </h1>
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse">
@@ -44,27 +44,11 @@
             <div class="collapse navbar-collapse" id="navbarCollapse">
                 <div class="navbar-nav ms-auto py-0">
                     <a href="{{ path('app_home') }}" class="nav-item nav-link active">Accueil</a>
-                    <a href="#" class="nav-item nav-link">À propos</a>
-                    <a href="#" class="nav-item nav-link">Services</a>
-                    <a href="#" class="nav-item nav-link">Tarifs</a>
                     
                     {# Admin/Medical staff events management panel #}
                     {% if is_granted('ROLE_ADMIN') or is_granted('ROLE_MEDECIN') or is_granted('ROLE_RESPONSABLE_LABO') or is_granted('ROLE_RESPONSABLE_PARA') or is_granted('ROLE_PATIENT') %}
-                    <a href="{{ path('admin_evenement_list') }}" class="nav-item nav-link">Gestion Événements</a>
+                    <a href="{{ path('admin_evenement_list') }}" class="nav-item nav-link">Événements</a>
                     {% endif %}
-                    
-                    <div class="nav-item dropdown">
-                        <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown">Pages</a>
-                        <div class="dropdown-menu m-0">
-                            <a href="#" class="dropdown-item">Blog</a>
-                            <a href="#" class="dropdown-item">Détails Blog</a>
-                            <a href="#" class="dropdown-item">L'équipe</a>
-                            <a href="#" class="dropdown-item">Témoignages</a>
-                            <a href="#" class="dropdown-item">Rendez-vous</a>
-                            <a href="#" class="dropdown-item">Recherche</a>
-                        </div>
-                    </div>
-                    <a href="#" class="nav-item nav-link">Contact</a>
                     
                     <!-- User Authentication Section -->
                     {% if app.user %}
@@ -73,6 +57,15 @@
                             <i class="fa fa-user me-1"></i>{{ app.user.prenom }} {{ app.user.nom }}
                         </a>
                         <div class="dropdown-menu dropdown-menu-end">
+                            <!-- Dashboard option for admins only -->
+                            {% if is_granted('ROLE_ADMIN') %}
+                            <a href="{{ path('admin_dashboard') }}" class="dropdown-item">
+                                <i class="fa fa-tachometer-alt me-2 text-warning"></i>
+                                <span class="fw-semibold">Dashboard Admin</span>
+                            </a>
+                            <hr class="dropdown-divider">
+                            {% endif %}
+                            
                             <a href="{{ path('app_profile') }}" class="dropdown-item">
                                 <i class="fa fa-user-circle me-2"></i>Mon Profil
                             </a>

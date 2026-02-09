@@ -14,15 +14,14 @@ use Symfony\Component\Routing\Annotation\Route;
 final class GroupeCibleController extends AbstractController
 {
     #[Route('/', name: 'groupe_cible_index', methods: ['GET'])]
-    public function index(EntityManagerInterface $em): Response
-    {
-        $groupes = $em->getRepository(GroupeCible::class)->findAll();
+public function index(EntityManagerInterface $em): Response
+{
+    $groupes = $em->getRepository(GroupeCible::class)->findAll();
 
-        return $this->render('evenement/evenement.html.twig', [
-            'groupes' => $groupes,
-        ]);
-    }
-
+    return $this->render('groupe_cible/index.html.twig', [  
+        'groupes' => $groupes,
+    ]);
+}
   #[Route('/new', name: 'groupe_cible_new', methods: ['GET', 'POST'])]
 public function new(
     Request $request,
