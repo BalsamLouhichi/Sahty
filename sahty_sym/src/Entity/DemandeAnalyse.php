@@ -16,23 +16,24 @@ class DemandeAnalyse
 
     #[ORM\ManyToOne(targetEntity: Patient::class, inversedBy: 'demandeAnalyses')]
     #[ORM\JoinColumn(name: 'patient_id', nullable: false)]
-    private ?Patient $patient = null;
+    private ?Patient $patient = null; // Changé de patient_id à patient
 
-    #[ORM\ManyToOne(targetEntity: Medecin::class)]
-    #[ORM\JoinColumn(name: 'medecin_id', referencedColumnName: 'id', nullable: true)]
+    #[ORM\ManyToOne(targetEntity: Medecin::class, inversedBy: 'demandeAnalyses')]
+    #[ORM\JoinColumn(name: 'medecin_id', nullable: true)] // ← Changer à true
     private ?Medecin $medecin = null;
 
     #[ORM\ManyToOne(targetEntity: Laboratoire::class, inversedBy: 'demandeAnalyses')]
     #[ORM\JoinColumn(name: 'laboratoire_id', nullable: false)]
-    private ?Laboratoire $laboratoire = null;
+    private ?Laboratoire $laboratoire = null; // Changé de laboratoire_id à laboratoire
 
     #[ORM\Column(length: 255)]
     private ?string $type_bilan = null;
 
-    // CORRECTION : Utiliser 'en_attente' pour cohérence avec le contrôleur et FormType
+    // Valeur par defaut basee sur la presence du PDF resultat
     #[ORM\Column(length: 50)]
     private string $statut = 'en_attente';
 
+    // Initialisation automatique de la date
     #[ORM\Column]
     private \DateTimeImmutable $date_demande;
 
@@ -42,22 +43,29 @@ class DemandeAnalyse
     #[ORM\Column(type: 'datetime', nullable: true)]
     private ?\DateTimeInterface $envoye_le = null;
 
+    // Notes facultatives
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $notes = null;
 
-    // CORRECTION : Utiliser 'normale' pour cohérence avec le FormType
+    // Priorité de la demande
     #[ORM\Column(length: 20)]
-    private string $priorite = 'normale';
+    private string $priorite = 'Normale'; // Ajout de la priorité
 
+    // Liste des analyses demandées (peut être JSON ou relation OneToMany)
     #[ORM\Column(type: 'json', nullable: true)]
     private ?array $analyses = [];
 
+    #[ORM\Column(name: 'resultat_pdf', length: 255, nullable: true)]
+    private ?string $resultatPdf = null;
+
+    // Constructeur pour initialiser date_demande
     public function __construct()
     {
         $this->date_demande = new \DateTimeImmutable();
         $this->analyses = [];
     }
 
+    // --- Getters et setters avec noms corrects ---
     public function getId(): ?int
     {
         return $this->id;
@@ -184,6 +192,18 @@ class DemandeAnalyse
         return $this;
     }
 
+    public function getResultatPdf(): ?string
+    {
+        return $this->resultatPdf;
+    }
+
+    public function setResultatPdf(?string $resultatPdf): static
+    {
+        $this->resultatPdf = $resultatPdf;
+        return $this;
+    }
+
+    // Méthodes pratiques
     public function addAnalyse(string $analyse): static
     {
         if (!in_array($analyse, $this->analyses)) {
@@ -196,7 +216,7 @@ class DemandeAnalyse
     {
         if (($key = array_search($analyse, $this->analyses)) !== false) {
             unset($this->analyses[$key]);
-            $this->analyses = array_values($this->analyses);
+            $this->analyses = array_values($this->analyses); // Réindexer
         }
         return $this;
     }
@@ -206,33 +226,9 @@ class DemandeAnalyse
         return count($this->analyses);
     }
 
+    // Pour faciliter l'affichage dans le template
     public function __toString(): string
     {
         return sprintf('Demande #%d - %s', $this->id, $this->type_bilan);
-    }
-    
-    // Méthode utilitaire pour afficher le statut de manière lisible
-    public function getStatutLibelle(): string
-    {
-        $statuts = [
-            'en_attente' => 'En attente',
-            'programme' => 'Programmé',
-            'envoye' => 'Envoyé',
-            'annule' => 'Annulé'
-        ];
-        
-        return $statuts[$this->statut] ?? $this->statut;
-    }
-    
-    // Méthode utilitaire pour afficher la priorité de manière lisible
-    public function getPrioriteLibelle(): string
-    {
-        $priorites = [
-            'normale' => 'Normale',
-            'haute' => 'Haute',
-            'urgent' => 'Urgent'
-        ];
-        
-        return $priorites[$this->priorite] ?? $this->priorite;
     }
 }

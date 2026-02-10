@@ -3,6 +3,7 @@
 namespace App\Controller;
 
 use App\Entity\Laboratoire;
+use App\Entity\ResponsableLaboratoire;
 use App\Entity\LaboratoireTypeAnalyse;
 use App\Form\LaboratoireType;
 use App\Repository\LaboratoireRepository;
@@ -17,12 +18,46 @@ use Symfony\Component\Routing\Annotation\Route;
 class LaboratoireController extends AbstractController
 {
     #[Route('/', name: 'app_labo_index', methods: ['GET'])]
-    public function index(LaboratoireRepository $laboratoireRepository): Response
+    public function index(Request $request, LaboratoireRepository $laboratoireRepository): Response
     {
-        $laboratoires = $laboratoireRepository->findAll();
+        $name = trim((string) $request->query->get('name', ''));
+        $ville = trim((string) $request->query->get('ville', ''));
+        $typeBilan = trim((string) $request->query->get('type_bilan', ''));
+
+        $laboratoires = $laboratoireRepository->findWithPublicFilters(
+            $name !== '' ? $name : null,
+            $ville !== '' ? $ville : null,
+            $typeBilan !== '' ? $typeBilan : null
+        );
+
+        $villes = $laboratoireRepository->findDistinctVilles();
+        $typeBilans = $laboratoireRepository->findDistinctTypeBilans();
 
         return $this->render('laboratoire/labo.html.twig', [
-            'laboratoires' => $laboratoires
+            'laboratoires' => $laboratoires,
+            'filter_name' => $name,
+            'filter_ville' => $ville,
+            'filter_type_bilan' => $typeBilan,
+            'filter_villes' => $villes,
+            'filter_type_bilans' => $typeBilans,
+        ]);
+    }
+
+    #[Route('/filter', name: 'app_labo_filter', methods: ['GET'])]
+    public function filter(Request $request, LaboratoireRepository $laboratoireRepository): Response
+    {
+        $name = trim((string) $request->query->get('name', ''));
+        $ville = trim((string) $request->query->get('ville', ''));
+        $typeBilan = trim((string) $request->query->get('type_bilan', ''));
+
+        $laboratoires = $laboratoireRepository->findWithPublicFilters(
+            $name !== '' ? $name : null,
+            $ville !== '' ? $ville : null,
+            $typeBilan !== '' ? $typeBilan : null
+        );
+
+        return $this->render('laboratoire/_lab_cards.html.twig', [
+            'laboratoires' => $laboratoires,
         ]);
     }
 
@@ -37,6 +72,14 @@ class LaboratoireController extends AbstractController
         if ($form->isSubmitted() && $form->isValid()) {
             // Set the current date/time
             $laboratoire->setCreeLe(new \DateTime());
+
+            $user = $this->getUser();
+            if ($user instanceof ResponsableLaboratoire) {
+                if ($user->getLaboratoire() && $user->getLaboratoire() !== $laboratoire) {
+                    $this->addFlash('warning', 'Votre compte etait deja associe a un autre laboratoire. Il a ete remplace.');
+                }
+                $laboratoire->setResponsable($user);
+            }
             
             // Associer le laboratoire à chaque LaboratoireTypeAnalyse
             foreach ($laboratoire->getLaboratoireTypeAnalyses() as $typeAnalyse) {

@@ -70,6 +70,52 @@ class LaboratoireRepository extends ServiceEntityRepository
     }
 
     /**
+     * Trouve les types de bilan distincts associes aux laboratoires
+     */
+    public function findDistinctTypeBilans(): array
+    {
+        $result = $this->createQueryBuilder('l')
+            ->leftJoin('l.laboratoireTypeAnalyses', 'lta')
+            ->leftJoin('lta.typeAnalyse', 'ta')
+            ->select('DISTINCT ta.nom')
+            ->where('ta.nom IS NOT NULL')
+            ->orderBy('ta.nom', 'ASC')
+            ->getQuery()
+            ->getScalarResult();
+
+        return array_column($result, 'nom');
+    }
+
+    /**
+     * Filtre par nom, ville et type de bilan
+     */
+    public function findWithPublicFilters(?string $name, ?string $ville, ?string $typeBilan): array
+    {
+        $queryBuilder = $this->createQueryBuilder('l')
+            ->leftJoin('l.laboratoireTypeAnalyses', 'lta')
+            ->leftJoin('lta.typeAnalyse', 'ta')
+            ->addSelect('lta', 'ta')
+            ->orderBy('l.nom', 'ASC');
+
+        if ($name) {
+            $queryBuilder->andWhere('l.nom LIKE :name')
+                ->setParameter('name', '%' . $name . '%');
+        }
+
+        if ($ville) {
+            $queryBuilder->andWhere('l.ville = :ville')
+                ->setParameter('ville', $ville);
+        }
+
+        if ($typeBilan) {
+            $queryBuilder->andWhere('ta.nom = :typeBilan')
+                ->setParameter('typeBilan', $typeBilan);
+        }
+
+        return $queryBuilder->getQuery()->getResult();
+    }
+
+    /**
      * Recherche pour l'API
      */
     public function findForApi(?string $search = null, ?string $ville = null, bool $disponible = true): array

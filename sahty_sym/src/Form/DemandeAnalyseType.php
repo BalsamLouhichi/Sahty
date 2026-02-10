@@ -100,20 +100,7 @@ class DemandeAnalyseType extends AbstractType
             ]
         ]);
 
-        // Champ statut - seulement pour les admins/médecins
-        if ($userRole === 'ROLE_ADMIN' || $userRole === 'ROLE_MEDECIN') {
-            $builder->add('statut', ChoiceType::class, [
-                'label' => 'Statut',
-                'choices' => [
-                    'En attente' => 'en_attente',
-                    'Programmé' => 'programme',
-                    'Envoyé' => 'envoye',
-                    'Annulé' => 'annule'
-                ],
-                'required' => true,
-                'data' => 'en_attente',
-            ]);
-        }
+        // Le statut est determine automatiquement a partir du PDF resultat
     }
 
     public function configureOptions(OptionsResolver $resolver): void

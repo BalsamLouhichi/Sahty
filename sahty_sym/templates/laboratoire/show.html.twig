@@ -135,14 +135,10 @@
                             <div class="col-md-6 mb-3">
                                 <span class="detail-label">Statut</span>
                                 <div class="detail-value">
-                                    {% if demande_analyse.statut == 'en_attente' %}
+                                    {% if demande_analyse.resultatPdf %}
+                                        <span class="badge-custom bg-success">Envoye</span>
+                                    {% else %}
                                         <span class="badge-custom bg-warning">En attente</span>
-                                    {% elseif demande_analyse.statut == 'programme' %}
-                                        <span class="badge-custom bg-info">Programmé</span>
-                                    {% elseif demande_analyse.statut == 'envoye' %}
-                                        <span class="badge-custom bg-success">Envoyé</span>
-                                    {% elseif demande_analyse.statut == 'annule' %}
-                                        <span class="badge-custom bg-danger">Annulé</span>
                                     {% endif %}
                                 </div>
                             </div>
@@ -245,14 +241,14 @@
                             <i class="fas fa-arrow-left"></i> Retour
                         </a>
                         
-                        {% if demande_analyse.statut == 'en_attente' %}
+                        {% if demande_analyse.resultatPdf is null %}
                             <a href="{{ path('app_demande_analyse_edit', {'id': demande_analyse.id}) }}" 
                                class="btn btn-warning btn-action">
                                 <i class="fas fa-edit"></i> Modifier
                             </a>
                         {% endif %}
                         
-                        {% if app.user and (is_granted('ROLE_ADMIN') or is_granted('ROLE_MEDECIN')) %}
+                        {% if app.user and (is_granted('ROLE_ADMIN') or is_granted('ROLE_MEDECIN')) and demande_analyse.resultatPdf %}
                             <div class="dropdown d-inline">
                                 <button class="btn btn-primary btn-action dropdown-toggle" 
                                         type="button" 
@@ -262,28 +258,10 @@
                                 <ul class="dropdown-menu">
                                     <li>
                                         <form method="post" 
-                                              action="{{ path('app_demande_analyse_changer_statut', {'id': demande_analyse.id, 'statut': 'programme'}) }}">
-                                            <input type="hidden" name="_token" value="{{ csrf_token('changer-statut' ~ demande_analyse.id) }}">
-                                            <button type="submit" class="dropdown-item">
-                                                <i class="fas fa-calendar-check text-info"></i> Marquer comme programmé
-                                            </button>
-                                        </form>
-                                    </li>
-                                    <li>
-                                        <form method="post" 
                                               action="{{ path('app_demande_analyse_changer_statut', {'id': demande_analyse.id, 'statut': 'envoye'}) }}">
                                             <input type="hidden" name="_token" value="{{ csrf_token('changer-statut' ~ demande_analyse.id) }}">
                                             <button type="submit" class="dropdown-item">
                                                 <i class="fas fa-paper-plane text-success"></i> Marquer comme envoyé
-                                            </button>
-                                        </form>
-                                    </li>
-                                    <li>
-                                        <form method="post" 
-                                              action="{{ path('app_demande_analyse_changer_statut', {'id': demande_analyse.id, 'statut': 'annule'}) }}">
-                                            <input type="hidden" name="_token" value="{{ csrf_token('changer-statut' ~ demande_analyse.id) }}">
-                                            <button type="submit" class="dropdown-item">
-                                                <i class="fas fa-ban text-danger"></i> Annuler
                                             </button>
                                         </form>
                                     </li>

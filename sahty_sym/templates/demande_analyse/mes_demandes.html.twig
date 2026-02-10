@@ -109,9 +109,7 @@
         }
         
         .badge-en_attente { background: #fff3cd; color: #856404; }
-        .badge-programme { background: #d1ecf1; color: #0c5460; }
         .badge-envoye { background: #d4edda; color: #155724; }
-        .badge-annule { background: #f8d7da; color: #721c24; }
         
         .priorite-badge {
             padding: 5px 12px;
@@ -310,7 +308,7 @@
                 </p>
 
                 <div class="d-flex flex-wrap align-items-center gap-3">
-                    <span class="text-white">
+                    <span class="text-white" id="mes-demandes-count">
                         <i class="fa fa-chart-line text-primary me-2"></i>
                         {% if demandes is not empty %}
                             {{ demandes|length }} demande(s) trouvée(s)
@@ -343,9 +341,7 @@
         <div class="row mb-5">
             <div class="col-12">
                 <div class="d-flex flex-wrap gap-3 justify-content-center">
-                    <a href="{{ path('app_demande_analyse_new') }}" class="btn btn-action btn-new">
-                        <i class="fas fa-plus-circle"></i> Nouvelle Demande
-                    </a>
+                    
                     
                     {% if is_granted('ROLE_ADMIN') or is_granted('ROLE_MEDECIN') %}
                         <a href="{{ path('app_demande_analyse_index') }}" class="btn btn-action btn-all">
@@ -360,289 +356,24 @@
             </div>
         </div>
 
-        {% if demandes is empty %}
-            {# État vide #}
-            <div class="row">
-                <div class="col-lg-8 mx-auto">
-                    <div class="empty-state">
-                        <div class="empty-icon">
-                            <i class="fas fa-file-medical"></i>
-                        </div>
-                        
-                        <h3 class="mb-3">Aucune demande d'analyse</h3>
-                        
-                        <p class="text-muted mb-4">
-                            Vous n'avez pas encore créé de demande d'analyse. 
-                            Créez votre première demande pour commencer.
-                        </p>
-                        
-                        <div class="d-flex justify-content-center gap-3">
-                            <a href="{{ path('app_demande_analyse_new') }}" class="btn btn-primary btn-lg px-5">
-                                <i class="fas fa-plus me-2"></i> Créer une Demande
-                            </a>
-                            
-                            <a href="{{ path('app_labo_index') }}" class="btn btn-outline-primary btn-lg px-5">
-                                <i class="fas fa-hospital me-2"></i> Explorer Laboratoires
-                            </a>
-                        </div>
-                    </div>
-                </div>
+        {# Filtre par type de bilan #}
+        <div class="row mb-4">
+            <div class="col-lg-6 mx-auto">
+                <form method="get" id="mes-demandes-filter" class="d-flex gap-2 align-items-center justify-content-center">
+                    <label class="form-label mb-0" for="type_bilan">Type de bilan</label>
+                    <select class="form-select" id="type_bilan" name="type_bilan" style="max-width: 320px;">
+                        <option value="">Tous</option>
+                        {% for type in type_bilan_options %}
+                            <option value="{{ type }}" {{ type_bilan_filter == type ? 'selected' : '' }}>{{ type }}</option>
+                        {% endfor %}
+                    </select>
+                </form>
             </div>
-        {% else %}
-            {# Tableau des demandes - AJOUT DE LA COLONNE MEDECIN #}
-            <div class="row">
-                <div class="col-12">
-                    <div class="table-responsive">
-                        <table class="table table-hover">
-                            <thead>
-                                <tr>
-                                    <th>ID</th>
-                                    <th>Date</th>
-                                    <th>Type de Bilan</th>
-                                    <th>Laboratoire</th>
-                                    <th>Médecin Prescripteur</th> {# NOUVELLE COLONNE #}
-                                    <th>Statut</th>
-                                    <th>Priorité</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for demande in demandes %}
-                                <tr>
-                                    <td class="fw-bold">#{{ demande.id }}</td>
-                                    <td class="date-cell">{{ demande.dateDemande|date('d/m/Y H:i') }}</td>
-                                    <td class="type-cell">{{ demande.typeBilan }}</td>
-                                    <td>
-                                        {% if demande.laboratoire %}
-                                            <div class="d-flex align-items-center">
-                                                <i class="fa fa-hospital text-primary me-2"></i>
-                                                <span>{{ demande.laboratoire.nom }}</span>
-                                            </div>
-                                        {% else %}
-                                            <span class="text-muted fst-italic">Non spécifié</span>
-                                        {% endif %}
-                                    </td>
-                                    <td class="medecin-cell">
-                                        {% if demande.medecin %}
-                                            <div class="medecin-info">
-                                                <i class="fas fa-user-md medecin-icon"></i>
-                                                <div>
-                                                    <div class="fw-bold small">Dr. {{ demande.medecin.nomComplet }}</div>
-                                                    {% if demande.medecin.specialite %}
-                                                        <div class="text-muted smaller">{{ demande.medecin.specialite }}</div>
-                                                    {% endif %}
-                                                </div>
-                                            </div>
-                                        {% else %}
-                                            <span class="no-medecin">Non spécifié</span>
-                                        {% endif %}
-                                    </td>
-                                    <td>
-                                        {% set statut = demande.statut %}
-                                        {% if statut == 'en_attente' %}
-                                            <span class="statut-badge badge-en_attente">
-                                                <i class="fas fa-clock me-1"></i> En attente
-                                            </span>
-                                        {% elseif statut == 'programme' %}
-                                            <span class="statut-badge badge-programme">
-                                                <i class="fas fa-calendar-check me-1"></i> Programmé
-                                            </span>
-                                        {% elseif statut == 'envoye' %}
-                                            <span class="statut-badge badge-envoye">
-                                                <i class="fas fa-paper-plane me-1"></i> Envoyé
-                                            </span>
-                                        {% elseif statut == 'annule' %}
-                                            <span class="statut-badge badge-annule">
-                                                <i class="fas fa-ban me-1"></i> Annulé
-                                            </span>
-                                        {% else %}
-                                            <span class="badge bg-secondary">{{ statut }}</span>
-                                        {% endif %}
-                                    </td>
-                                    <td>
-                                        {% set priorite = demande.priorite %}
-                                        {% if priorite == 'urgent' %}
-                                            <span class="priorite-badge badge-urgent">
-                                                <i class="fas fa-exclamation-circle me-1"></i> Urgent
-                                            </span>
-                                        {% elseif priorite == 'haute' %}
-                                            <span class="priorite-badge badge-haute">
-                                                <i class="fas fa-exclamation-triangle me-1"></i> Haute
-                                            </span>
-                                        {% else %}
-                                            <span class="priorite-badge badge-normale">
-                                                <i class="fas fa-check-circle me-1"></i> Normale
-                                            </span>
-                                        {% endif %}
-                                    </td>
-                                    <td>
-                                        <div class="d-flex gap-2">
-                                            <a href="{{ path('app_demande_analyse_show', {'id': demande.id}) }}" 
-                                               class="btn btn-sm btn-primary" 
-                                               title="Voir détails"
-                                               data-bs-toggle="tooltip">
-                                                <i class="fas fa-eye"></i>
-                                            </a>
-                                            
-                                            {% if demande.statut == 'en_attente' %}
-                                                <a href="{{ path('app_demande_analyse_edit', {'id': demande.id}) }}" 
-                                                   class="btn btn-sm btn-warning" 
-                                                   title="Modifier"
-                                                   data-bs-toggle="tooltip">
-                                                    <i class="fas fa-edit"></i>
-                                                </a>
-                                            {% endif %}
-                                            
-                                            {% if demande.statut == 'en_attente' %}
-                                                <form method="post" 
-                                                      action="{{ path('app_demande_analyse_delete', {'id': demande.id}) }}" 
-                                                      onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cette demande ?');"
-                                                      class="d-inline">
-                                                    <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ demande.id) }}">
-                                                    <button type="submit" 
-                                                            class="btn btn-sm btn-danger" 
-                                                            title="Supprimer"
-                                                            data-bs-toggle="tooltip">
-                                                        <i class="fas fa-trash"></i>
-                                                    </button>
-                                                </form>
-                                            {% endif %}
-                                        </div>
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                    
-                    {# Statistiques avec ajout de médecin #}
-                    <div class="row mt-5">
-                        <div class="col-md-6 col-lg-3 mb-4">
-                            <div class="demande-card text-center p-4">
-                                <div class="info-icon mx-auto mb-3">
-                                    <i class="fas fa-clock"></i>
-                                </div>
-                                <h4 class="mb-2">
-                                    {% set en_attente = demandes|filter(d => d.statut == 'en_attente')|length %}
-                                    {{ en_attente }}
-                                </h4>
-                                <p class="text-muted mb-0">En attente</p>
-                            </div>
-                        </div>
-                        
-                        <div class="col-md-6 col-lg-3 mb-4">
-                            <div class="demande-card text-center p-4">
-                                <div class="info-icon mx-auto mb-3">
-                                    <i class="fas fa-calendar-check"></i>
-                                </div>
-                                <h4 class="mb-2">
-                                    {% set programme = demandes|filter(d => d.statut == 'programme')|length %}
-                                    {{ programme }}
-                                </h4>
-                                <p class="text-muted mb-0">Programmées</p>
-                            </div>
-                        </div>
-                        
-                        <div class="col-md-6 col-lg-3 mb-4">
-                            <div class="demande-card text-center p-4">
-                                <div class="info-icon mx-auto mb-3">
-                                    <i class="fas fa-user-md"></i> {# NOUVELLE ICONE #}
-                                </div>
-                                <h4 class="mb-2">
-                                    {% set avec_medecin = demandes|filter(d => d.medecin is not null)|length %}
-                                    {{ avec_medecin }}
-                                </h4>
-                                <p class="text-muted mb-0">Avec médecin</p>
-                            </div>
-                        </div>
-                        
-                        <div class="col-md-6 col-lg-3 mb-4">
-                            <div class="demande-card text-center p-4">
-                                <div class="info-icon mx-auto mb-3">
-                                    <i class="fas fa-chart-line"></i>
-                                </div>
-                                <h4 class="mb-2">{{ demandes|length }}</h4>
-                                <p class="text-muted mb-0">Total des demandes</p>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    {# Graphique de répartition avec médecin #}
-                    <div class="row mt-4">
-                        <div class="col-md-6 mb-4">
-                            <div class="demande-card p-4">
-                                <h5 class="mb-4">
-                                    <i class="fas fa-user-md text-primary me-2"></i>
-                                    Répartition par médecin prescripteur
-                                </h5>
-                                {% set avec_medecin = demandes|filter(d => d.medecin is not null)|length %}
-                                {% set sans_medecin = demandes|filter(d => d.medecin is null)|length %}
-                                
-                                <div class="mb-3">
-                                    <div class="d-flex justify-content-between mb-1">
-                                        <span>Avec médecin</span>
-                                        <span>{{ avec_medecin }} ({{ (avec_medecin / demandes|length * 100)|round(1) }}%)</span>
-                                    </div>
-                                    <div class="progress" style="height: 20px;">
-                                        <div class="progress-bar bg-primary" role="progressbar" 
-                                             style="width: {{ (avec_medecin / demandes|length * 100) }}%">
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <div class="mb-3">
-                                    <div class="d-flex justify-content-between mb-1">
-                                        <span>Sans médecin</span>
-                                        <span>{{ sans_medecin }} ({{ (sans_medecin / demandes|length * 100)|round(1) }}%)</span>
-                                    </div>
-                                    <div class="progress" style="height: 20px;">
-                                        <div class="progress-bar bg-secondary" role="progressbar" 
-                                             style="width: {{ (sans_medecin / demandes|length * 100) }}%">
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <div class="text-center mt-3">
-                                    <small class="text-muted">
-                                        <i class="fas fa-info-circle me-1"></i>
-                                        {{ avec_medecin }} demande(s) avec médecin sur {{ demandes|length }} au total
-                                    </small>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="col-md-6 mb-4">
-                            <div class="demande-card p-4">
-                                <h5 class="mb-4">
-                                    <i class="fas fa-heartbeat text-primary me-2"></i>
-                                    Statuts des demandes
-                                </h5>
-                                
-                                {% for statut in ['en_attente', 'programme', 'envoye', 'annule'] %}
-                                    {% set count = demandes|filter(d => d.statut == statut)|length %}
-                                    {% if count > 0 %}
-                                        <div class="d-flex justify-content-between align-items-center mb-2">
-                                            <span>
-                                                {% if statut == 'en_attente' %}
-                                                    <i class="fas fa-clock text-warning me-2"></i>En attente
-                                                {% elseif statut == 'programme' %}
-                                                    <i class="fas fa-calendar-check text-info me-2"></i>Programmé
-                                                {% elseif statut == 'envoye' %}
-                                                    <i class="fas fa-paper-plane text-success me-2"></i>Envoyé
-                                                {% elseif statut == 'annule' %}
-                                                    <i class="fas fa-ban text-danger me-2"></i>Annulé
-                                                {% endif %}
-                                            </span>
-                                            <span class="badge bg-light text-dark">{{ count }}</span>
-                                        </div>
-                                    {% endif %}
-                                {% endfor %}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        {% endif %}
+        </div>
+
+        <div id="mes-demandes-results">
+            {% include 'demande_analyse/_mes_demandes_results.html.twig' with { demandes: demandes } %}
+        </div>
 
     </div>
 </div>
@@ -664,27 +395,105 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Activer les tooltips Bootstrap
-    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-        return new bootstrap.Tooltip(tooltipTriggerEl);
-    });
-    
+    const initDemandesHandlers = function() {
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+
+        const deleteForms = document.querySelectorAll('form[action*="/delete"]');
+        deleteForms.forEach(form => {
+            form.addEventListener('submit', function(e) {
+                if (!confirm('Êtes-vous sûr de vouloir supprimer cette demande ? Cette action est irréversible.')) {
+                    e.preventDefault();
+                }
+            });
+        });
+
+        const medecinCells = document.querySelectorAll('.medecin-cell');
+        medecinCells.forEach(cell => {
+            const medecinDiv = cell.querySelector('.medecin-info');
+            if (medecinDiv) {
+                cell.addEventListener('mouseenter', function() {
+                    this.style.cursor = 'help';
+                });
+
+                const medecinName = cell.querySelector('.fw-bold').textContent;
+                const specialite = cell.querySelector('.text-muted')?.textContent || 'Spécialité non spécifiée';
+
+                cell.setAttribute('title', `Médecin: ${medecinName}\nSpécialité: ${specialite}`);
+                new bootstrap.Tooltip(cell, {
+                    placement: 'top',
+                    trigger: 'hover'
+                });
+            }
+        });
+
+        const resultButtons = document.querySelectorAll('.js-result-pdf');
+        resultButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const status = this.getAttribute('data-status');
+                const pdfUrl = this.getAttribute('data-pdf');
+
+                if (status === 'en_attente') {
+                    alert('Le resultat n\'est pas encore disponible.');
+                    return;
+                }
+
+                if (!pdfUrl) {
+                    alert('Aucun resultat PDF n\'est disponible pour cette demande.');
+                    return;
+                }
+
+                window.open(pdfUrl, '_blank', 'noopener');
+            });
+        });
+    };
+
+    const filterForm = document.getElementById('mes-demandes-filter');
+    const filterSelect = document.getElementById('type_bilan');
+    const resultsContainer = document.getElementById('mes-demandes-results');
+    const countContainer = document.getElementById('mes-demandes-count');
+    let debounceTimer;
+
+    const fetchResults = () => {
+        if (!filterForm) return;
+        const params = new URLSearchParams(new FormData(filterForm));
+        const url = `{{ path('app_demande_analyse_mes_demandes_filter') }}?${params.toString()}`;
+
+        fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+            .then(response => response.json())
+            .then(data => {
+                if (resultsContainer) {
+                    resultsContainer.innerHTML = data.html;
+                }
+                if (countContainer) {
+                    countContainer.innerHTML = data.count_text;
+                }
+                initDemandesHandlers();
+            })
+            .catch(() => {
+                if (resultsContainer) {
+                    resultsContainer.innerHTML = '<div class="row"><div class="col-12 text-center text-muted">Erreur de chargement.</div></div>';
+                }
+            });
+    };
+
+    const scheduleFetch = () => {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(fetchResults, 250);
+    };
+
+    if (filterSelect) {
+        filterSelect.addEventListener('change', scheduleFetch);
+    }
+
+    initDemandesHandlers();
     // Animation pour les cartes
     const cards = document.querySelectorAll('.demande-card');
     cards.forEach((card, index) => {
         card.style.animationDelay = `${index * 0.1}s`;
         card.classList.add('animate__animated', 'animate__fadeInUp');
-    });
-    
-    // Confirmation avant suppression
-    const deleteForms = document.querySelectorAll('form[action*="/delete"]');
-    deleteForms.forEach(form => {
-        form.addEventListener('submit', function(e) {
-            if (!confirm('Êtes-vous sûr de vouloir supprimer cette demande ? Cette action est irréversible.')) {
-                e.preventDefault();
-            }
-        });
     });
     
     // Mode test indicator
@@ -701,28 +510,9 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     {% endif %}
     
-    // Afficher les infos complètes des médecins au survol
-    const medecinCells = document.querySelectorAll('.medecin-cell');
-    medecinCells.forEach(cell => {
-        const medecinDiv = cell.querySelector('.medecin-info');
-        if (medecinDiv) {
-            cell.addEventListener('mouseenter', function() {
-                this.style.cursor = 'help';
-            });
-            
-            // Tooltip personnalisé pour les informations du médecin
-            const medecinName = cell.querySelector('.fw-bold').textContent;
-            const specialite = cell.querySelector('.text-muted')?.textContent || 'Spécialité non spécifiée';
-            
-            cell.setAttribute('title', `Médecin: ${medecinName}\nSpécialité: ${specialite}`);
-            new bootstrap.Tooltip(cell, {
-                placement: 'top',
-                trigger: 'hover'
-            });
-        }
-    });
 });
 </script>
+
 
 </body>
 </html>

@@ -189,10 +189,10 @@
                         Créée le: {{ demande_analyse.dateDemande|date('d/m/Y H:i') }}
                     </span>
                     
-                    {% if demande_analyse.statut != 'en_attente' %}
+                    {% if demande_analyse.resultatPdf %}
                     <span class="badge bg-warning">
                         <i class="fas fa-exclamation-triangle me-1"></i>
-                        Statut: {{ demande_analyse.statut }}
+                        Statut: Envoye
                     </span>
                     {% endif %}
                 </div>
@@ -238,14 +238,10 @@
                                 <div>
                                     <small class="text-muted">Statut</small>
                                     <div class="fw-bold">
-                                        {% if demande_analyse.statut == 'en_attente' %}
+                                        {% if demande_analyse.resultatPdf %}
+                                            <span class="badge bg-success">Envoye</span>
+                                        {% else %}
                                             <span class="badge bg-warning">En attente</span>
-                                        {% elseif demande_analyse.statut == 'programme' %}
-                                            <span class="badge bg-info">Programmé</span>
-                                        {% elseif demande_analyse.statut == 'envoye' %}
-                                            <span class="badge bg-success">Envoyé</span>
-                                        {% elseif demande_analyse.statut == 'annule' %}
-                                            <span class="badge bg-danger">Annulé</span>
                                         {% endif %}
                                     </div>
                                 </div>
@@ -353,16 +349,6 @@
                             </div>
                         </div>
                         
-                        {# Champ statut pour admins/médecins #}
-                        {% if form.statut is defined %}
-                        <div class="col-md-12">
-                            <div class="form-group-custom">
-                                {{ form_label(form.statut, 'Statut', {'label_attr': {'class': 'form-label'}}) }}
-                                {{ form_widget(form.statut, {'attr': {'class': 'form-select'}}) }}
-                                {{ form_errors(form.statut) }}
-                            </div>
-                        </div>
-                        {% endif %}
                         
                         {# Champ patient pour admins/médecins #}
                         {% if form.patient is defined %}
@@ -388,7 +374,7 @@
                                     <i class="fas fa-times"></i> Annuler
                                 </a>
                                 
-                                {% if demande_analyse.statut == 'en_attente' %}
+                                {% if demande_analyse.resultatPdf is null %}
                                     <button type="button" 
                                             class="btn btn-action btn-danger" 
                                             data-bs-toggle="modal" 
@@ -511,11 +497,11 @@ document.addEventListener('DOMContentLoaded', function() {
     {% endif %}
     
     // Avertissement si la demande n'est plus modifiable
-    {% if demande_analyse.statut != 'en_attente' %}
+    {% if demande_analyse.resultatPdf %}
         const submitBtn = document.querySelector('button[type="submit"]');
         if (submitBtn) {
             submitBtn.addEventListener('click', function(e) {
-                if (!confirm('Attention ! Cette demande a le statut "{{ demande_analyse.statut|replace({'_': ' '})|title }}".\n\nÊtes-vous sûr de vouloir la modifier ? Certains changements pourraient ne pas être autorisés.')) {
+                if (!confirm('Attention ! Cette demande a le statut "Envoye".\n\nÊtes-vous sûr de vouloir la modifier ? Certains changements pourraient ne pas être autorisés.')) {
                     e.preventDefault();
                 }
             });

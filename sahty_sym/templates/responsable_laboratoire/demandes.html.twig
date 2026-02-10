@@ -1,7 +1,7 @@
-{# list_demande.html.twig #}
+{# responsable_laboratoire/demandes.html.twig #}
 {% extends 'base.html.twig' %}
 
-{% block title %}Demandes d'analyse - Laboratoire{% endblock %}
+{% block title %}Demandes d'analyse - Responsable laboratoire{% endblock %}
 
 {% block stylesheets %}
     {# Google Web Fonts #}
@@ -41,18 +41,6 @@
             box-shadow: var(--shadow-md);
             position: relative;
             overflow: hidden;
-        }
-        
-        .page-header::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            right: 0;
-            width: 300px;
-            height: 300px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 50%;
-            transform: translate(30%, -30%);
         }
         
         .page-header::after {
@@ -274,6 +262,25 @@
             box-shadow: 0 2px 10px rgba(0,0,0,0.08);
             margin-bottom: 2rem;
         }
+
+        .filter-bar .form-select,
+        .filter-bar .form-control {
+            height: 40px;
+            border-radius: 10px;
+        }
+
+        .filter-bar .btn {
+            height: 40px;
+            border-radius: 10px;
+            font-weight: 600;
+        }
+
+        .header-actions .btn {
+            font-size: 0.85rem;
+            font-weight: 600;
+            border-radius: 10px;
+            padding: 0.35rem 0.75rem;
+        }
         
         .user-avatar {
             width: 40px;
@@ -310,15 +317,54 @@
     </style>
 {% endblock %}
 
+{% block javascripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const form = document.querySelector('.filter-bar form');
+        if (!form) return;
+
+        const inputs = form.querySelectorAll('select');
+        let debounceTimer;
+
+        const submitForm = () => {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => form.submit(), 250);
+        };
+
+        inputs.forEach((input) => {
+            input.addEventListener('change', submitForm);
+        });
+    });
+</script>
+{% endblock %}
+
 {% block body %}
+{% set demandes = demandes|default(demande_analyses|default([])) %}
+{% set stats = stats|default({
+    'total': demandes|length,
+    'en_attente': demandes|filter(d => d.resultatPdf is null)|length,
+    'envoye': demandes|filter(d => d.resultatPdf is not null)|length
+}) %}
+{% set statut_filter = statut_filter|default('') %}
+{% set type_bilan_filter = type_bilan_filter|default('') %}
+{% set priorite_filter = priorite_filter|default('') %}
+{% set date_filter = date_filter|default('') %}
+{% set sort = sort|default('date') %}
+{% set dir = dir|default('desc') %}
+{% set pagination = pagination|default({
+    'page': 1,
+    'per_page': 6,
+    'total': stats.total ?? demandes|length,
+    'total_pages': 1
+}) %}
 <div class="container-fluid py-4">
-    {# En-tête de page #}
+    {# En-tete de page #}
     <div class="page-header">
         <div class="container">
             <div class="d-flex justify-content-between align-items-center">
                 <div>
                     <h1><i class="fas fa-vial me-2"></i>Demandes d'analyse</h1>
-                    <p class="lead mb-0">Gestion des demandes d'analyse du laboratoire</p>
+                    <p class="lead mb-0">Gestion des demandes d'analyse de votre laboratoire</p>
                 </div>
                 <div class="d-flex align-items-center">
                 <div class="user-avatar me-3">
@@ -337,8 +383,19 @@
                         {% endif %}
                     </div>
                     <small class="text-white-50">
-                        {% if app.user %}Connecté{% else %}Session{% endif %}
+                        {% if app.user %}Connecte{% else %}Session{% endif %}
                     </small>
+                </div>
+                <div class="ms-3 header-actions d-flex flex-wrap gap-2">
+                    <a class="btn btn-light" href="{{ path('app_profile') }}">
+                        <i class="fas fa-user me-1"></i>Mon profil
+                    </a>
+                    <a class="btn btn-light" href="{{ path('app_responsable_labo_edit') }}">
+                        <i class="fas fa-flask me-1"></i>Modifier laboratoire
+                    </a>
+                    <a class="btn btn-outline-light" href="{{ path('app_logout') }}">
+                        <i class="fas fa-sign-out-alt me-1"></i>Deconnexion
+                    </a>
                 </div>
             </div>
             </div>
@@ -347,24 +404,26 @@
 
     <div class="container">
         {# Cartes de statistiques #}
+        {% set total_count = stats.total ?? demandes|length %}
+        {% set pending_count = stats.en_attente ?? (demandes|filter(d => d.resultatPdf is null)|length) %}
+        {% set sent_count = stats.envoye ?? (demandes|filter(d => d.resultatPdf is not null)|length) %}
+
         <div class="row mb-4">
             <div class="col-md-3">
                 <div class="card stats-card">
-                    <div class="number">{{ demande_analyses|length }}</div>
+                    <div class="number">{{ total_count }}</div>
                     <div class="label">Total Demandes</div>
                 </div>
             </div>
             <div class="col-md-3">
                 <div class="card stats-card">
-                    {% set pending = demande_analyses|filter(d => d.resultatPdf is null)|length %}
-                    <div class="number">{{ pending }}</div>
+                    <div class="number">{{ pending_count }}</div>
                     <div class="label">En attente</div>
                 </div>
             </div>
             <div class="col-md-3">
                 <div class="card stats-card">
-                    {% set sent = demande_analyses|filter(d => d.resultatPdf is not null)|length %}
-                    <div class="number">{{ sent }}</div>
+                    <div class="number">{{ sent_count }}</div>
                     <div class="label">Envoyees</div>
                 </div>
             </div>
@@ -372,42 +431,38 @@
 
         {# Barre de filtres #}
         <div class="filter-bar">
-            <div class="row align-items-center">
-                <div class="col-md-6">
-                    <h5 class="mb-0"><i class="fas fa-filter me-2"></i>Filtres</h5>
-                </div>
-                <div class="col-md-6 text-end">
-                    <div class="btn-group">
-                        <button class="btn btn-outline-primary btn-sm"><i class="fas fa-download me-1"></i> Exporter</button>
-                        <button class="btn btn-outline-secondary btn-sm"><i class="fas fa-print me-1"></i> Imprimer</button>
-                        
-                    </div>
-                </div>
+            <div class="d-flex align-items-center justify-content-between mb-3">
+                <h5 class="mb-0"><i class="fas fa-filter me-2"></i>Filtres</h5>
             </div>
-            <hr class="my-3">
-            <div class="row g-2">
+            <form method="get" action="{{ path('app_responsable_labo_demandes') }}" class="row g-2">
+                <input type="hidden" name="sort" value="{{ sort|default('date') }}">
+                <input type="hidden" name="dir" value="{{ dir|default('desc') }}">
+                <input type="hidden" name="page" value="1">
                 <div class="col-md-3">
-                    <select class="form-select form-select-sm">
-                        <option>Tous les statuts</option>
-                        <option>En attente</option>
-                        <option>Envoye</option>
+                    <label class="form-label small text-muted" for="statut">Statut</label>
+                    <select class="form-select form-select-sm" id="statut" name="statut">
+                        <option value="">Tous les statuts</option>
+                        <option value="en_attente" {{ statut_filter == 'en_attente' ? 'selected' : '' }}>En attente</option>
+                        <option value="envoye" {{ statut_filter == 'envoye' ? 'selected' : '' }}>Envoye</option>
                     </select>
                 </div>
                 <div class="col-md-3">
-                    <select class="form-select form-select-sm">
-                        <option>Toutes les priorités</option>
-                        <option>Haute</option>
-                        <option>Normale</option>
-                        <option>Basse</option>
+                    <label class="form-label small text-muted" for="priorite">Priorite</label>
+                    <select class="form-select form-select-sm" id="priorite" name="priorite">
+                        <option value="">Toutes les priorites</option>
+                        <option value="Haute" {{ priorite_filter == 'Haute' ? 'selected' : '' }}>Haute</option>
+                        <option value="Normale" {{ priorite_filter == 'Normale' ? 'selected' : '' }}>Normale</option>
+                        <option value="Basse" {{ priorite_filter == 'Basse' ? 'selected' : '' }}>Basse</option>
                     </select>
                 </div>
                 <div class="col-md-3">
-                    <input type="date" class="form-control form-control-sm" placeholder="Date début">
+                    <label class="form-label small text-muted" for="date_demande">Date</label>
+                    <input type="date" class="form-control form-control-sm" id="date_demande" name="date" value="{{ date_filter|default('') }}">
                 </div>
-                <div class="col-md-3">
-                    <button class="btn btn-primary btn-sm w-100"><i class="fas fa-search me-1"></i> Appliquer</button>
+                <div class="col-md-3 d-flex align-items-end">
+                    <button class="btn btn-primary btn-sm w-100" type="submit"><i class="fas fa-search me-1"></i> Appliquer</button>
                 </div>
-            </div>
+            </form>
         </div>
 
         {# Liste des demandes #}
@@ -421,16 +476,11 @@
                 </div>
             </div>
             <div class="card-body p-0">
-                {% if demande_analyses is empty %}
+                {% if demandes is empty %}
                     <div class="empty-state">
                         <i class="fas fa-vial"></i>
                         <h4 class="mt-3">Aucune demande d'analyse</h4>
-                        <p class="text-muted">Aucune demande n'a été trouvée pour votre laboratoire.</p>
-                        {% if is_granted('ROLE_RESPONSABLE_LABO') %}
-                            <a href="{{ path('app_demande_analyse_new') }}" class="btn btn-primary mt-2">
-                                <i class="fas fa-plus me-1"></i> Créer la première demande
-                            </a>
-                        {% endif %}
+                        <p class="text-muted">Aucune demande n'a ete trouvee pour votre laboratoire.</p>
                     </div>
                 {% else %}
                     <div class="table-responsive">
@@ -439,15 +489,15 @@
                                 <tr class="bg-light">
                                     <th width="60">ID</th>
                                     <th>Patient</th>
-                                    <th>Médecin Prescripteur</th>
-                                    <th>Date Demande</th>
-                                    <th>Priorité</th>
+                                    <th>Medecin Prescripteur</th>
+                                    <th>Date Programmee</th>
+                                    <th>Priorite</th>
                                     <th>Statut</th>
                                     <th width="220">Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {% for demande in demande_analyses %}
+                                {% for demande in demandes %}
                                     <tr class="demande-item">
                                         <td class="fw-bold">#{{ demande.id|slice(0, 8) }}</td>
                                         <td>
@@ -464,7 +514,7 @@
                                                         {% if demande.patient %}
                                                             {{ demande.patient.nom }} {{ demande.patient.prenom }}
                                                         {% else %}
-                                                            <span class="text-muted">Non renseigné</span>
+                                                            <span class="text-muted">Non renseigne</span>
                                                         {% endif %}
                                                     </div>
                                                     {% if demande.patient and demande.patient.dateNaissance %}
@@ -478,14 +528,14 @@
                                         <td>
                                             {% if demande.medecin %}
                                                 <div class="fw-bold">Dr. {{ demande.medecin.nom }}</div>
-                                                <small class="text-muted">{{ demande.medecin.specialite ?? 'Généraliste' }}</small>
+                                                <small class="text-muted">{{ demande.medecin.specialite ?? 'Generaliste' }}</small>
                                             {% else %}
-                                                <span class="text-muted">Non assigné</span>
+                                                <span class="text-muted">Non assigne</span>
                                             {% endif %}
                                         </td>
                                         <td>
-                                            <div class="fw-bold">{{ demande.dateDemande ? demande.dateDemande|date('d/m/Y') : '-' }}</div>
-                                            <small class="text-muted">{{ demande.dateDemande ? demande.dateDemande|date('H:i') : '' }}</small>
+                                            <div class="fw-bold">{{ demande.programmeLe ? demande.programmeLe|date('d/m/Y') : '-' }}</div>
+                                            <small class="text-muted">{{ demande.programmeLe ? demande.programmeLe|date('H:i') : '' }}</small>
                                         </td>
                                         <td>
                                             {% set priority_class = {
@@ -514,8 +564,8 @@
                                         <td>
                                             <div class="btn-group btn-group-sm">
                                                 {% if demande.resultatPdf %}
-                                                    <a href="{{ asset(demande.resultatPdf) }}" 
-                                                       class="btn btn-action btn-view" 
+                                                    <a href="{{ asset(demande.resultatPdf) }}"
+                                                       class="btn btn-action btn-view"
                                                        title="Voir PDF"
                                                        target="_blank"
                                                        rel="noopener">
@@ -526,15 +576,12 @@
                                                         <i class="fas fa-file-pdf"></i>
                                                     </button>
                                                 {% endif %}
-                                                
-                                                {# Vérifie si le responsable appartient au labo de la demande #}
-                                                {% if is_granted('ROLE_RESPONSABLE_LABO') and app.user.laboratoire and demande.laboratoire and app.user.laboratoire.id == demande.laboratoire.id %}
-                                                    <a href="{{ path('app_responsable_labo_demande_edit', {'id': demande.id}) }}"
-                                                       class="btn btn-action btn-upload"
-                                                       title="Uploader resultat PDF">
-                                                        <i class="fas fa-upload"></i>
-                                                    </a>
-                                                {% endif %}
+
+                                                <a href="{{ path('app_responsable_labo_demande_edit', {'id': demande.id}) }}"
+                                                   class="btn btn-action btn-upload"
+                                                   title="Uploader resultat PDF">
+                                                    <i class="fas fa-upload"></i>
+                                                </a>
                                             </div>
                                         </td>
                                     </tr>
@@ -544,26 +591,65 @@
                     </div>
                 {% endif %}
             </div>
-            
-            {% if demande_analyses|length > 0 %}
+
+            {% if demandes|length > 0 %}
                 <div class="card-footer bg-white">
                     <div class="d-flex justify-content-between align-items-center">
                         <div class="text-muted small">
-                            Affichage de {{ demande_analyses|length }} demande(s)
+                            {% set start_index = ((pagination.page - 1) * pagination.per_page) + 1 %}
+                            {% set end_index = pagination.page * pagination.per_page %}
+                            {% if end_index > pagination.total %}{% set end_index = pagination.total %}{% endif %}
+                            Affichage de {{ start_index }} a {{ end_index }} sur {{ pagination.total }} demande(s)
                         </div>
-                        <nav>
-                            <ul class="pagination pagination-sm mb-0">
-                                <li class="page-item disabled">
-                                    <a class="page-link" href="#"><i class="fas fa-chevron-left"></i></a>
-                                </li>
-                                <li class="page-item active"><a class="page-link" href="#">1</a></li>
-                                <li class="page-item"><a class="page-link" href="#">2</a></li>
-                                <li class="page-item"><a class="page-link" href="#">3</a></li>
-                                <li class="page-item">
-                                    <a class="page-link" href="#"><i class="fas fa-chevron-right"></i></a>
-                                </li>
-                            </ul>
-                        </nav>
+                        {% if pagination.total_pages > 1 %}
+                            <nav>
+                                <ul class="pagination pagination-sm mb-0">
+                                    {% set prev_page = pagination.page - 1 %}
+                                    <li class="page-item {{ pagination.page <= 1 ? 'disabled' : '' }}">
+                                        <a class="page-link" href="{{ path('app_responsable_labo_demandes', {
+                                            page: prev_page < 1 ? 1 : prev_page,
+                                            statut: statut_filter,
+                                            type_bilan: type_bilan_filter,
+                                            priorite: priorite_filter,
+                                            date: date_filter,
+                                            sort: sort,
+                                            dir: dir
+                                        }) }}">
+                                            <i class="fas fa-chevron-left"></i>
+                                        </a>
+                                    </li>
+
+                                    {% for p in 1..pagination.total_pages %}
+                                        <li class="page-item {{ p == pagination.page ? 'active' : '' }}">
+                                            <a class="page-link" href="{{ path('app_responsable_labo_demandes', {
+                                                page: p,
+                                                statut: statut_filter,
+                                                type_bilan: type_bilan_filter,
+                                                priorite: priorite_filter,
+                                                date: date_filter,
+                                                sort: sort,
+                                                dir: dir
+                                            }) }}">{{ p }}</a>
+                                        </li>
+                                    {% endfor %}
+
+                                    {% set next_page = pagination.page + 1 %}
+                                    <li class="page-item {{ pagination.page >= pagination.total_pages ? 'disabled' : '' }}">
+                                        <a class="page-link" href="{{ path('app_responsable_labo_demandes', {
+                                            page: next_page > pagination.total_pages ? pagination.total_pages : next_page,
+                                            statut: statut_filter,
+                                            type_bilan: type_bilan_filter,
+                                            priorite: priorite_filter,
+                                            date: date_filter,
+                                            sort: sort,
+                                            dir: dir
+                                        }) }}">
+                                            <i class="fas fa-chevron-right"></i>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </nav>
+                        {% endif %}
                     </div>
                 </div>
             {% endif %}
@@ -571,34 +657,4 @@
     </div>
 </div>
 
-{% block javascripts %}
-<script>
-    // Scripts pour les interactions
-    document.addEventListener('DOMContentLoaded', function() {
-        // Tooltips pour les boutons
-        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[title]'))
-        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-            return new bootstrap.Tooltip(tooltipTriggerEl)
-        });
-        
-        // Filtrage des demandes
-        document.querySelectorAll('.filter-bar select').forEach(select => {
-            select.addEventListener('change', function() {
-                // Implémentez ici la logique de filtrage
-                console.log('Filtre changé:', this.value);
-            });
-        });
-        
-        // Animation pour les lignes
-        document.querySelectorAll('.demande-item').forEach(row => {
-            row.addEventListener('click', function(e) {
-                if (!e.target.closest('.btn-group')) {
-                    const id = this.querySelector('td').textContent.replace('#', '');
-                    window.location.href = `{{ path('app_demande_analyse_show', {'id': 'PLACEHOLDER'}) }}`.replace('PLACEHOLDER', id.trim());
-                }
-            });
-        });
-    });
-</script>
-{% endblock %}
 {% endblock %}

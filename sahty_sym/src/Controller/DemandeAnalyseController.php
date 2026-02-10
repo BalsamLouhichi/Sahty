@@ -7,6 +7,7 @@ use App\Entity\DemandeAnalyse;
 use App\Entity\Patient;
 use App\Entity\Laboratoire;
 use App\Entity\Medecin;
+use App\Entity\ResponsableLaboratoire;
 use App\Form\DemandeAnalyseType;
 use App\Repository\DemandeAnalyseRepository;
 use Doctrine\ORM\EntityManagerInterface;
@@ -17,6 +18,7 @@ use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 use Symfony\Component\Security\Core\Security;
 use Symfony\Component\Security\Core\User\UserInterface;
+use Symfony\Component\HttpFoundation\JsonResponse;
 
 #[Route('/demande-analyse')]
 class DemandeAnalyseController extends AbstractController
@@ -91,6 +93,20 @@ class DemandeAnalyseController extends AbstractController
             return $this->redirectToRoute('app_demande_analyse_mes_demandes');
         }
 
+        // Pour les responsables de laboratoire, voir seulement les demandes du labo
+        if ($user instanceof ResponsableLaboratoire) {
+            $laboratoire = $user->getLaboratoire();
+            $demandes = $laboratoire
+                ? $demandeAnalyseRepository->findBy(['laboratoire' => $laboratoire])
+                : [];
+
+            return $this->render('responsable_laboratoire/demandes.html.twig', [
+                'demande_analyses' => $demandes,
+                'controller_name' => 'DemandeAnalyseController',
+                'test_mode' => $this->isTestMode(),
+            ]);
+        }
+
         // Pour les médecins, voir seulement leurs propres demandes
         if ($user instanceof Medecin) {
             $demandes = $demandeAnalyseRepository->findBy(['medecin' => $user]);
@@ -99,7 +115,7 @@ class DemandeAnalyseController extends AbstractController
             $demandes = $demandeAnalyseRepository->findAll();
         }
 
-        return $this->render('demande_analyse/list_demande.html.twig', [
+        return $this->render('demande_analyse/index.html.twig', [
             'demande_analyses' => $demandes,
             'controller_name' => 'DemandeAnalyseController',
             'test_mode' => $this->isTestMode(),
@@ -110,32 +126,75 @@ class DemandeAnalyseController extends AbstractController
      * Liste des demandes du patient connecté
      */
     #[Route('/mes-demandes', name: 'app_demande_analyse_mes_demandes', methods: ['GET'])]
-    public function mesDemandes(DemandeAnalyseRepository $demandeAnalyseRepository): Response
+    public function mesDemandes(Request $request, DemandeAnalyseRepository $demandeAnalyseRepository): Response
+    {
+        [$demandes, $typeBilanOptions, $typeBilanFilter] = $this->buildMesDemandesData($request, $demandeAnalyseRepository);
+
+        return $this->render('demande_analyse/mes_demandes.html.twig', [
+            'demandes' => $demandes,
+            'type_bilan_filter' => $typeBilanFilter,
+            'type_bilan_options' => $typeBilanOptions,
+            'test_mode' => $this->isTestMode(),
+        ]);
+    }
+
+    #[Route('/mes-demandes/filter', name: 'app_demande_analyse_mes_demandes_filter', methods: ['GET'])]
+    public function mesDemandesFilter(Request $request, DemandeAnalyseRepository $demandeAnalyseRepository): JsonResponse
+    {
+        [$demandes, $typeBilanOptions, $typeBilanFilter] = $this->buildMesDemandesData($request, $demandeAnalyseRepository);
+
+        $html = $this->renderView('demande_analyse/_mes_demandes_results.html.twig', [
+            'demandes' => $demandes,
+        ]);
+
+        $countText = $demandes ? sprintf('%d demande(s) trouvée(s)', count($demandes)) : 'Aucune demande pour le moment';
+
+        return $this->json([
+            'html' => $html,
+            'count_text' => $countText,
+        ]);
+    }
+
+    private function buildMesDemandesData(Request $request, DemandeAnalyseRepository $demandeAnalyseRepository): array
     {
         $user = $this->getTestUser();
-        
+
         if (!$user instanceof Patient) {
-            // En mode test, on crée un faux patient si nécessaire
             if ($this->isTestMode()) {
                 $user = $this->entityManager->getRepository(Patient::class)->findOneBy([]);
                 if (!$user) {
-                    $this->addFlash('warning', 'Aucun patient trouvé pour le test. Créez d\'abord un patient.');
-                    return $this->redirectToRoute('app_demande_analyse_new');
+                    throw new AccessDeniedException('Aucun patient trouvé pour le test.');
                 }
             } else {
                 throw new AccessDeniedException('Accès réservé aux patients.');
             }
         }
 
-        $demandes = $demandeAnalyseRepository->findBy(
+        $allDemandes = $demandeAnalyseRepository->findBy(
             ['patient' => $user],
-            ['date_demande' => 'DESC']
+            ['programme_le' => 'DESC']
         );
 
-        return $this->render('demande_analyse/mes_demandes.html.twig', [
-            'demandes' => $demandes,
-            'test_mode' => $this->isTestMode(),
-        ]);
+        $typeBilanFilter = trim((string) $request->query->get('type_bilan', ''));
+        $demandes = $allDemandes;
+
+        if ($typeBilanFilter !== '') {
+            $demandes = array_values(array_filter(
+                $allDemandes,
+                static fn (DemandeAnalyse $demande) => $demande->getTypeBilan() === $typeBilanFilter
+            ));
+        }
+
+        $typeBilanOptions = [];
+        foreach ($allDemandes as $demande) {
+            $type = $demande->getTypeBilan();
+            if ($type) {
+                $typeBilanOptions[$type] = $type;
+            }
+        }
+        ksort($typeBilanOptions);
+
+        return [$demandes, $typeBilanOptions, $typeBilanFilter];
     }
 
     /**
@@ -154,13 +213,10 @@ class DemandeAnalyseController extends AbstractController
             throw $this->createNotFoundException('Laboratoire non trouvé.');
         }
 
+        $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
+
         // Si c'est une requête POST (formulaire simple)
         if ($request->isMethod('POST')) {
-            // En mode test, on autorise sans authentification
-            if (!$this->isTestMode()) {
-                $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
-            }
-            
             // Vérifier le token CSRF
             $submittedToken = $request->request->get('_token');
             if (!$this->isCsrfTokenValid('demande_analyse_new', $submittedToken)) {
@@ -178,23 +234,23 @@ class DemandeAnalyseController extends AbstractController
             $demandeAnalyse->setTypeBilan($typeAnalyse ?? 'Analyse non spécifiée');
             
             // Associer le patient
-            $user = $this->getTestUser();
+            $user = $this->getUser();
             if ($user instanceof Patient) {
                 $demandeAnalyse->setPatient($user);
                 // IMPORTANT : Ne pas définir de médecin automatiquement
                 // Le médecin reste null (optionnel)
-            } else {
-                // En mode test, chercher un patient par défaut
-                $defaultPatient = $entityManager->getRepository(Patient::class)->findOneBy([]);
-                if ($defaultPatient) {
-                    $demandeAnalyse->setPatient($defaultPatient);
-                    // IMPORTANT : Ne pas définir de médecin automatiquement
-                    // Le médecin reste null (optionnel)
-                }
             }
             
             // NOTE IMPORTANTE : On ne définit PAS de médecin automatiquement
             // Le champ medecin est optionnel et reste null
+
+            $medecinId = $request->request->get('medecin_id');
+            if ($medecinId) {
+                $medecin = $entityManager->getRepository(Medecin::class)->find($medecinId);
+                if ($medecin) {
+                    $demandeAnalyse->setMedecin($medecin);
+                }
+            }
             
             // Ajouter les notes
             $notes = $request->request->get('notes');
@@ -253,18 +309,11 @@ class DemandeAnalyseController extends AbstractController
         $demandeAnalyse = new DemandeAnalyse();
         $demandeAnalyse->setLaboratoire($laboratoire);
         
-        $user = $this->getTestUser();
+        $user = $this->getUser();
         
         if ($user instanceof Patient) {
             $demandeAnalyse->setPatient($user);
             // IMPORTANT : Ne pas définir de médecin automatiquement
-        } else {
-            // En mode test, chercher un patient par défaut
-            $defaultPatient = $entityManager->getRepository(Patient::class)->findOneBy([]);
-            if ($defaultPatient) {
-                $demandeAnalyse->setPatient($defaultPatient);
-                // IMPORTANT : Ne pas définir de médecin automatiquement
-            }
         }
 
         $userRole = $user ? $user->getRoles()[0] : 'ROLE_PATIENT';
@@ -315,17 +364,12 @@ class DemandeAnalyseController extends AbstractController
             $this->checkAccess($demandeAnalyse);
         }
         
-        // Empêcher la modification si la demande est déjà envoyée
-        if ($demandeAnalyse->getStatut() === 'envoye') {
-            $this->addFlash('warning', 'Cette demande a déjà été envoyée au laboratoire et ne peut plus être modifiée.');
+        // Empêcher la modification si un resultat PDF existe
+        if ($demandeAnalyse->getResultatPdf()) {
+            $this->addFlash('warning', 'Cette demande a déjà un resultat et ne peut plus être modifiée.');
             return $this->redirectToRoute('app_demande_analyse_show', ['id' => $demandeAnalyse->getId()]);
         }
         
-        // Empêcher la modification si la demande est annulée
-        if ($demandeAnalyse->getStatut() === 'annule') {
-            $this->addFlash('warning', 'Cette demande a été annulée et ne peut plus être modifiée.');
-            return $this->redirectToRoute('app_demande_analyse_show', ['id' => $demandeAnalyse->getId()]);
-        }
 
         $user = $this->getTestUser();
         $userRole = $user ? $user->getRoles()[0] : 'ROLE_PATIENT';
@@ -378,9 +422,9 @@ class DemandeAnalyseController extends AbstractController
             $this->checkAccess($demandeAnalyse);
         }
         
-        // Empêcher la suppression si la demande est déjà envoyée
-        if ($demandeAnalyse->getStatut() === 'envoye') {
-            $this->addFlash('warning', 'Cette demande a déjà été envoyée au laboratoire et ne peut plus être supprimée.');
+        // Empêcher la suppression si un resultat PDF existe
+        if ($demandeAnalyse->getResultatPdf()) {
+            $this->addFlash('warning', 'Cette demande a déjà un resultat et ne peut plus être supprimée.');
             
             $user = $this->getTestUser();
             if ($user instanceof Patient || $this->isTestMode()) {
@@ -390,17 +434,6 @@ class DemandeAnalyseController extends AbstractController
             }
         }
         
-        // Empêcher la suppression si la demande est annulée
-        if ($demandeAnalyse->getStatut() === 'annule') {
-            $this->addFlash('warning', 'Cette demande a été annulée et ne peut plus être supprimée.');
-            
-            $user = $this->getTestUser();
-            if ($user instanceof Patient || $this->isTestMode()) {
-                return $this->redirectToRoute('app_demande_analyse_mes_demandes');
-            } else {
-                return $this->redirectToRoute('app_demande_analyse_index');
-            }
-        }
 
         if ($this->isCsrfTokenValid('delete'.$demandeAnalyse->getId(), $request->request->get('_token'))) {
             try {
@@ -443,19 +476,18 @@ class DemandeAnalyseController extends AbstractController
         }
 
         if ($this->isCsrfTokenValid('changer-statut'.$demandeAnalyse->getId(), $request->request->get('_token'))) {
-            $statutsValides = ['en_attente', 'programme', 'envoye', 'annule'];
-            
-            if (!in_array($statut, $statutsValides)) {
+            $statutsValides = ['en_attente', 'envoye'];
+
+            if (!in_array($statut, $statutsValides, true)) {
                 $this->addFlash('error', 'Statut invalide.');
                 return $this->redirectToRoute('app_demande_analyse_show', ['id' => $demandeAnalyse->getId()]);
             }
 
+            $statut = $demandeAnalyse->getResultatPdf() ? 'envoye' : 'en_attente';
             $demandeAnalyse->setStatut($statut);
 
-            // Mettre à jour les dates en fonction du statut
-            if ($statut === 'programme' && !$demandeAnalyse->getProgrammeLe()) {
-                $demandeAnalyse->setProgrammeLe(new \DateTime());
-            } elseif ($statut === 'envoye' && !$demandeAnalyse->getEnvoyeLe()) {
+            // Mettre à jour la date d'envoi si resultat PDF disponible
+            if ($statut === 'envoye' && !$demandeAnalyse->getEnvoyeLe()) {
                 $demandeAnalyse->setEnvoyeLe(new \DateTime());
             }
 

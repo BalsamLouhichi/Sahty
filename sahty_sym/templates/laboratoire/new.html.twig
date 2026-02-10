@@ -4,7 +4,7 @@
 
 {% extends 'base.html.twig' %}
 
-{% block title %}Ajouter un laboratoire{% endblock %}
+{% block title %}{{ is_edit|default(false) ? 'Modifier le laboratoire' : 'Ajouter un laboratoire' }}{% endblock %}
 
 {% block stylesheets %}
     {{ parent() }}
@@ -177,9 +177,14 @@
         <div class="container py-5">
             <div class="row justify-content-center">
                 <div class="col-lg-8 text-center">
-                    <h1 class="display-4 text-white mb-3">Ajouter un nouveau laboratoire</h1>
+                    <h1 class="display-4 text-white mb-3">
+                        {{ is_edit|default(false) ? 'Modifier le laboratoire' : 'Ajouter un nouveau laboratoire' }}
+                    </h1>
                     <p class="text-white-50 mb-0">
-                        Remplissez les informations pour créer un nouveau laboratoire dans notre système.
+                        {{ is_edit|default(false)
+                            ? 'Mettez a jour les informations de votre laboratoire.'
+                            : 'Remplissez les informations pour creer un nouveau laboratoire dans notre systeme.'
+                        }}
                     </p>
                 </div>
             </div>
@@ -199,7 +204,7 @@
                                 <div class="text-muted">Les champs marqués * sont obligatoires</div>
                             </div>
 
-                            <a href="{{ path('app_labo_index') }}" class="btn btn-outline-primary">
+                            <a href="{{ return_path|default(path('app_labo_index')) }}" class="btn btn-outline-primary">
                                 <i class="fa fa-arrow-left me-2"></i>Retour à la liste
                             </a>
                         </div>
@@ -504,11 +509,11 @@
 
                             {# --- Boutons d'action --- #}
                             <div class="col-12 d-flex justify-content-between mt-4 pt-4 border-top">
-                                <a href="{{ path('app_labo_index') }}" class="btn btn-lg btn-outline-secondary px-5">
+                                <a href="{{ return_path|default(path('app_labo_index')) }}" class="btn btn-lg btn-outline-secondary px-5">
                                     <i class="fa fa-times me-2"></i>Annuler
                                 </a>
                                 <button class="btn btn-lg btn-primary px-5" type="submit">
-                                    <i class="fa fa-save me-2"></i>Enregistrer le laboratoire
+                                    <i class="fa fa-save me-2"></i>{{ is_edit|default(false) ? 'Enregistrer les modifications' : 'Enregistrer le laboratoire' }}
                                 </button>
                             </div>
 

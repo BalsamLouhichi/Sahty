@@ -187,11 +187,6 @@
         @media (max-width: 768px){
             .protocol-grid{ grid-template-columns: 1fr; }
             .labo-main-image{ height: 250px; }
-            .test-mode-badge {
-                top: 70px;
-                right: 10px;
-                font-size: 0.7rem;
-            }
         }
     </style>
 </head>
@@ -200,11 +195,6 @@
 
 {# ✅ Topbar + Navbar (ton include) #}
 {% include 'partials/header.html.twig' %}
-
-{# Badge mode test #}
-<div class="test-mode-badge">
-    <i class="fas fa-flask me-1"></i> MODE TEST
-</div>
 
 {# ===========================
    Header (dynamique)
@@ -445,24 +435,18 @@
                         Planifiez vos tests de laboratoire en ligne.
                     </p>
 
-                    {# Message mode test #}
-                    <div class="test-mode-info mb-4">
-                        <i class="fas fa-flask text-warning me-2"></i>
-                        <strong>Mode test activé</strong> - Vous pouvez réserver sans connexion.
-                        La demande sera associée à un patient par défaut.
-                    </div>
-
+                    {% if app.user %}
                     <form method="post" action="{{ path('app_demande_analyse_new_for_lab', {'laboratoireId': laboratoire.id}) }}">
                         
                         {# Nom complet #}
-                        <div class="mb-3">
+                        {#<div class="mb-3">
                             <label class="form-label text-white">Nom complet *</label>
                             <input type="text" class="form-control" name="nom" 
                                 placeholder="Votre Nom" required>
                         </div>
 
                         {# Téléphone #}
-                        <div class="mb-3">
+                        {# <div class="mb-3">
                             <label class="form-label text-white">Téléphone *</label>
                             <input type="tel" class="form-control" name="telephone" 
                                 placeholder="Ex: 06123456" 
@@ -472,7 +456,7 @@
                         </div>
 
                         {# Email #}
-                        <div class="mb-3">
+                        {# <div class="mb-3">
                             <label class="form-label text-white">Email *</label>
                             <input type="email" class="form-control" name="email" 
                                 placeholder="votre@email.com" required>
@@ -613,13 +597,21 @@
                             <i class="fa fa-calendar-check me-2"></i>Prendre Rendez-vous
                         </button>
                         
-                        <div class="text-center mt-3">
-                            <small class="text-white-50">
-                                <i class="fas fa-info-circle me-1"></i>
-                                En mode test, pas besoin de connexion
-                            </small>
-                        </div>
                     </form>
+                    {% else %}
+                        <div class="alert alert-warning mb-0">
+                            <i class="fas fa-lock me-2"></i>
+                            Vous devez vous connecter ou vous inscrire pour reserver un test.
+                        </div>
+                        <div class="d-flex gap-2 mt-3">
+                            <a class="btn btn-light w-100" href="{{ path('app_login') }}">
+                                Se connecter
+                            </a>
+                            <a class="btn btn-outline-light w-100" href="{{ path('app_signup') }}">
+                                S'inscrire
+                            </a>
+                        </div>
+                    {% endif %}
                 </div>
 
                 {# Contact Information (dynamique) #}
@@ -896,17 +888,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Mode test indicator
-    const testIndicator = document.querySelector('.test-mode-badge');
-    if (testIndicator) {
-        testIndicator.addEventListener('click', function() {
-            alert('Mode test activé :\n\n' +
-                  '• Pas besoin de connexion\n' +
-                  '• Utilisation d\'un patient par défaut\n' +
-                  '• Les données sont sauvegardées normalement\n' +
-                  '• En production, l\'authentification sera requise');
-        });
-    }
 });
 </script>
 

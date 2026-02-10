@@ -101,182 +101,44 @@
             <p class="mb-0">We have multiple laboratory locations across the city for your convenience.</p>
         </div>
 
-        <div class="row g-4">
-
-            {# Si tu passes "laboratoires" depuis le controller #}
-            {% if laboratoires is defined and laboratoires|length > 0 %}
-                {% for lab in laboratoires %}
-                    <div class="col-lg-4 col-md-6">
-                        <div class="labo-card">
-                            <img class="labo-img" src="{{ asset(lab.imagePath ?? 'img/lab.jpg') }}" alt="{{ lab.nom ?? 'Laboratory' }}">
-                            <div class="labo-icon"><i class="{{ lab.icon ?? 'fa fa-hospital' }}"></i></div>
-                            <div class="p-4">
-                                <h3 class="mb-2">{{ lab.nom }}</h3>
-                                <p class="labo-location mb-3">
-                                    <i class="fa fa-map-marker-alt text-primary me-2"></i>{{ lab.adresse ?? '' }}
-                                </p>
-                                <p class="mb-3">{{ lab.description ?? '' }}</p>
-
-                                <div class="d-flex justify-content-between mt-4">
-                                    <a href="#appointment" class="btn btn-primary">Book Now</a>
-                                    <a href="{{ path('app_labo_show', {id: lab.id}) }}" class="btn btn-outline-primary">View Details</a>
-                                </div>
-                            </div>
-                        </div>
+        <div class="row mb-4">
+            <div class="col-12">
+                <form method="get" class="row g-3 justify-content-center">
+                    <div class="col-md-4">
+                        <label class="form-label" for="filter_name">Laboratory name</label>
+                        <input class="form-control" id="filter_name" name="name" type="text" value="{{ filter_name|default('') }}" placeholder="Search by name">
                     </div>
-                {% endfor %}
-            {% endif %}
+                    <div class="col-md-3">
+                        <label class="form-label" for="filter_ville">Location</label>
+                        <select class="form-select" id="filter_ville" name="ville">
+                            <option value="">All</option>
+                            {% for city in filter_villes|default([]) %}
+                                <option value="{{ city }}" {{ filter_ville == city ? 'selected' : '' }}>{{ city }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label" for="filter_type_bilan">Type bilan</label>
+                        <select class="form-select" id="filter_type_bilan" name="type_bilan">
+                            <option value="">All</option>
+                            {% for type in filter_type_bilans|default([]) %}
+                                <option value="{{ type }}" {{ filter_type_bilan == type ? 'selected' : '' }}>{{ type }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-2 d-flex align-items-end">
+                        <button class="btn btn-primary w-100" type="submit">Filter</button>
+                    </div>
+                </form>
+            </div>
+        </div>
 
+        <div class="row g-4" id="lab-cards">
+            {% include 'laboratoire/_lab_cards.html.twig' with { laboratoires: laboratoires } %}
         </div>
     </div>
 </div>
 
-{# ===== Appointment Start ===== #}
-<div class="container-fluid bg-primary my-5 py-5" id="appointment">
-    <div class="container py-5">
-        <div class="row gx-5">
-            <div class="col-lg-6 mb-5 mb-lg-0">
-                <div class="mb-4">
-                    <h5 class="d-inline-block text-white text-uppercase border-bottom border-5">Appointment</h5>
-                    <h1 class="display-4 text-white mb-0">Book Your Lab Test Today</h1>
-                </div>
-
-                <p class="text-white mb-5">
-                    Schedule your laboratory tests conveniently online. Choose your preferred location, date, and time.
-                    Our team will contact you to confirm your appointment.
-                </p>
-
-                <div class="row g-3">
-                    <div class="col-sm-6">
-                        <div class="d-flex align-items-center mb-3">
-                            <div class="flex-shrink-0 bg-light rounded-circle d-flex align-items-center justify-content-center"
-                                 style="width: 60px; height: 60px;">
-                                <i class="fa fa-calendar-check text-primary fs-4"></i>
-                            </div>
-                            <div class="ms-3">
-                                <h6 class="text-white">Easy Booking</h6>
-                                <p class="text-white-50 mb-0">Online appointment system</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="col-sm-6">
-                        <div class="d-flex align-items-center mb-3">
-                            <div class="flex-shrink-0 bg-light rounded-circle d-flex align-items-center justify-content-center"
-                                 style="width: 60px; height: 60px;">
-                                <i class="fa fa-clock text-primary fs-4"></i>
-                            </div>
-                            <div class="ms-3">
-                                <h6 class="text-white">Quick Results</h6>
-                                <p class="text-white-50 mb-0">Fast turnaround time</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="col-sm-6">
-                        <div class="d-flex align-items-center mb-3">
-                            <div class="flex-shrink-0 bg-light rounded-circle d-flex align-items-center justify-content-center"
-                                 style="width: 60px; height: 60px;">
-                                <i class="fa fa-user-md text-primary fs-4"></i>
-                            </div>
-                            <div class="ms-3">
-                                <h6 class="text-white">Expert Staff</h6>
-                                <p class="text-white-50 mb-0">Certified technicians</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="col-sm-6">
-                        <div class="d-flex align-items-center mb-3">
-                            <div class="flex-shrink-0 bg-light rounded-circle d-flex align-items-center justify-content-center"
-                                 style="width: 60px; height: 60px;">
-                                <i class="fa fa-file-medical text-primary fs-4"></i>
-                            </div>
-                            <div class="ms-3">
-                                <h6 class="text-white">Digital Reports</h6>
-                                <p class="text-white-50 mb-0">Online access to results</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-lg-6">
-                <div class="bg-white rounded p-5">
-                    <form method="post" action="#!">
-                        <div class="row g-3">
-                            <div class="col-12 col-sm-6">
-                                <input type="text" class="form-control bg-light border-0"
-                                       placeholder="Your Name" style="height: 55px;">
-                            </div>
-
-                            <div class="col-12 col-sm-6">
-                                <input type="email" class="form-control bg-light border-0"
-                                       placeholder="Your Email" style="height: 55px;">
-                            </div>
-
-                            <div class="col-12 col-sm-6">
-                                <input type="text" class="form-control bg-light border-0"
-                                       placeholder="Your Phone" style="height: 55px;">
-                            </div>
-
-                            <div class="col-12 col-sm-6">
-                                <select class="form-select bg-light border-0" style="height: 55px;">
-                                    <option selected>Select Laboratory</option>
-
-                                    {# ✅ Dynamique si tu as laboratoires en DB #}
-                                    {% if laboratoires is defined and laboratoires|length > 0 %}
-                                        {% for lab in laboratoires %}
-                                            <option value="{{ lab.id }}">{{ lab.nom }}</option>
-                                        {% endfor %}
-                                    {% else %}
-                                        {# ✅ Fallback statique (comme ton HTML) #}
-                                        <option value="1">Central Laboratory</option>
-                                        <option value="2">North District Lab</option>
-                                        <option value="3">West Medical Lab</option>
-                                        <option value="4">East Side Laboratory</option>
-                                        <option value="5">South Health Lab</option>
-                                        <option value="6">24/7 Emergency Lab</option>
-                                    {% endif %}
-                                </select>
-                            </div>
-
-                            <div class="col-12 col-sm-6">
-                                <input type="date" class="form-control bg-light border-0"
-                                       style="height: 55px;">
-                            </div>
-
-                            <div class="col-12 col-sm-6">
-                                <select class="form-select bg-light border-0" style="height: 55px;">
-                                    <option selected>Select Time</option>
-                                    <option value="1">08:00 AM</option>
-                                    <option value="2">09:00 AM</option>
-                                    <option value="3">10:00 AM</option>
-                                    <option value="4">11:00 AM</option>
-                                    <option value="5">12:00 PM</option>
-                                    <option value="6">01:00 PM</option>
-                                    <option value="7">02:00 PM</option>
-                                    <option value="8">03:00 PM</option>
-                                </select>
-                            </div>
-
-                            <div class="col-12">
-                                <textarea class="form-control bg-light border-0" rows="5"
-                                          placeholder="Special Instructions (if any)"></textarea>
-                            </div>
-
-                            <div class="col-12">
-                                <button class="btn btn-primary w-100 py-3" type="submit">Book Appointment</button>
-                            </div>
-                        </div>
-                    </form>
-                </div>
-            </div>
-
-        </div>
-    </div>
-</div>
-{# ===== Appointment End ===== #}
 
 
 {# ✅ Réutiliser ton footer #}
@@ -295,5 +157,63 @@
 <script src="{{ asset('lib/tempusdominus/js/moment-timezone.min.js') }}"></script>
 <script src="{{ asset('lib/tempusdominus/js/tempusdominus-bootstrap-4.min.js') }}"></script>
 <script src="{{ asset('js/main.js') }}"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const nameInput = document.getElementById('filter_name');
+    const citySelect = document.getElementById('filter_ville');
+    const typeSelect = document.getElementById('filter_type_bilan');
+    const cardsContainer = document.getElementById('lab-cards');
+
+    let debounceTimer;
+
+    const buildQuery = () => {
+        const params = new URLSearchParams();
+        if (nameInput && nameInput.value.trim() !== '') {
+            params.set('name', nameInput.value.trim());
+        }
+        if (citySelect && citySelect.value.trim() !== '') {
+            params.set('ville', citySelect.value.trim());
+        }
+        if (typeSelect && typeSelect.value.trim() !== '') {
+            params.set('type_bilan', typeSelect.value.trim());
+        }
+        return params.toString();
+    };
+
+    const fetchCards = () => {
+        const query = buildQuery();
+        const url = query ? `{{ path('app_labo_filter') }}?${query}` : `{{ path('app_labo_filter') }}`;
+
+        fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+            .then(response => response.text())
+            .then(html => {
+                if (cardsContainer) {
+                    cardsContainer.innerHTML = html;
+                }
+            })
+            .catch(() => {
+                if (cardsContainer) {
+                    cardsContainer.innerHTML = '<div class="col-12"><p class="text-center text-muted">Unable to load results.</p></div>';
+                }
+            });
+    };
+
+    const scheduleFetch = () => {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(fetchCards, 300);
+    };
+
+    if (nameInput) {
+        nameInput.addEventListener('input', scheduleFetch);
+    }
+    if (citySelect) {
+        citySelect.addEventListener('change', scheduleFetch);
+    }
+    if (typeSelect) {
+        typeSelect.addEventListener('change', scheduleFetch);
+    }
+});
+</script>
 </body>
 </html>

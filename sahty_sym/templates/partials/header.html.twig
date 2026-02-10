@@ -35,7 +35,7 @@
         <nav class="navbar navbar-expand-lg bg-white navbar-light py-3 py-lg-0">
             <a href="{{ path('app_home') }}" class="navbar-brand">
                 <h1 class="m-0 text-uppercase text-primary">
-                    <i class="fa fa-clinic-medical me-2"></i>Medinova
+                        <i class="fa fa-heartbeat me-2"></i>Sahty
                 </h1>
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse">
@@ -43,16 +43,23 @@
             </button>
             <div class="collapse navbar-collapse" id="navbarCollapse">
                 <div class="navbar-nav ms-auto py-0">
-                    <a href="#" class="nav-item nav-link active">Home</a>
+                    <a href="#" class="nav-item nav-link">Home</a>
                     <a href="#" class="nav-item nav-link">About</a>
                     <a href="#" class="nav-item nav-link">Service</a>
+                    <div class="nav-item dropdown">
+                        <a href="#" class="nav-link dropdown-toggle active" data-bs-toggle="dropdown">Laboratoire</a>
+                        <div class="dropdown-menu m-0">
+                            <a href="{{ app_url }}/laboratoire/" class="dropdown-item">Liste des laboratoires</a>
+                            <a href="{{ app_url }}/demande-analyse/mes-demandes" class="dropdown-item">Mes demandes</a>
+                        </div>
+                    </div>
                     <a href="#" class="nav-item nav-link">Pricing</a>
                     {# <a href="{{ path('app_home') }}" class="nav-item nav-link active">Home</a>
                     <a href="{{ path('app_about') }}" class="nav-item nav-link">About</a>
                     <a href="{{ path('app_service') }}" class="nav-item nav-link">Service</a>
                     <a href="{{ path('app_price') }}" class="nav-item nav-link">Pricing</a> #}
                     <div class="nav-item dropdown">
-                        <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown">Pages</a>
+                        <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown"></a>
                         <div class="dropdown-menu m-0">
                             <a href="#" class="dropdown-item">Blog Grid</a>
                             <a href="#" class="dropdown-item">Blog Detail</a>
@@ -71,6 +78,29 @@
                     <a href="#" class="nav-item nav-link">Contact</a>
                     
                     {# <a href="{{ path('app_contact') }}" class="nav-item nav-link">Contact</a> #}
+                </div>
+                <div class="d-flex align-items-center ms-3">
+                    {% if app.user %}
+                        <div class="nav-item dropdown">
+                            <a href="#" class="nav-link dropdown-toggle d-flex align-items-center gap-2" data-bs-toggle="dropdown">
+                                {% if app.user.photoProfil %}
+                                    <img src="{{ asset(app.user.photoProfil) }}" alt="Profil" style="width: 36px; height: 36px; border-radius: 50%; object-fit: cover;">
+                                {% else %}
+                                    <span class="d-inline-flex align-items-center justify-content-center" style="width: 36px; height: 36px; border-radius: 50%; background: var(--light); color: var(--primary);">
+                                        <i class="fa fa-user"></i>
+                                    </span>
+                                {% endif %}
+                                <span class="fw-semibold">{{ app.user.nomComplet }}</span>
+                            </a>
+                            <div class="dropdown-menu dropdown-menu-end m-0">
+                                <a href="{{ path('app_profile') }}" class="dropdown-item">Mon profil</a>
+                                <a href="{{ path('app_logout') }}" class="dropdown-item">Se deconnecter</a>
+                            </div>
+                        </div>
+                    {% else %}
+                        <a href="{{ path('app_signup') }}" class="btn btn-outline-primary me-2">S'inscrire</a>
+                        <a href="{{ path('app_login') }}" class="btn btn-primary">Se connecter</a>
+                    {% endif %}
                 </div>
             </div>
         </nav>

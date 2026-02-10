@@ -48,4 +48,24 @@ class SecurityController extends AbstractController
             'user' => $user,
         ]);
     }
+
+    #[Route('/login/redirect', name: 'app_login_redirect')]
+    public function loginRedirect(): Response
+    {
+        $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
+
+        if ($this->isGranted('ROLE_RESPONSABLE_LABO')) {
+            return $this->redirectToRoute('app_demande_analyse_index');
+        }
+
+        if ($this->isGranted('ROLE_MEDECIN') || $this->isGranted('ROLE_ADMIN')) {
+            return $this->redirectToRoute('app_demande_analyse_index');
+        }
+
+        if ($this->isGranted('ROLE_PATIENT')) {
+            return $this->redirectToRoute('app_labo_index');
+        }
+
+        return $this->redirectToRoute('app_profile');
+    }
 }
