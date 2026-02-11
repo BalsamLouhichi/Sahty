@@ -1,0 +1,904 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Dashboard Médical{% endblock %}
+
+{% block stylesheets %}
+{{ parent() }}
+<style>
+    body {
+        background-color: #f8f9fc;
+    }
+    
+    .wrapper {
+        display: flex;
+        width: 100%;
+        align-items: stretch;
+    }
+    
+    /* Sidebar */
+    .sidebar {
+        min-width: 280px;
+        max-width: 280px;
+        background: linear-gradient(135deg, #2c3e50 0%, #1e2a36 100%);
+        color: #fff;
+        transition: all 0.3s;
+        position: fixed;
+        height: 100vh;
+        overflow-y: auto;
+        box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+        z-index: 1000;
+    }
+    
+    .sidebar-header {
+        padding: 30px 25px;
+        background: rgba(0,0,0,0.2);
+        border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    
+    .sidebar .logo {
+        font-size: 1.8rem;
+        font-weight: 700;
+        margin-bottom: 5px;
+    }
+    
+    .sidebar .logo-small {
+        font-size: 0.9rem;
+        opacity: 0.8;
+    }
+    
+    .sidebar .nav-menu {
+        padding: 20px 15px;
+    }
+    
+    .sidebar .nav-button {
+        width: 100%;
+        padding: 15px 20px;
+        margin-bottom: 10px;
+        border: none;
+        border-radius: 12px;
+        background: rgba(255,255,255,0.1);
+        color: white;
+        font-size: 1.1rem;
+        font-weight: 500;
+        text-align: left;
+        transition: all 0.3s;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+    }
+    
+    .sidebar .nav-button i {
+        margin-right: 15px;
+        font-size: 1.3rem;
+        width: 25px;
+        text-align: center;
+    }
+    
+    .sidebar .nav-button:hover {
+        background: rgba(255,255,255,0.2);
+        transform: translateX(5px);
+    }
+    
+    .sidebar .nav-button.active {
+        background: linear-gradient(45deg, #667eea, #764ba2);
+        box-shadow: 0 5px 15px rgba(102,126,234,0.4);
+    }
+    
+    .sidebar .stats-mini {
+        margin-top: 30px;
+        padding: 20px;
+        background: rgba(0,0,0,0.2);
+        border-radius: 12px;
+    }
+    
+    .sidebar .stats-mini-item {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 10px;
+        font-size: 0.9rem;
+    }
+    
+    /* Content */
+    .content {
+        width: 100%;
+        margin-left: 280px;
+        padding: 20px 30px;
+        transition: all 0.3s;
+    }
+    
+    .stat-card {
+        transition: transform 0.3s;
+        border: none;
+        border-radius: 15px;
+        border-left: 4px solid;
+    }
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 25px rgba(0,0,0,0.1) !important;
+    }
+    
+    .badge-status {
+        padding: 5px 10px;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        display: inline-block;
+    }
+    .badge-confirme, .badge-Confirmé, .badge-confirmé {
+        background-color: #d4edda;
+        color: #155724;
+    }
+    .badge-en-attente, .badge-En attente {
+        background-color: #fff3cd;
+        color: #856404;
+    }
+    .badge-annule, .badge-Annulé, .badge-annulé {
+        background-color: #f8d7da;
+        color: #721c24;
+    }
+    .badge-termine, .badge-Terminé, .badge-termine {
+        background-color: #cce5ff;
+        color: #004085;
+    }
+    .badge-actif, .badge-Actif {
+        background-color: #d4edda;
+        color: #155724;
+    }
+    .badge-inactif, .badge-Inactif {
+        background-color: #f8d7da;
+        color: #721c24;
+    }
+    
+    .card {
+        border: none;
+        border-radius: 15px;
+        overflow: hidden;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+    }
+    .card-header {
+        border-bottom: none;
+        padding: 1rem 1.5rem;
+        background: linear-gradient(135deg, #2c3e50, #3498db);
+        color: white;
+    }
+    .bg-gradient-dark {
+        background: linear-gradient(135deg, #2c3e50, #3498db);
+        color: white;
+    }
+    
+    .dashboard-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 2rem;
+        border-radius: 15px;
+        margin-bottom: 2rem;
+    }
+    
+    .tab-content {
+        display: none;
+    }
+    
+    .tab-content.active {
+        display: block;
+    }
+    
+    .view-title {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: #2c3e50;
+        margin-bottom: 20px;
+        padding-bottom: 10px;
+        border-bottom: 2px solid #e3e6f0;
+    }
+    
+    .view-title i {
+        margin-right: 10px;
+        color: #667eea;
+    }
+    
+    /* Responsive */
+    @media (max-width: 768px) {
+        .sidebar {
+            min-width: 100%;
+            max-width: 100%;
+            position: relative;
+            height: auto;
+        }
+        .content {
+            margin-left: 0;
+        }
+        .wrapper {
+            flex-direction: column;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="wrapper">
+    {# ================= SIDEBAR ================= #}
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <div class="logo">🏥 The Data Labs</div>
+            <div class="logo-small">Executive Medical Dashboard</div>
+        </div>
+        
+        <div class="nav-menu">
+            <button id="btnRendezVous" class="nav-button active">
+                <i class="fas fa-calendar-check"></i>
+                Rendez-vous
+            </button>
+            <button id="btnFiches" class="nav-button">
+                <i class="fas fa-file-medical"></i>
+                Fiches médicales
+            </button>
+        </div>
+        
+        <div class="stats-mini">
+            <h6 class="mb-3"><i class="fas fa-chart-pie me-2"></i>Aperçu rapide</h6>
+            <div class="stats-mini-item">
+                <span>📅 Rendez-vous</span>
+                <span class="badge bg-light text-dark">{{ stats.total_appointments }}</span>
+            </div>
+            <div class="stats-mini-item">
+                <span>📋 Fiches</span>
+                <span class="badge bg-light text-dark">{{ stats.total_medical_records }}</span>
+            </div>
+            <div class="stats-mini-item">
+                <span>👥 Patients</span>
+                <span class="badge bg-light text-dark">{{ stats.total_patients }}</span>
+            </div>
+            <div class="stats-mini-item">
+                <span>👨‍⚕️ Médecins</span>
+                <span class="badge bg-light text-dark">{{ stats.total_medecins }}</span>
+            </div>
+            <div class="stats-mini-item">
+                <span>📊 Aujourd'hui</span>
+                <span class="badge bg-light text-dark">{{ stats.appointments_today }}</span>
+            </div>
+        </div>
+        
+        <div class="stats-mini mt-3">
+            <h6 class="mb-3"><i class="fas fa-info-circle me-2"></i>Informations</h6>
+            <div class="stats-mini-item">
+                <span>📅 Date</span>
+                <span>{{ "now"|date('d/m/Y') }}</span>
+            </div>
+            <div class="stats-mini-item">
+                <span>⏰ Heure</span>
+                <span>{{ "now"|date('H:i') }}</span>
+            </div>
+        </div>
+    </div>
+    
+    {# ================= CONTENU PRINCIPAL ================= #}
+    <div class="content">
+        
+        {# ================= EN-TÊTE ================= #}
+        <div class="dashboard-header d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="display-4">Tableau de bord</h1>
+                <p class="lead mb-0">Visualisation des données médicales</p>
+            </div>
+            <div class="text-right">
+                <span class="badge bg-white text-dark p-3 rounded-pill">
+                    <i class="fas fa-calendar-alt me-2"></i>{{ "now"|date('d/m/Y') }}
+                </span>
+            </div>
+        </div>
+        
+        {# ================= STATISTIQUES GLOBALES ================= #}
+        <div class="row mb-4">
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card stat-card shadow h-100 py-3 border-left-primary">
+                    <div class="card-body">
+                        <div class="row align-items-center">
+                            <div class="col mr-2">
+                                <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                    <i class="fas fa-calendar-check me-1"></i>Total Rendez-vous</div>
+                                <div class="h2 mb-0 font-weight-bold text-gray-800">{{ stats.total_appointments }}</div>
+                                <small class="text-muted">+{{ stats.appointments_today }} aujourd'hui</small>
+                            </div>
+                            <div class="col-auto">
+                                <i class="fas fa-calendar fa-3x text-gray-300"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card stat-card shadow h-100 py-3 border-left-success">
+                    <div class="card-body">
+                        <div class="row align-items-center">
+                            <div class="col mr-2">
+                                <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                    <i class="fas fa-file-medical me-1"></i>Fiches médicales</div>
+                                <div class="h2 mb-0 font-weight-bold text-gray-800">{{ stats.total_medical_records }}</div>
+                                <small class="text-muted">Total</small>
+                            </div>
+                            <div class="col-auto">
+                                <i class="fas fa-file-alt fa-3x text-gray-300"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card stat-card shadow h-100 py-3 border-left-info">
+                    <div class="card-body">
+                        <div class="row align-items-center">
+                            <div class="col mr-2">
+                                <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                    <i class="fas fa-users me-1"></i>Patients</div>
+                                <div class="h2 mb-0 font-weight-bold text-gray-800">{{ stats.total_patients }}</div>
+                                <small class="text-muted">Enregistrés</small>
+                            </div>
+                            <div class="col-auto">
+                                <i class="fas fa-user-injured fa-3x text-gray-300"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card stat-card shadow h-100 py-3 border-left-warning">
+                    <div class="card-body">
+                        <div class="row align-items-center">
+                            <div class="col mr-2">
+                                <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                    <i class="fas fa-user-md me-1"></i>Médecins</div>
+                                <div class="h2 mb-0 font-weight-bold text-gray-800">{{ stats.total_medecins }}</div>
+                                <small class="text-muted">Actifs</small>
+                            </div>
+                            <div class="col-auto">
+                                <i class="fas fa-stethoscope fa-3x text-gray-300"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        {# ================= VUE RENDEZ-VOUS ================= #}
+        <div id="viewRendezVous" class="tab-content active">
+            <div class="view-title">
+                <i class="fas fa-calendar-check"></i>
+                Gestion des rendez-vous
+            </div>
+            
+            {# Graphiques RDV #}
+            <div class="row mb-4">
+                <div class="col-md-6 mb-3">
+                    <div class="card shadow h-100">
+                        <div class="card-header">
+                            <strong><i class="fas fa-chart-line me-2"></i>Rendez-vous par mois</strong>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="appointmentsChart" style="height: 250px;"></canvas>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-6 mb-3">
+                    <div class="card shadow h-100">
+                        <div class="card-header">
+                            <strong><i class="fas fa-chart-pie me-2"></i>Répartition par statut</strong>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="statusPieChart" style="height: 250px;"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row mb-4">
+                <div class="col-md-6 mb-3">
+                    <div class="card shadow h-100">
+                        <div class="card-header">
+                            <strong><i class="fas fa-user-md me-2"></i>Top 5 Médecins</strong>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="medecinChart" style="height: 250px;"></canvas>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-6 mb-3">
+                    <div class="card shadow h-100">
+                        <div class="card-header">
+                            <strong><i class="fas fa-clock me-2"></i>Derniers rendez-vous</strong>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-dashboard table-hover mb-0">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Patient</th>
+                                            <th>Date</th>
+                                            <th>Médecin</th>
+                                            <th>Statut</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for rdv in recent_appointments %}
+                                        <tr>
+                                            <td>
+                                                <i class="fas fa-user-circle text-primary me-1"></i>
+                                                {{ rdv.patient.prenom ?? '' }} {{ rdv.patient.nom ?? '—' }}
+                                            </td>
+                                            <td>
+                                                {% if rdv.dateRdv is defined %}
+                                                    {{ rdv.dateRdv|date('d/m/Y') }}
+                                                    {% if rdv.heureRdv is defined %}
+                                                        {{ rdv.heureRdv|date('H:i') }}
+                                                    {% endif %}
+                                                {% else %}
+                                                    —
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <i class="fas fa-stethoscope text-info me-1"></i>
+                                                Dr. {{ rdv.medecin.prenom ?? '' }} {{ rdv.medecin.nom ?? '—' }}
+                                            </td>
+                                            <td>
+                                                {% set statut = rdv.statut|default('Non défini') %}
+                                                <span class="badge-status badge-{{ statut|lower|replace({' ':'-', 'é':'e', 'è':'e', 'ê':'e', 'î':'i', 'ô':'o', 'û':'u', 'à':'a', 'ç':'c'}) }}">
+                                                    {{ statut }}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                        {% else %}
+                                        <tr>
+                                            <td colspan="4" class="text-center text-muted py-4">
+                                                <i class="fas fa-calendar-times fa-2x mb-2"></i>
+                                                <p class="mb-0">Aucun rendez-vous trouvé</p>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        {# ================= VUE FICHES MÉDICALES ================= #}
+        <div id="viewFiches" class="tab-content">
+            <div class="view-title">
+                <i class="fas fa-file-medical"></i>
+                Gestion des fiches médicales
+            </div>
+            
+            {# Graphiques Fiches #}
+            <div class="row mb-4">
+                <div class="col-md-6 mb-3">
+                    <div class="card shadow h-100">
+                        <div class="card-header">
+                            <strong><i class="fas fa-notes-medical me-2"></i>Catégories IMC</strong>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="imcChart" style="height: 250px;"></canvas>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-6 mb-3">
+                    <div class="card shadow h-100">
+                        <div class="card-header">
+                            <strong><i class="fas fa-chart-pie me-2"></i>Statut des fiches</strong>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="ficheStatusChart" style="height: 250px;"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row mb-4">
+                <div class="col-md-6 mb-3">
+                    <div class="card shadow h-100">
+                        <div class="card-header">
+                            <strong><i class="fas fa-user me-2"></i>Top 5 Patients</strong>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="patientChart" style="height: 250px;"></canvas>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-6 mb-3">
+                    <div class="card shadow h-100">
+                        <div class="card-header">
+                            <strong><i class="fas fa-clock me-2"></i>Dernières fiches médicales</strong>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-dashboard table-hover mb-0">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Patient</th>
+                                            <th>Date</th>
+                                            <th>IMC</th>
+                                            <th>Statut</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for fiche in recent_medical_records %}
+                                        <tr>
+                                            <td>
+                                                <i class="fas fa-user-circle text-success me-1"></i>
+                                                {{ fiche.patient.prenom ?? '' }} {{ fiche.patient.nom ?? '—' }}
+                                            </td>
+                                            <td>
+                                                {% if fiche.creeLe is defined %}
+                                                    {{ fiche.creeLe|date('d/m/Y') }}
+                                                {% else %}
+                                                    —
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if fiche.imc is defined and fiche.imc %}
+                                                    <span class="badge bg-info text-dark">{{ fiche.imc }} ({{ fiche.categorieImc ?? 'N/A' }})</span>
+                                                {% else %}
+                                                    <span class="text-muted">—</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% set statut = fiche.statut|default('Non défini') %}
+                                                <span class="badge-status badge-{{ statut|lower }}">
+                                                    {{ statut }}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                        {% else %}
+                                        <tr>
+                                            <td colspan="4" class="text-center text-muted py-4">
+                                                <i class="fas fa-file-alt fa-2x mb-2"></i>
+                                                <p class="mb-0">Aucune fiche médicale trouvée</p>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card shadow">
+                        <div class="card-header">
+                            <strong><i class="fas fa-info-circle me-2"></i>Résumé des fiches médicales</strong>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <div class="text-center p-3">
+                                        <h3 class="text-primary">{{ stats.total_medical_records }}</h3>
+                                        <span class="text-muted">Total fiches</span>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="text-center p-3">
+                                        <h3 class="text-success">{{ charts.imc_labels|length > 2 ? charts.imc_labels|slice(1, -1)|split(',')|length : 0 }}</h3>
+                                        <span class="text-muted">Catégories IMC</span>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="text-center p-3">
+                                        <h3 class="text-info">{{ recent_medical_records|length }}</h3>
+                                        <span class="text-muted">Fiches récentes</span>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="text-center p-3">
+                                        <h3 class="text-warning">{{ stats.total_patients }}</h3>
+                                        <span class="text-muted">Patients</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        {# ================= RÉSUMÉ MENSUEL ================= #}
+        <div class="row mt-2">
+            <div class="col-12">
+                <div class="card shadow bg-gradient-dark text-white">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            <i class="fas fa-chart-line me-2"></i>Évolution mensuelle des consultations
+                        </h5>
+                        <div class="row mt-3">
+                            {% set months = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'] %}
+                            {% set app_data = charts.appointments_data|replace({'[':'', ']':'', ', ':','})|split(',') %}
+                            
+                            {% for i in 0..11 %}
+                                {% if i % 3 == 0 %}
+                                    <div class="col-md-4">
+                                {% endif %}
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <span>{{ months[i] }}:</span>
+                                        <strong>{{ app_data[i]|default('0') }} RDV</strong>
+                                    </div>
+                                {% if i % 3 == 2 or i == 11 %}
+                                    </div>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+    </div>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+{{ parent() }}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // ================= GESTION DES ONGLETS =================
+    const btnRendezVous = document.getElementById('btnRendezVous');
+    const btnFiches = document.getElementById('btnFiches');
+    const viewRendezVous = document.getElementById('viewRendezVous');
+    const viewFiches = document.getElementById('viewFiches');
+    
+    btnRendezVous.addEventListener('click', function() {
+        btnRendezVous.classList.add('active');
+        btnFiches.classList.remove('active');
+        viewRendezVous.classList.add('active');
+        viewFiches.classList.remove('active');
+    });
+    
+    btnFiches.addEventListener('click', function() {
+        btnFiches.classList.add('active');
+        btnRendezVous.classList.remove('active');
+        viewFiches.classList.add('active');
+        viewRendezVous.classList.remove('active');
+    });
+    
+    // ================= RÉCUPÉRATION DES DONNÉES JSON =================
+    let months = [];
+    let appointmentsData = [];
+    let medecinNames = [];
+    let medecinCounts = [];
+    let patientNames = [];
+    let patientCounts = [];
+    let imcLabels = [];
+    let imcCounts = [];
+    let statusLabels = [];
+    let statusCounts = [];
+    let ficheStatusLabels = [];
+    let ficheStatusCounts = [];
+    
+    try {
+        months = {{ charts.months|raw }};
+        appointmentsData = {{ charts.appointments_data|raw }};
+        medecinNames = {{ charts.medecin_names|raw }};
+        medecinCounts = {{ charts.medecin_counts|raw }};
+        patientNames = {{ charts.patient_names|raw }};
+        patientCounts = {{ charts.patient_counts|raw }};
+        imcLabels = {{ charts.imc_labels|raw }};
+        imcCounts = {{ charts.imc_counts|raw }};
+        statusLabels = {{ charts.status_labels|raw }};
+        statusCounts = {{ charts.status_counts|raw }};
+        ficheStatusLabels = {{ charts.fiche_status_labels|raw }};
+        ficheStatusCounts = {{ charts.fiche_status_counts|raw }};
+    } catch(e) {
+        console.log('Erreur de parsing JSON:', e);
+    }
+    
+    // ================= INITIALISATION DES GRAPHIQUES =================
+    
+    // 1. Graphique des rendez-vous par mois
+    const ctx1 = document.getElementById('appointmentsChart');
+    if (ctx1 && appointmentsData.length > 0) {
+        new Chart(ctx1.getContext('2d'), {
+            type: 'line',
+            data: {
+                labels: months,
+                datasets: [{
+                    label: 'Nombre de rendez-vous',
+                    data: appointmentsData,
+                    backgroundColor: 'rgba(54, 162, 235, 0.1)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 2,
+                    tension: 0.3,
+                    fill: true,
+                    pointBackgroundColor: 'rgba(54, 162, 235, 1)',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2,
+                    pointRadius: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            color: 'rgba(0,0,0,0.05)'
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    // 2. Graphique des statuts RDV
+    const ctx2 = document.getElementById('statusPieChart');
+    if (ctx2 && statusLabels.length > 0 && statusCounts.length > 0) {
+        new Chart(ctx2.getContext('2d'), {
+            type: 'doughnut',
+            data: {
+                labels: statusLabels,
+                datasets: [{
+                    data: statusCounts,
+                    backgroundColor: [
+                        'rgba(46, 204, 113, 0.8)',
+                        'rgba(241, 196, 15, 0.8)',
+                        'rgba(231, 76, 60, 0.8)',
+                        'rgba(52, 152, 219, 0.8)',
+                        'rgba(155, 89, 182, 0.8)'
+                    ],
+                    borderWidth: 0,
+                    hoverOffset: 10
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+    }
+    
+    // 3. Graphique des médecins
+    const ctx3 = document.getElementById('medecinChart');
+    if (ctx3 && medecinNames.length > 0 && medecinCounts.length > 0) {
+        new Chart(ctx3.getContext('2d'), {
+            type: 'pie',
+            data: {
+                labels: medecinNames,
+                datasets: [{
+                    data: medecinCounts,
+                    backgroundColor: [
+                        'rgba(255, 99, 132, 0.8)',
+                        'rgba(54, 162, 235, 0.8)',
+                        'rgba(255, 206, 86, 0.8)',
+                        'rgba(75, 192, 192, 0.8)',
+                        'rgba(153, 102, 255, 0.8)'
+                    ],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+    }
+    
+    // 4. Graphique IMC
+    const ctx4 = document.getElementById('imcChart');
+    if (ctx4 && imcLabels.length > 0 && imcCounts.length > 0) {
+        new Chart(ctx4.getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: imcLabels,
+                datasets: [{
+                    label: 'Nombre de patients',
+                    data: imcCounts,
+                    backgroundColor: [
+                        'rgba(52, 152, 219, 0.7)',
+                        'rgba(46, 204, 113, 0.7)',
+                        'rgba(241, 196, 15, 0.7)',
+                        'rgba(231, 76, 60, 0.7)'
+                    ],
+                    borderRadius: 5
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    }
+    
+    // 5. Graphique des patients
+    const ctx5 = document.getElementById('patientChart');
+    if (ctx5 && patientNames.length > 0 && patientCounts.length > 0) {
+        new Chart(ctx5.getContext('2d'), {
+            type: 'doughnut',
+            data: {
+                labels: patientNames,
+                datasets: [{
+                    data: patientCounts,
+                    backgroundColor: [
+                        'rgba(255, 159, 64, 0.8)',
+                        'rgba(54, 162, 235, 0.8)',
+                        'rgba(255, 206, 86, 0.8)',
+                        'rgba(75, 192, 192, 0.8)',
+                        'rgba(153, 102, 255, 0.8)'
+                    ]
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+    }
+    
+    // 6. Graphique des statuts fiches
+    const ctx6 = document.getElementById('ficheStatusChart');
+    if (ctx6 && ficheStatusLabels.length > 0 && ficheStatusCounts.length > 0) {
+        new Chart(ctx6.getContext('2d'), {
+            type: 'pie',
+            data: {
+                labels: ficheStatusLabels,
+                datasets: [{
+                    data: ficheStatusCounts,
+                    backgroundColor: [
+                        'rgba(46, 204, 113, 0.8)',
+                        'rgba(231, 76, 60, 0.8)',
+                        'rgba(52, 152, 219, 0.8)'
+                    ]
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

@@ -556,11 +556,11 @@
                     <a href="{{ path('app_login') }}" class="nav-link">
                         <i class="fas fa-sign-in-alt"></i>Connexion
                     </a>
-                    {% if app.request.get('_route') != 'app_register' %}
-                        <a href="{{ path('app_register') }}" class="nav-link btn-inscription">
-                            <i class="fas fa-user-plus"></i>Inscription
-                        </a>
-                    {% endif %}
+                    {% if app.request.get('_route') != 'app_sign' %}
+        <a href="{{ path('app_sign') }}" class="nav-link btn-inscription">
+            <i class="fas fa-user-plus"></i>Inscription
+        </a>
+    {% endif %}
                 {% endif %}
             </div>
         </div>
