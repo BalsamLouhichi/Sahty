@@ -2,6 +2,7 @@
 
 namespace App\Controller;
 
+use App\Entity\ResponsableLaboratoire;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
@@ -14,7 +15,7 @@ class SecurityController extends AbstractController
     {
         // Si l'utilisateur est déjà connecté, redirigez-le vers son profil
         if ($this->getUser()) {
-            return $this->redirectToRoute('app_profile');
+            return $this->redirectToRoute('app_login_redirect');
         }
 
         // Récupérer l'erreur de login s'il y en a une
@@ -54,11 +55,20 @@ class SecurityController extends AbstractController
     {
         $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
 
+        if ($this->isGranted('ROLE_ADMIN')) {
+            return $this->redirectToRoute('admin');
+        }
+
         if ($this->isGranted('ROLE_RESPONSABLE_LABO')) {
+            $user = $this->getUser();
+            if ($user instanceof ResponsableLaboratoire && !$user->getLaboratoire()) {
+                return $this->redirectToRoute('app_labo_new');
+            }
+
             return $this->redirectToRoute('app_demande_analyse_index');
         }
 
-        if ($this->isGranted('ROLE_MEDECIN') || $this->isGranted('ROLE_ADMIN')) {
+        if ($this->isGranted('ROLE_MEDECIN')) {
             return $this->redirectToRoute('app_demande_analyse_index');
         }
 

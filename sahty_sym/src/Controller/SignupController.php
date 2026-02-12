@@ -141,9 +141,6 @@ class SignupController extends AbstractController
                 $em->persist($user);
                 $em->flush();
                 $this->addFlash('success', 'Votre compte a été créé avec succès !');
-                if ($roleSelected === 'responsable_labo') {
-                    return $this->redirectToRoute('app_labo_new');
-                }
                 return $this->redirectToRoute('app_login');
                 
             } catch (\Exception $e) {

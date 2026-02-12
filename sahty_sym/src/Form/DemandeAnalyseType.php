@@ -7,30 +7,48 @@ use App\Entity\DemandeAnalyse;
 use App\Entity\Patient;
 use App\Entity\Medecin;
 use App\Entity\Laboratoire;
+use App\Repository\TypeAnalyseRepository;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\TextareaType;
-use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\Extension\Core\Type\DateTimeType;
 use Symfony\Component\Form\FormBuilderInterface;
+use Symfony\Component\Form\CallbackTransformer;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
 class DemandeAnalyseType extends AbstractType
 {
+    private TypeAnalyseRepository $typeAnalyseRepository;
+
+    public function __construct(TypeAnalyseRepository $typeAnalyseRepository)
+    {
+        $this->typeAnalyseRepository = $typeAnalyseRepository;
+    }
+
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $userRole = $options['user_role'];
         $userEntity = $options['user_entity'];
         $laboratoire = $options['laboratoire'] ?? null;
 
+        $typeAnalyseChoices = [];
+        $typeAnalyses = $this->typeAnalyseRepository->findBy(['actif' => true], ['categorie' => 'ASC', 'nom' => 'ASC']);
+        foreach ($typeAnalyses as $typeAnalyse) {
+            $categorie = $typeAnalyse->getCategorie() ?: 'Autres';
+            $nom = $typeAnalyse->getNom() ?: 'Analyse';
+            if (!isset($typeAnalyseChoices[$categorie])) {
+                $typeAnalyseChoices[$categorie] = [];
+            }
+            $typeAnalyseChoices[$categorie][$nom] = $nom;
+        }
+
         $builder
-            ->add('type_bilan', TextType::class, [
+            ->add('type_bilan', ChoiceType::class, [
                 'label' => 'Type de bilan',
+                'choices' => $typeAnalyseChoices,
                 'required' => true,
-                'attr' => [
-                    'placeholder' => 'Ex: Bilan sanguin complet, Bilan lipidique...'
-                ]
+                'placeholder' => 'Sélectionnez un type de bilan',
             ])
             ->add('notes', TextareaType::class, [
                 'label' => 'Notes complémentaires',
@@ -48,7 +66,6 @@ class DemandeAnalyseType extends AbstractType
                     'Urgent' => 'urgent'
                 ],
                 'required' => true,
-                'data' => 'normale',
             ]);
 
         // Si ce n'est pas un patient, on affiche le champ patient
@@ -78,7 +95,7 @@ class DemandeAnalyseType extends AbstractType
         ]);
 
         // Champ laboratoire
-        $builder->add('laboratoire', EntityType::class, [
+        $laboratoireFieldOptions = [
             'label' => 'Laboratoire',
             'class' => Laboratoire::class,
             'choice_label' => function(Laboratoire $laboratoire) {
@@ -86,8 +103,11 @@ class DemandeAnalyseType extends AbstractType
             },
             'required' => true,
             'placeholder' => 'Sélectionnez un laboratoire',
-            'data' => $laboratoire, // Pré-rempli si laboratoire spécifié
-        ]);
+        ];
+        if ($laboratoire) {
+            $laboratoireFieldOptions['data'] = $laboratoire; // Pré-rempli si laboratoire spécifié
+        }
+        $builder->add('laboratoire', EntityType::class, $laboratoireFieldOptions);
 
         // Date programmée (optionnelle)
         $builder->add('programme_le', DateTimeType::class, [
@@ -101,6 +121,11 @@ class DemandeAnalyseType extends AbstractType
         ]);
 
         // Le statut est determine automatiquement a partir du PDF resultat
+
+        $builder->get('priorite')->addModelTransformer(new CallbackTransformer(
+            static fn ($value) => $value ? strtolower((string) $value) : $value,
+            static fn ($value) => $value ? strtolower((string) $value) : $value
+        ));
     }
 
     public function configureOptions(OptionsResolver $resolver): void

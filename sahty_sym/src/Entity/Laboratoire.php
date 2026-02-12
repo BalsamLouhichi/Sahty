@@ -8,6 +8,7 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: LaboratoireRepository::class)]
 #[ORM\Table(name: "laboratoire")]
@@ -19,21 +20,53 @@ class Laboratoire
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
+    #[Assert\NotBlank(message: 'Le nom est obligatoire.')]
+    #[Assert\Regex(
+        pattern: "/^[A-Za-z]+(?:[ '\\-][A-Za-z]+)*$/",
+        message: 'Le nom doit contenir uniquement des lettres, espaces, tirets ou apostrophes.'
+    )]
     private ?string $nom = null;
 
     #[ORM\Column(length: 255)]
+    #[Assert\NotBlank(message: 'La ville est obligatoire.')]
+    #[Assert\Regex(
+        pattern: "/^[A-Za-z]+(?:[ '\\-,][A-Za-z]+)*$/",
+        message: 'La ville doit contenir uniquement des lettres, espaces, tirets, apostrophes ou virgules.'
+    )]
     private ?string $ville = null;
 
     #[ORM\Column(length: 255)]
+    #[Assert\NotBlank(message: 'L\'adresse est obligatoire.')]
+    #[Assert\Regex(
+        pattern: "/^[A-Za-z0-9 '\\-,]+$/",
+        message: 'L\'adresse doit contenir uniquement lettres, chiffres, espaces, tirets, apostrophes ou virgules.'
+    )]
     private ?string $adresse = null;
 
     #[ORM\Column(length: 255)]
+    #[Assert\NotBlank(message: 'Le telephone est obligatoire.')]
+    #[Assert\Regex(
+        pattern: '/^(?:\+216\s?)?[0-9]{8}$/',
+        message: 'Le telephone doit contenir 8 chiffres (optionnellement avec +216).'
+    )]
     private ?string $telephone = null;
 
     #[ORM\Column]
+    #[Assert\NotNull(message: 'La latitude est obligatoire.')]
+    #[Assert\Range(
+        min: -90,
+        max: 90,
+        notInRangeMessage: 'La latitude doit etre entre -90 et 90.'
+    )]
     private ?float $latitude = null;
 
     #[ORM\Column]
+    #[Assert\NotNull(message: 'La longitude est obligatoire.')]
+    #[Assert\Range(
+        min: -180,
+        max: 180,
+        notInRangeMessage: 'La longitude doit etre entre -180 et 180.'
+    )]
     private ?float $longitude = null;
 
     #[ORM\Column]

@@ -90,6 +90,9 @@ class LaboratoireController extends AbstractController
             $em->flush();
 
             $this->addFlash('success', 'Laboratoire ajouté avec succès ✅');
+            if ($user instanceof ResponsableLaboratoire) {
+                return $this->redirectToRoute('app_responsable_labo_demandes');
+            }
 
             return $this->redirectToRoute('app_labo_show', ['id' => $laboratoire->getId()]);
         }
