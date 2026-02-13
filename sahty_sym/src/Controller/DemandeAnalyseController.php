@@ -213,6 +213,12 @@ class DemandeAnalyseController extends AbstractController
             throw $this->createNotFoundException('Laboratoire non trouvé.');
         }
 
+        $responsable = $laboratoire->getResponsable();
+        if (!$laboratoire->isDisponible() || ($responsable && !$responsable->isEstActif())) {
+            $this->addFlash('error', 'Ce laboratoire est indisponible pour le moment.');
+            return $this->redirectToRoute('app_labo_show', ['id' => $laboratoireId]);
+        }
+
         $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
 
         // Si c'est une requête POST (formulaire simple)

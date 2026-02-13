@@ -6,6 +6,7 @@ use App\Entity\Laboratoire;
 use App\Entity\ResponsableLaboratoire;
 use EasyCorp\Bundle\EasyAdminBundle\Config\Dashboard;
 use EasyCorp\Bundle\EasyAdminBundle\Config\MenuItem;
+use EasyCorp\Bundle\EasyAdminBundle\Config\Assets;
 use EasyCorp\Bundle\EasyAdminBundle\Controller\AbstractDashboardController;
 use EasyCorp\Bundle\EasyAdminBundle\Router\AdminUrlGenerator;
 use Symfony\Component\HttpFoundation\Response;
@@ -39,5 +40,12 @@ class DashboardController extends AbstractDashboardController
         yield MenuItem::section('Gestion');
         yield MenuItem::linkToCrud('Laboratoires', 'fa fa-flask', Laboratoire::class);
         yield MenuItem::linkToCrud('Responsables labo', 'fa fa-user', ResponsableLaboratoire::class);
+    }
+
+    public function configureAssets(): Assets
+    {
+        return Assets::new()
+            ->addAssetMapperEntry('app')
+            ->addJsFile('js/admin-search.js'); // Charge votre script
     }
 }
