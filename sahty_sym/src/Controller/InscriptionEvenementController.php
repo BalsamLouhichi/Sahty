@@ -120,7 +120,7 @@ final class InscriptionEvenementController extends AbstractController
         $inscriptions = $entityManager->getRepository(InscriptionEvenement::class)
             ->findBy(['utilisateur' => $user], ['dateInscription' => 'DESC']);
         
-        return $this->render('inscription_evenement/mes_inscriptions.html.twig', [
+        return $this->render('evenement/mes_inscriptions.html.twig', [
             'inscriptions' => $inscriptions,
         ]);
     }

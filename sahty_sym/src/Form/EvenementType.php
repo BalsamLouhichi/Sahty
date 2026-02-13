@@ -143,6 +143,7 @@ class EvenementType extends AbstractType
             'data_class' => Evenement::class,
             'is_edit' => false,
             'is_admin' => false,
+            'is_demande' => false,
             'user_role' => null,
         ]);
 

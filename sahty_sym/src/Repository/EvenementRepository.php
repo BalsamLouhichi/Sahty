@@ -190,6 +190,62 @@ class EvenementRepository extends ServiceEntityRepository
               ->getResult();
 }
 
+public function findVisibleEventsForClient($user = null): array
+{
+    $qb = $this->createQueryBuilder('e')
+        ->orderBy('e.dateDebut', 'ASC');
+
+    // Seuls les événements avec statut approuvé sont visibles pour les clients
+    $qb->andWhere('e.statut IN (:statutsApprouves)')
+       ->setParameter('statutsApprouves', ['planifie', 'confirme', 'en_cours']);
+
+    if ($user) {
+        $userGroups = $user->getGroupes();
+        
+        // L'utilisateur peut voir :
+        // 1. Les événements publics (sans groupe cible) ET approuvés
+        // 2. Les événements de ses groupes ET approuvés
+        $qb->leftJoin('e.groupeCibles', 'g')
+           ->andWhere(
+               $qb->expr()->orX(
+                   'e.groupeCibles IS EMPTY',
+                   'g IN (:userGroups)'
+               )
+           )
+           ->setParameter('userGroups', $userGroups ?: []);
+        
+        // Note: Les événements en attente ne sont PAS inclus ici
+        // Ils doivent être récupérés séparément avec une requête dédiée
+    } else {
+        // Non connecté : seulement les événements publics approuvés
+        $qb->andWhere('e.groupeCibles IS EMPTY');
+    }
+
+    return $qb->getQuery()->getResult();
+}
+
+// Nouvelle méthode pour récupérer les demandes en attente d'un utilisateur
+public function findPendingEventsForUser(Utilisateur $user): array
+{
+    return $this->createQueryBuilder('e')
+        ->where('e.createur = :userId')
+        ->andWhere('e.statut = :statut')
+        ->setParameter('userId', $user->getId())
+        ->setParameter('statut', 'en_attente_approbation')
+        ->orderBy('e.creeLe', 'DESC')
+        ->getQuery()
+        ->getResult();
+}
 
 
+
+public function findAllPendingEvents(): array
+{
+    return $this->createQueryBuilder('e')
+        ->where('e.statut = :statut')
+        ->setParameter('statut', 'en_attente_approbation')
+        ->orderBy('e.creeLe', 'DESC')
+        ->getQuery()
+        ->getResult();
+}
 }

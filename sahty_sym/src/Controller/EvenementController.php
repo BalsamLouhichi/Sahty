@@ -14,7 +14,9 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 
-#[Route(['/evenements', '/admin/evenements'], name: 'admin_')]
+#[Route('/evenements', name: 'evenements_')]
+
+
 class EvenementController extends AbstractController
 {
     private EvenementRepository $evenementRepository;
@@ -27,9 +29,13 @@ class EvenementController extends AbstractController
     #[Route('/', name: 'evenement_list', methods: ['GET'])]
     public function index(Request $request, EntityManagerInterface $em): Response
     {
-        $user = $this->getUser();
-        $isAdmin = $this->isGranted('ROLE_ADMIN');
+        // Rediriger les non-admins vers la page client
+        if (!$this->isGranted('ROLE_ADMIN')) {
+            return $this->redirectToRoute('evenements_client_events');
+        }
         
+        // Seuls les admins continuent ici
+        $user = $this->getUser();
         $type = $request->query->get('type');
         $statut = $request->query->get('statut');
         $recherche = $request->query->get('recherche');
@@ -81,18 +87,12 @@ class EvenementController extends AbstractController
 
         $actions = [];
         foreach ($evenements as $evt) {
-            $canEdit = $isAdmin || ($user && $evt->getCreateur() === $user);
-
+            $canEdit = true; // Admin peut toujours éditer
+            
             $inscriptionsCount = $em->getRepository(InscriptionEvenement::class)->count(['evenement' => $evt]);
-            $canDelete = ($isAdmin || ($user && $evt->getCreateur() === $user)) && ($isAdmin || $inscriptionsCount == 0);
+            $canDelete = true; // Admin peut toujours supprimer
 
-            $canInscrire = false;
-            if ($user && !$isAdmin) {
-                $subscribeCheck = $this->canUserSubscribe($user, $evt, $em);
-                $canInscrire = $subscribeCheck['can_subscribe'];
-            } elseif ($user && $isAdmin) {
-                $canInscrire = true;
-            }
+            $canInscrire = true; // Admin peut toujours voir l'inscription
 
             $actions[$evt->getId()] = [
                 'can_edit' => (bool) $canEdit,
@@ -110,7 +110,7 @@ class EvenementController extends AbstractController
             'type' => $type,
             'statut' => $statut,
             'recherche' => $recherche,
-            'is_admin' => $isAdmin,
+            'is_admin' => true, // Forcément admin ici
             'actions' => $actions,
         ]);
     }
@@ -118,11 +118,7 @@ class EvenementController extends AbstractController
     #[Route('/nouveau', name: 'evenement_add', methods: ['GET','POST'])]
     public function new(Request $request, EntityManagerInterface $em): Response
     {
-        $user = $this->getUser();
-        if (!$user) {
-            return $this->redirectToRoute('app_login');
-        }
-        
+
         $allowedRoles = ['ROLE_ADMIN', 'ROLE_MEDECIN', 'ROLE_RESPONSABLE_LABO', 'ROLE_RESPONSABLE_PARA', 'ROLE_PATIENT'];
         $hasPermission = false;
         
@@ -135,6 +131,11 @@ class EvenementController extends AbstractController
         
         if (!$hasPermission) {
             throw new AccessDeniedException('Vous n\'avez pas la permission de créer des événements.');
+        }
+
+        $user = $this->getUser();
+        if (!$user) {
+            return $this->redirectToRoute('app_login');
         }
 
         $evenement = new Evenement();
@@ -153,31 +154,75 @@ class EvenementController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            // CONTROLE DE SAISIE AJOUTÉ
-            if ($evenement->getDateFin() < $evenement->getDateDebut()) {
-                $this->addFlash('error', 'La date de fin doit être postérieure à la date de début.');
+            $errors = [];
+            
+            if (!$evenement->getDateDebut()) {
+                $errors[] = 'La date de début est obligatoire.';
+            }
+            
+            if (!$evenement->getDateFin()) {
+                $errors[] = 'La date de fin est obligatoire.';
+            }
+            
+            if ($evenement->getDateDebut() && $evenement->getDateFin()) {
+                if ($evenement->getDateFin() < $evenement->getDateDebut()) {
+                    $errors[] = 'La date de fin doit être postérieure à la date de début.';
+                }
+                
+                $now = new \DateTime();
+                if ($evenement->getDateDebut() < $now) {
+                    $errors[] = 'La date de début ne peut pas être dans le passé.';
+                }
+                
+                $diff = $evenement->getDateDebut()->diff($evenement->getDateFin());
+                if ($diff->days > 30) {
+                    $errors[] = 'La durée de l\'événement ne peut pas dépasser 30 jours.';
+                }
+            }
+            
+            if ($evenement->getPlacesMax() !== null) {
+                if ($evenement->getPlacesMax() <= 0) {
+                    $errors[] = 'Le nombre de places doit être supérieur à zéro.';
+                }
+                if ($evenement->getPlacesMax() > 10000) {
+                    $errors[] = 'Le nombre de places ne peut pas dépasser 10000.';
+                }
+            }
+            
+            if ($evenement->getTarif() !== null) {
+                if ($evenement->getTarif() < 0) {
+                    $errors[] = 'Le tarif ne peut pas être négatif.';
+                }
+                if ($evenement->getTarif() > 10000) {
+                    $errors[] = 'Le tarif ne peut pas dépasser 10000 TND.';
+                }
+            }
+            
+            if (strlen($evenement->getTitre()) < 5) {
+                $errors[] = 'Le titre doit contenir au moins 5 caractères.';
+            }
+            
+            if (strlen($evenement->getTitre()) > 200) {
+                $errors[] = 'Le titre ne peut pas dépasser 200 caractères.';
+            }
+            
+            if ($evenement->getDescription() && strlen($evenement->getDescription()) > 5000) {
+                $errors[] = 'La description ne peut pas dépasser 5000 caractères.';
+            }
+            
+            if ($evenement->getLieu() && strlen($evenement->getLieu()) > 500) {
+                $errors[] = 'Le lieu ne peut pas dépasser 500 caractères.';
+            }
+            
+            if (!empty($errors)) {
+                foreach ($errors as $error) {
+                    $this->addFlash('error', $error);
+                }
                 return $this->render('evenement/new.html.twig', [
                     'form' => $form->createView(),
                     'is_patient' => $this->isGranted('ROLE_PATIENT'),
                 ]);
             }
-
-            if ($evenement->getPlacesMax() !== null && $evenement->getPlacesMax() <= 0) {
-                $this->addFlash('error', 'Le nombre de places doit être supérieur à zéro.');
-                return $this->render('evenement/new.html.twig', [
-                    'form' => $form->createView(),
-                    'is_patient' => $this->isGranted('ROLE_PATIENT'),
-                ]);
-            }
-
-            if ($evenement->getTarif() !== null && $evenement->getTarif() < 0) {
-                $this->addFlash('error', 'Le tarif ne peut pas être négatif.');
-                return $this->render('evenement/new.html.twig', [
-                    'form' => $form->createView(),
-                    'is_patient' => $this->isGranted('ROLE_PATIENT'),
-                ]);
-            }
-            // FIN DU CONTROLE DE SAISIE
 
             $evenement->setCreeLe(new \DateTime());
             $evenement->setCreateur($user);
@@ -191,7 +236,11 @@ class EvenementController extends AbstractController
                 $this->addFlash('info', 'Votre événement est en attente d\'approbation par un administrateur.');
             }
 
-            return $this->redirectToRoute('admin_evenement_list');
+            if ($this->isGranted('ROLE_ADMIN')) {
+                return $this->redirectToRoute('evenements_evenement_list');
+            } else {
+                return $this->redirectToRoute('evenements_client_events');
+            }
         }
 
         return $this->render('evenement/new.html.twig', [
@@ -213,7 +262,11 @@ class EvenementController extends AbstractController
             
             if ($this->isGranted('ROLE_PATIENT') && $evenement->getStatut() === 'approuve') {
                 $this->addFlash('warning', 'Les événements approuvés ne peuvent plus être modifiés. Contactez un administrateur.');
-                return $this->redirectToRoute('admin_evenement_view', ['id' => $evenement->getId()]);
+                if ($isAdmin) {
+                    return $this->redirectToRoute('evenements_evenement_view', ['id' => $evenement->getId()]);
+                } else {
+                    return $this->redirectToRoute('admin_client_event_view', ['id' => $evenement->getId()]);
+                }
             }
         }
 
@@ -226,34 +279,84 @@ class EvenementController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            // CONTROLE DE SAISIE AJOUTÉ
-            if ($evenement->getDateFin() < $evenement->getDateDebut()) {
-                $this->addFlash('error', 'La date de fin doit être postérieure à la date de début.');
+            $errors = [];
+            
+            if (!$evenement->getDateDebut()) {
+                $errors[] = 'La date de début est obligatoire.';
+            }
+            
+            if (!$evenement->getDateFin()) {
+                $errors[] = 'La date de fin est obligatoire.';
+            }
+            
+            if ($evenement->getDateDebut() && $evenement->getDateFin()) {
+                if ($evenement->getDateFin() < $evenement->getDateDebut()) {
+                    $errors[] = 'La date de fin doit être postérieure à la date de début.';
+                }
+                
+                $now = new \DateTime();
+                $originalDateDebut = $evenement->getDateDebut(); // Note: vous devriez stocker l'ancienne date pour comparaison
+                
+                if ($evenement->getDateDebut() < $now) {
+                    $errors[] = 'Vous ne pouvez pas mettre une date de début dans le passé.';
+                }
+                
+                $diff = $evenement->getDateDebut()->diff($evenement->getDateFin());
+                if ($diff->days > 30) {
+                    $errors[] = 'La durée de l\'événement ne peut pas dépasser 30 jours.';
+                }
+            }
+            
+            if ($evenement->getPlacesMax() !== null) {
+                if ($evenement->getPlacesMax() <= 0) {
+                    $errors[] = 'Le nombre de places doit être supérieur à zéro.';
+                }
+                if ($evenement->getPlacesMax() > 10000) {
+                    $errors[] = 'Le nombre de places ne peut pas dépasser 10000.';
+                }
+                
+                $inscriptionsCount = $em->getRepository(InscriptionEvenement::class)
+                    ->count(['evenement' => $evenement]);
+                if ($evenement->getPlacesMax() < $inscriptionsCount) {
+                    $errors[] = 'Vous ne pouvez pas réduire le nombre de places en dessous du nombre d\'inscrits actuels (' . $inscriptionsCount . ').';
+                }
+            }
+            
+            if ($evenement->getTarif() !== null) {
+                if ($evenement->getTarif() < 0) {
+                    $errors[] = 'Le tarif ne peut pas être négatif.';
+                }
+                if ($evenement->getTarif() > 10000) {
+                    $errors[] = 'Le tarif ne peut pas dépasser 10000 TND.';
+                }
+            }
+            
+            if (strlen($evenement->getTitre()) < 5) {
+                $errors[] = 'Le titre doit contenir au moins 5 caractères.';
+            }
+            
+            if (strlen($evenement->getTitre()) > 200) {
+                $errors[] = 'Le titre ne peut pas dépasser 200 caractères.';
+            }
+            
+            if ($evenement->getDescription() && strlen($evenement->getDescription()) > 5000) {
+                $errors[] = 'La description ne peut pas dépasser 5000 caractères.';
+            }
+            
+            if ($evenement->getLieu() && strlen($evenement->getLieu()) > 500) {
+                $errors[] = 'Le lieu ne peut pas dépasser 500 caractères.';
+            }
+            
+            if (!empty($errors)) {
+                foreach ($errors as $error) {
+                    $this->addFlash('error', $error);
+                }
                 return $this->render('evenement/edit.html.twig', [
                     'evenement' => $evenement,
                     'form' => $form->createView(),
                     'is_admin' => $isAdmin,
                 ]);
             }
-
-            if ($evenement->getPlacesMax() !== null && $evenement->getPlacesMax() <= 0) {
-                $this->addFlash('error', 'Le nombre de places doit être supérieur à zéro.');
-                return $this->render('evenement/edit.html.twig', [
-                    'evenement' => $evenement,
-                    'form' => $form->createView(),
-                    'is_admin' => $isAdmin,
-                ]);
-            }
-
-            if ($evenement->getTarif() !== null && $evenement->getTarif() < 0) {
-                $this->addFlash('error', 'Le tarif ne peut pas être négatif.');
-                return $this->render('evenement/edit.html.twig', [
-                    'evenement' => $evenement,
-                    'form' => $form->createView(),
-                    'is_admin' => $isAdmin,
-                ]);
-            }
-            // FIN DU CONTROLE DE SAISIE
 
             $evenement->setModifieLe(new \DateTime());
             
@@ -266,7 +369,12 @@ class EvenementController extends AbstractController
             
             $em->flush();
 
-            return $this->redirectToRoute('admin_evenement_list');
+            // Redirection différente selon le rôle
+            if ($isAdmin) {
+                return $this->redirectToRoute('evenements_evenement_list');
+            } else {
+                return $this->redirectToRoute('evenements_client_events');
+            }
         }
 
         return $this->render('evenement/edit.html.twig', [
@@ -283,7 +391,7 @@ class EvenementController extends AbstractController
         
         if (!$evenement) {
             $this->addFlash('warning', 'Cet événement n\'existe pas ou a déjà été supprimé.');
-            return $this->redirectToRoute('admin_evenement_list');
+            return $this->redirectToRoute('evenements_evenement_list');
         }
         
         $user = $this->getUser();
@@ -298,7 +406,11 @@ class EvenementController extends AbstractController
             
         if ($inscriptionsCount > 0 && !$isAdmin) {
             $this->addFlash('danger', 'Impossible de supprimer cet événement car il a déjà des inscriptions. Contactez un administrateur.');
-            return $this->redirectToRoute('admin_evenement_view', ['id' => $evenement->getId()]);
+            if ($isAdmin) {
+                return $this->redirectToRoute('evenements_evenement_view', ['id' => $evenement->getId()]);
+            } else {
+                return $this->redirectToRoute('admin_client_event_view', ['id' => $evenement->getId()]);
+            }
         }
 
         if ($this->isCsrfTokenValid('delete'.$evenement->getId(), $request->request->get('_token'))) {
@@ -306,12 +418,22 @@ class EvenementController extends AbstractController
             $this->addFlash('success', 'Événement supprimé avec succès.');
         }
 
-        return $this->redirectToRoute('admin_evenement_list');
+        // Redirection différente selon le rôle
+        if ($isAdmin) {
+            return $this->redirectToRoute('evenements_evenement_list');
+        } else {
+            return $this->redirectToRoute('evenements_client_events');
+        }
     }
 
     #[Route('/{id}', name: 'evenement_view', methods: ['GET'])]
     public function view(Evenement $evenement, Request $request, EntityManagerInterface $em): Response
     {
+      
+        if (!$this->isGranted('ROLE_ADMIN')) {
+            return $this->redirectToRoute('admin_client_event_view', ['id' => $evenement->getId()]);
+        }
+        
         $user = $this->getUser();
         
         $nombreParticipants = $this->evenementRepository->getNombreParticipants($evenement);
@@ -349,8 +471,10 @@ class EvenementController extends AbstractController
             'can_inscribe' => (bool) $canInscribe,
         ];
         
+
         $participants = $em->getRepository(InscriptionEvenement::class)
             ->findBy(['evenement' => $evenement], ['dateInscription' => 'DESC']);
+        $revenusGeneres = $nombreParticipants * ($evenement->getTarif() ?? 0);
 
         return $this->render('evenement/view.html.twig', [
             'evenement' => $evenement,
@@ -363,6 +487,179 @@ class EvenementController extends AbstractController
             'participants' => $participants,
         ]);
     }
+
+    #[Route('/{id}/client-view', name: 'client_event_view', methods: ['GET'])]
+public function clientEventView(Evenement $evenement, Request $request, EntityManagerInterface $em): Response
+{
+    $user = $this->getUser();
+    
+    // Vérifier l'accès pour les clients (non-admins)
+    if (!$this->isGranted('ROLE_ADMIN')) {
+        // Vérifier si l'utilisateur peut voir cet événement
+        if ($user) {
+            $userGroups = $user->getGroupes();
+            $eventGroups = $evenement->getGroupeCibles();
+            
+            // L'utilisateur peut voir ses propres événements
+            if ($evenement->getCreateur() !== $user) {
+                if (!$eventGroups->isEmpty()) {
+                    $canView = false;
+                    foreach ($eventGroups as $eventGroup) {
+                        if ($userGroups->contains($eventGroup)) {
+                            $canView = true;
+                            break;
+                        }
+                    }
+                    
+                    if (!$canView) {
+                        throw new AccessDeniedException('Vous n\'avez pas accès à cet événement.');
+                    }
+                }
+            }
+        } else {
+            // Utilisateur non connecté : peut voir les événements ouverts à tous
+            if (!$evenement->getGroupeCibles()->isEmpty()) {
+                throw new AccessDeniedException('Vous devez être connecté pour accéder à cet événement.');
+            }
+        }
+    }
+    
+    $nombreParticipants = $this->evenementRepository->getNombreParticipants($evenement);
+    $tauxRemplissage = $this->evenementRepository->getTauxRemplissage($evenement);
+    $revenusGeneres = $nombreParticipants * ($evenement->getTarif() ?? 0);
+    
+    $userInscription = null;
+    if ($user) {
+        try {
+            $userInscription = $em->getRepository(InscriptionEvenement::class)
+                ->findOneBy(['evenement' => $evenement, 'utilisateur' => $user]);
+        } catch (\Throwable $e) {
+            $this->addFlash('warning', 'Problème base de données : colonne manquante. Affichage limité.');
+            $userInscription = null;
+        }
+    }
+
+    $canSubscribe = $user ? $this->canUserSubscribe($user, $evenement, $em) : [
+        'can_subscribe' => false,
+        'message' => 'Vous devez être connecté pour vous inscrire.'
+    ];
+
+    $isAdmin = $this->isGranted('ROLE_ADMIN');
+    $isCreator = $user && $evenement->getCreateur() && $evenement->getCreateur() === $user;
+
+    $inscriptionsCount = $em->getRepository(InscriptionEvenement::class)->count(['evenement' => $evenement]);
+
+    $canEdit = $isAdmin || $isCreator;
+    $canDelete = ($isAdmin || $isCreator) && ($isAdmin || $inscriptionsCount == 0);
+    $canInscribe = $user ? ($isAdmin ? true : ($canSubscribe['can_subscribe'] ?? false)) : false;
+
+    $perms = [
+        'can_edit' => (bool) $canEdit,
+        'can_delete' => (bool) $canDelete,
+        'can_inscribe' => (bool) $canInscribe,
+    ];
+    
+    // Récupérer les participants (limité pour les non-admins)
+    $participants = [];
+    if ($isAdmin || $isCreator) {
+        $participants = $em->getRepository(InscriptionEvenement::class)
+            ->findBy(['evenement' => $evenement], ['dateInscription' => 'DESC']);
+    }
+
+    return $this->render('evenement/view.html.twig', [
+        'evenement' => $evenement,
+        'nombreParticipants' => $nombreParticipants,
+        'tauxRemplissage' => $tauxRemplissage,
+        'revenusGeneres' => $revenusGeneres,
+        'user_inscription' => $userInscription,
+        'can_subscribe' => $canSubscribe,
+        'perms' => $perms,
+        'participants' => $participants,
+        'is_admin' => $isAdmin, // Important pour le template
+    ]);
+}
+
+#[Route('/', name: 'home', methods: ['GET'])]
+public function home(Request $request, EvenementRepository $evenementRepository, EntityManagerInterface $em): Response
+{
+    $type = $request->query->get('type');
+    $recherche = $request->query->get('recherche');
+    
+    $user = $this->getUser();
+    $evenements = [];
+    
+    if ($user && !$this->isGranted('ROLE_ADMIN')) {
+        // Clients connectés (non-admin)
+        $evenements = $evenementRepository->findVisibleEventsForClient($user);
+        
+        // Appliquer les filtres
+        if ($type) {
+            $evenements = array_filter($evenements, function($e) use ($type) {
+                return strtolower($e->getType()) === strtolower($type);
+            });
+        }
+        
+        if ($recherche) {
+            $evenements = array_filter($evenements, function($e) use ($recherche) {
+                return stripos($e->getTitre(), $recherche) !== false || 
+                       stripos($e->getDescription(), $recherche) !== false;
+            });
+        }
+    } else {
+        // Utilisateurs non connectés ou admins - événements publics
+        $evenements = $evenementRepository->findPublicEvents();
+    }
+    
+    // Calculer les statistiques
+    $now = new \DateTime();
+    $stats = [
+        'totalEvents' => count($evenements),
+        'upcomingEvents' => count(array_filter($evenements, fn($e) => $e->getDateDebut() > $now)),
+        'expertSpeakers' => 25, // À adapter selon votre logique métier
+        'happyParticipants' => 1200, // À adapter
+    ];
+    
+    // Permissions pour les actions
+    $actions = [];
+    foreach ($evenements as $evt) {
+        $canEdit = $user && $evt->getCreateur() === $user;
+        $canInscrire = false;
+        
+        if ($user && $user !== $evt->getCreateur()) {
+            $subscribeCheck = $this->canUserSubscribe($user, $evt, $em);
+            $canInscrire = $subscribeCheck['can_subscribe'];
+        }
+        
+        // Compter les inscriptions (optimisation)
+        $evt->inscriptionsCount = $em->getRepository(InscriptionEvenement::class)
+            ->count(['evenement' => $evt]);
+
+        $actions[$evt->getId()] = [
+            'can_edit' => (bool) $canEdit,
+            'can_inscribe' => (bool) $canInscrire,
+        ];
+    }
+    
+    $hasClientRole = false;
+    if ($user) {
+        $allowedClientRoles = ['ROLE_MEDECIN', 'ROLE_RESPONSABLE_LABO', 'ROLE_RESPONSABLE_PARA', 'ROLE_PATIENT'];
+        foreach ($allowedClientRoles as $role) {
+            if ($this->isGranted($role)) {
+                $hasClientRole = true;
+                break;
+            }
+        }
+    }
+    
+    return $this->render('home/index.html.twig', [
+        'evenements' => array_slice($evenements, 0, 6), 
+        'stats' => $stats,
+        'actions' => $actions,
+        'type' => $type,
+        'recherche' => $recherche,
+        'has_permission_to_create' => $hasClientRole,
+    ]);
+}
 
     #[Route('/{id}/inscrire', name: 'evenement_inscrire', methods: ['POST'])]
     public function inscrire(Request $request, Evenement $evenement, EntityManagerInterface $em): Response
@@ -399,7 +696,8 @@ class EvenementController extends AbstractController
         
         if (!$canSubscribe['can_subscribe']) {
             $this->addFlash('warning', $canSubscribe['message']);
-            return $this->redirectToRoute('admin_evenement_view', ['id' => $evenement->getId()]);
+            $route = $this->isGranted('ROLE_ADMIN') ? 'evenements_evenement_view' : 'admin_client_event_view';
+            return $this->redirectToRoute($route, ['id' => $evenement->getId()]);
         }
 
         $existing = $em->getRepository(InscriptionEvenement::class)
@@ -407,7 +705,8 @@ class EvenementController extends AbstractController
 
         if ($existing) {
             $this->addFlash('warning', 'Vous êtes déjà inscrit à cet événement.');
-            return $this->redirectToRoute('admin_evenement_view', ['id' => $evenement->getId()]);
+            $route = $this->isGranted('ROLE_ADMIN') ? 'evenements_evenement_view' : 'admin_client_event_view';
+            return $this->redirectToRoute($route, ['id' => $evenement->getId()]);
         }
 
         if ($evenement->getPlacesMax() !== null) {
@@ -416,7 +715,8 @@ class EvenementController extends AbstractController
                 
             if ($inscriptionsCount >= $evenement->getPlacesMax()) {
                 $this->addFlash('danger', 'Désolé, cet événement est complet.');
-                return $this->redirectToRoute('admin_evenement_view', ['id' => $evenement->getId()]);
+                $route = $this->isGranted('ROLE_ADMIN') ? 'evenements_evenement_view' : 'admin_client_event_view';
+                return $this->redirectToRoute($route, ['id' => $evenement->getId()]);
             }
         }
 
@@ -444,14 +744,8 @@ class EvenementController extends AbstractController
         $em->flush();
 
         $this->addFlash('success', 'Inscription réussie !');
-        return $this->redirectToRoute('admin_evenement_view', ['id' => $evenement->getId()]);
-    }
-
-    #[Route('/{id}/inscrire', name: 'evenement_inscrire_get', methods: ['GET'])]
-    public function inscrireGet(Evenement $evenement): Response
-    {
-        $this->addFlash('info', 'Veuillez utiliser le formulaire d\'inscription sur la page de l\'événement.');
-        return $this->redirectToRoute('admin_evenement_view', ['id' => $evenement->getId()]);
+        $route = $this->isGranted('ROLE_ADMIN') ? 'evenements_evenement_view' : 'admin_client_event_view';
+        return $this->redirectToRoute($route, ['id' => $evenement->getId()]);
     }
 
     #[Route('/{id}/desinscrire', name: 'evenement_desinscrire', methods: ['POST'])]
@@ -472,7 +766,8 @@ class EvenementController extends AbstractController
             $this->addFlash('success', 'Vous avez été désinscrit de cet événement.');
         }
 
-        return $this->redirectToRoute('admin_evenement_view', ['id' => $evenement->getId()]);
+        $route = $this->isGranted('ROLE_ADMIN') ? 'evenements_evenement_view' : 'admin_client_event_view';
+        return $this->redirectToRoute($route, ['id' => $evenement->getId()]);
     }
 
     #[Route('/{id}/approuver', name: 'evenement_approuver', methods: ['POST'])]
@@ -487,7 +782,7 @@ class EvenementController extends AbstractController
             $this->addFlash('success', 'Événement approuvé avec succès.');
         }
 
-        return $this->redirectToRoute('admin_evenement_view', ['id' => $evenement->getId()]);
+        return $this->redirectToRoute('evenements_evenement_view', ['id' => $evenement->getId()]);
     }
 
     #[Route('/{id}/participants', name: 'evenement_participants', methods: ['GET'])]
@@ -521,33 +816,159 @@ class EvenementController extends AbstractController
         ]);
     }
 
-    #[Route('/promouvoir', name: 'evenement_promote', methods: ['GET'])]
-    public function promote(): Response
-    {
-        $this->denyAccessUnlessGranted('ROLE_ADMIN');
-        return $this->render('evenement/promote.html.twig');
+    // Page des événements pour les clients (non-admins)
+    #[Route('/client/events', name: 'client_events', methods: ['GET'])]
+public function clientEvents(Request $request, EvenementRepository $evenementRepository, EntityManagerInterface $em): Response
+{
+    // Vérifier que l'utilisateur a un rôle client valide
+    $allowedClientRoles = ['ROLE_MEDECIN', 'ROLE_RESPONSABLE_LABO', 'ROLE_RESPONSABLE_PARA', 'ROLE_PATIENT'];
+    $hasClientRole = false;
+    
+    foreach ($allowedClientRoles as $role) {
+        if ($this->isGranted($role)) {
+            $hasClientRole = true;
+            break;
+        }
+    }
+    
+    // Si admin, rediriger vers la page admin
+    if ($this->isGranted('ROLE_ADMIN')) {
+        return $this->redirectToRoute('evenements_evenement_list');
+    }
+    
+    // Si pas de rôle client valide et pas connecté, rediriger vers login
+    if (!$hasClientRole && !$this->getUser()) {
+        return $this->redirectToRoute('app_login');
     }
 
-    #[Route('/exporter', name: 'evenement_export', methods: ['GET'])]
-    public function export(): Response
-    {
-        $this->denyAccessUnlessGranted('ROLE_ADMIN');
+    $user = $this->getUser();
+    $type = $request->query->get('type');
+    $recherche = $request->query->get('recherche');
+    
+    // Récupérer TOUS les événements pertinents pour le client
+    $evenements = [];
+    
+    if ($user) {
+        // 1. Événements approuvés visibles (publics ou pour ses groupes)
+        $visibleEvents = $evenementRepository->findVisibleEventsForClient($user);
         
-        $evenements = $this->evenementRepository->findAllWithStats();
-
-        return $this->render('evenement/export.html.twig', [
-            'evenements' => $evenements,
+        // 2. Ses propres événements en attente d'approbation (UNIQUEMENT les siens)
+        $demandesEnAttente = $evenementRepository->findBy([
+            'createur' => $user,
+            'statut' => 'en_attente_approbation'
         ]);
+        
+        // 3. Ses propres événements approuvés (déjà dans visibleEvents mais on les garde pour éviter doublons)
+        $mesEvenementsApprouves = $evenementRepository->findBy([
+            'createur' => $user,
+            'statut' => ['planifie', 'confirme', 'en_cours']
+        ]);
+        
+        // Fusionner tous les événements
+        $evenements = array_merge($visibleEvents, $demandesEnAttente, $mesEvenementsApprouves);
+        
+        // Supprimer les doublons (basé sur l'ID)
+        $evenements = array_reduce($evenements, function($carry, $item) {
+            $carry[$item->getId()] = $item;
+            return $carry;
+        }, []);
+        $evenements = array_values($evenements);
+        
+        // Trier par date de début
+        usort($evenements, function($a, $b) {
+            return $a->getDateDebut() <=> $b->getDateDebut();
+        });
+        
+    } else {
+        // Utilisateur non connecté : seulement les événements publics approuvés
+        $evenements = $evenementRepository->findBy([
+            'statut' => ['planifie', 'confirme', 'en_cours']
+        ], ['dateDebut' => 'ASC']);
+        
+        // Filtrer ceux qui ont des groupes cibles (les exclure)
+        $evenements = array_filter($evenements, function($event) {
+            return $event->getGroupeCibles()->isEmpty();
+        });
+    }
+    
+    // Appliquer les filtres (type et recherche)
+    if ($type) {
+        $evenements = array_filter($evenements, function($evenement) use ($type) {
+            return strtolower($evenement->getType()) === strtolower($type);
+        });
+    }
+    
+    if ($recherche) {
+        $recherche = strtolower($recherche);
+        $evenements = array_filter($evenements, function($evenement) use ($recherche) {
+            return stripos(strtolower($evenement->getTitre()), $recherche) !== false || 
+                   stripos(strtolower($evenement->getDescription() ?? ''), $recherche) !== false;
+        });
     }
 
-    #[Route('/parametres', name: 'evenement_settings', methods: ['GET'])]
-    public function settings(): Response
-    {
-        $this->denyAccessUnlessGranted('ROLE_ADMIN');
-        return $this->render('evenement/settings.html.twig');
+    // Calculer les statistiques
+    $now = new \DateTime();
+    $stats = [
+        'totalEvents' => count($evenements),
+        'upcomingEvents' => count(array_filter($evenements, function($event) use ($now) {
+            return $event->getDateDebut() > $now;
+        })),
+        'expertSpeakers' => 25,
+        'happyParticipants' => 1200,
+    ];
+    
+    // Calculer les permissions pour chaque événement
+    $actions = [];
+    foreach ($evenements as $evt) {
+        $canEdit = $user && $evt->getCreateur() === $user && $evt->getStatut() === 'en_attente_approbation';
+        $canInscrire = false;
+        
+        if ($user && $user !== $evt->getCreateur() && $evt->getStatut() !== 'en_attente_approbation') {
+            $subscribeCheck = $this->canUserSubscribe($user, $evt, $em);
+            $canInscrire = $subscribeCheck['can_subscribe'];
+        }
+        
+        // Compter les inscriptions
+        try {
+            $evt->inscriptionsCount = $em->getRepository(InscriptionEvenement::class)
+                ->count(['evenement' => $evt]);
+        } catch (\Exception $e) {
+            $evt->inscriptionsCount = 0;
+        }
+
+        $actions[$evt->getId()] = [
+            'can_edit' => (bool) $canEdit,
+            'can_inscribe' => (bool) $canInscrire,
+        ];
+        
+        // Ajouter un indicateur de statut pour l'affichage
+        $evt->displayStatus = $evt->getStatut();
+        if ($evt->getStatut() === 'en_attente_approbation') {
+            $evt->displayBadge = 'warning';
+            $evt->displayMessage = 'En attente de validation';
+            $evt->isPendingRequest = true;
+        } elseif ($evt->getStatut() === 'planifie') {
+            $evt->displayBadge = 'success';
+            $evt->displayMessage = 'Planifié';
+        } elseif ($evt->getStatut() === 'confirme') {
+            $evt->displayBadge = 'info';
+            $evt->displayMessage = 'Confirmé';
+        } elseif ($evt->getStatut() === 'en_cours') {
+            $evt->displayBadge = 'primary';
+            $evt->displayMessage = 'En cours';
+        }
     }
 
-    private function canUserSubscribe(Utilisateur $user, Evenement $evenement, EntityManagerInterface $em): array
+    return $this->render('evenement/client.html.twig', [
+        'evenements' => $evenements,
+        'actions' => $actions,
+        'stats' => $stats,
+        'type' => $type,
+        'recherche' => $recherche,
+        'has_permission_to_create' => $hasClientRole,
+        'user' => $user,
+    ]);
+}   private function canUserSubscribe(Utilisateur $user, Evenement $evenement, EntityManagerInterface $em): array
     {
         if (!in_array($evenement->getStatut(), ['planifie', 'approuve'])) {
             return [
@@ -597,65 +1018,614 @@ class EvenementController extends AbstractController
         ];
     }
 
-   #[Route('/admin/dashboard', name: 'dashboard', methods: ['GET'])]
-public function dashboard(EntityManagerInterface $em): Response
-{
-    $this->denyAccessUnlessGranted('ROLE_ADMIN');
+    #[Route('/admin/dashboard', name: 'dashboard', methods: ['GET'])]
+    public function dashboard(EntityManagerInterface $em): Response
+    {
+        $this->denyAccessUnlessGranted('ROLE_ADMIN');
 
-    $user = $this->getUser();
-    $now = new \DateTime();
-    $lastWeek = clone $now;
-    $lastWeek->modify('-7 days');
+        $user = $this->getUser();
+        $now = new \DateTime();
+        $lastWeek = clone $now;
+        $lastWeek->modify('-7 days');
+
+        $totalEvenements = $this->evenementRepository->count([]);
+        
+        $evenementsAVenir = $this->evenementRepository->createQueryBuilder('e')
+            ->where('e.dateDebut > :now')
+            ->setParameter('now', $now)
+            ->getQuery()
+            ->getSingleScalarResult();
+
+        $evenementsSemaine = $this->evenementRepository->createQueryBuilder('e')
+            ->where('e.creeLe >= :lastWeek')
+            ->setParameter('lastWeek', $lastWeek)
+            ->getQuery()
+            ->getSingleScalarResult();
+
+        $totalInscriptions = $em->getRepository(InscriptionEvenement::class)->count([]);
+
+        $evenementsRecents = $this->evenementRepository->createQueryBuilder('e')
+            ->orderBy('e.creeLe', 'DESC')
+            ->setMaxResults(6)
+            ->getQuery()
+            ->getResult();
+
+        $evenementsProchains = $this->evenementRepository->createQueryBuilder('e')
+            ->where('e.dateDebut > :now')
+            ->setParameter('now', $now)
+            ->orderBy('e.dateDebut', 'ASC')
+            ->setMaxResults(5)
+            ->getQuery()
+            ->getResult();
+
+        $evenementsParType = $this->evenementRepository->createQueryBuilder('e')
+            ->select('e.type, COUNT(e.id) as count')
+            ->groupBy('e.type')
+            ->getQuery()
+            ->getResult();
+
+        return $this->render('evenement/dashboard.html.twig', [
+            'totalEvenements' => $totalEvenements,
+            'evenementsAVenir' => $evenementsAVenir,
+            'evenementsSemaine' => $evenementsSemaine,
+            'totalInscriptions' => $totalInscriptions,
+            'evenementsRecents' => $evenementsRecents,
+            'evenementsProchains' => $evenementsProchains,
+            'evenementsParType' => $evenementsParType,
+            'user' => $user,
+        ]);
+    }
 
   
-    $totalEvenements = $this->evenementRepository->count([]);
+
+ #[Route('/client/demande-evenement', name: 'client_demande_evenement', methods: ['GET', 'POST'])]
+public function demandeEvenement(Request $request, EntityManagerInterface $em): Response
+{
+    $user = $this->getUser();
     
-    $evenementsAVenir = $this->evenementRepository->createQueryBuilder('e')
-        ->where('e.dateDebut > :now')
-        ->setParameter('now', $now)
-        ->getQuery()
-        ->getSingleScalarResult();
 
-    $evenementsSemaine = $this->evenementRepository->createQueryBuilder('e')
-        ->where('e.creeLe >= :lastWeek')
-        ->setParameter('lastWeek', $lastWeek)
-        ->getQuery()
-        ->getSingleScalarResult();
+    if (!$user) {
+        $this->addFlash('error', 'Vous devez être connecté pour faire une demande.');
+        return $this->redirectToRoute('app_login');
+    }
 
-    $totalInscriptions = $em->getRepository(InscriptionEvenement::class)->count([]);
+    
+    if ($this->isGranted('ROLE_ADMIN')) {
+        $this->addFlash('info', 'Les administrateurs utilisent le formulaire de création standard.');
+        return $this->redirectToRoute('admin_evenement_add');
+    }
 
-    // Événements récents
-    $evenementsRecents = $this->evenementRepository->createQueryBuilder('e')
-        ->orderBy('e.creeLe', 'DESC')
-        ->setMaxResults(6)
-        ->getQuery()
-        ->getResult();
+    
+    $hasPermission = true;
+    
 
-    // Événements à venir
-    $evenementsProchains = $this->evenementRepository->createQueryBuilder('e')
-        ->where('e.dateDebut > :now')
-        ->setParameter('now', $now)
-        ->orderBy('e.dateDebut', 'ASC')
-        ->setMaxResults(5)
-        ->getQuery()
-        ->getResult();
+    $roles = implode(', ', $user->getRoles());
+    $this->addFlash('debug', "Vos rôles actuels: {$roles}");
 
-    // Statistiques par type
-    $evenementsParType = $this->evenementRepository->createQueryBuilder('e')
-        ->select('e.type, COUNT(e.id) as count')
-        ->groupBy('e.type')
-        ->getQuery()
-        ->getResult();
+    $evenement = new Evenement();
+    $evenement->setStatut('en_attente_approbation');
+    $evenement->setStatutDemande('en_attente_approbation');
 
-    return $this->render('evenement/dashboard.html.twig', [
-        'totalEvenements' => $totalEvenements,
-        'evenementsAVenir' => $evenementsAVenir,
-        'evenementsSemaine' => $evenementsSemaine,
-        'totalInscriptions' => $totalInscriptions,
-        'evenementsRecents' => $evenementsRecents,
-        'evenementsProchains' => $evenementsProchains,
-        'evenementsParType' => $evenementsParType,
+    $form = $this->createForm(EvenementType::class, $evenement, [
+        'user_role' => $user->getRoles()[0] ?? 'ROLE_USER',
+        'is_admin' => false,
+        'is_demande' => true,
+    ]);
+
+    $form->handleRequest($request);
+
+    if ($form->isSubmitted() && $form->isValid()) {
+        $errors = $this->validateEvenement($evenement);
+
+        if (!empty($errors)) {
+            foreach ($errors as $error) {
+                $this->addFlash('error', $error);
+            }
+
+            return $this->render('evenement/client_ajout_demande.html.twig', [
+                'form' => $form->createView(),
+            ]);
+        }
+
+        $evenement->setCreeLe(new \DateTime());
+        $evenement->setCreateur($user);
+        $evenement->setStatutDemande('en_attente_approbation');
+
+        $em->persist($evenement);
+        $em->flush();
+
+        $this->addFlash('success', 'Votre demande a été envoyée.');
+        $this->addFlash('info', 'Elle sera examinée sous 48h.');
+
+        return $this->redirectToRoute('evenements_client_events');
+    }
+
+    return $this->render('evenement/client_ajout_demande.html.twig', [
+        'form' => $form->createView(),
+    ]);
+}
+    #[Route('/admin/demandes-evenements', name: 'admin_demandes_evenements', methods: ['GET'])]
+    public function demandesEvenements(
+        Request $request,
+        EvenementRepository $evenementRepository
+    ): Response {
+
+        $this->denyAccessUnlessGranted('ROLE_ADMIN');
+
+        $recherche = $request->query->get('recherche');
+        $type = $request->query->get('type');
+
+        $qb = $evenementRepository->createQueryBuilder('e')
+            ->where('e.statutDemande = :statut')
+            ->setParameter('statut', 'en_attente_approbation')
+            ->orderBy('e.creeLe', 'DESC');
+
+        if ($recherche) {
+
+            $qb->andWhere('e.titre LIKE :recherche OR e.description LIKE :recherche')
+               ->setParameter('recherche', '%' . $recherche . '%');
+        }
+
+        if ($type) {
+
+            $qb->andWhere('e.type = :type')
+               ->setParameter('type', $type);
+        }
+
+        $demandes = $qb->getQuery()->getResult();
+
+        return $this->render('evenement/admin_demandes_evenements.html.twig', [
+            'demandes' => $demandes,
+            'recherche' => $recherche,
+            'type' => $type,
+        ]);
+    }
+
+
+
+    #[Route('/admin/evenement/{id}/approuver', name: 'admin_evenement_approuver', methods: ['POST'])]
+    public function approuverDemande(
+        Request $request,
+        Evenement $evenement,
+        EntityManagerInterface $em
+    ): Response {
+
+        $this->denyAccessUnlessGranted('ROLE_ADMIN');
+
+        if (!$evenement) {
+            throw $this->createNotFoundException('Événement non trouvé');
+        }
+
+        $evenement->setStatutDemande('approuve');
+        $evenement->setStatut('planifie');
+        $evenement->setModifieLe(new \DateTime());
+
+        $em->flush();
+
+        $this->addFlash('success', 'Événement approuvé.');
+
+        return $this->redirectToRoute('evenements_admin_demandes_evenements');
+
+    }
+
+
+
+    #[Route('/admin/evenement/{id}/refuser', name: 'evenement_refuser', methods: ['POST'])]
+    public function refuserDemande(
+        Request $request,
+        Evenement $evenement,
+        EntityManagerInterface $em
+    ): Response {
+
+        $this->denyAccessUnlessGranted('ROLE_ADMIN');
+
+        if (!$evenement) {
+            throw $this->createNotFoundException('Événement non trouvé');
+        }
+
+        $evenement->setStatutDemande('refuse');
+        $evenement->setStatut('annule');
+        $evenement->setModifieLe(new \DateTime());
+
+        $em->flush();
+
+        $this->addFlash('warning', 'Événement refusé.');
+
+      return $this->redirectToRoute('evenements_admin_demandes_evenements');
+
+    }
+
+
+
+    private function validateEvenement(Evenement $evenement): array
+{
+    $errors = [];
+
+    if (!$evenement->getDateDebut()) {
+        $errors[] = 'La date de début est obligatoire.';
+    }
+
+    if (!$evenement->getDateFin()) {
+        $errors[] = 'La date de fin est obligatoire.';
+    }
+
+    if ($evenement->getDateDebut() && $evenement->getDateFin()) {
+
+        if ($evenement->getDateFin() < $evenement->getDateDebut()) {
+            $errors[] = 'La date de fin doit être après la date de début.';
+        }
+
+        // FIX: Create DateTime properly without string timezone
+        $minDate = new \DateTime();
+        $minDate->modify('+2 days');
+
+        if ($evenement->getDateDebut() < $minDate) {
+            $errors[] = 'La date doit être au moins 48h à l\'avance.';
+        }
+
+        $diff = $evenement->getDateDebut()->diff($evenement->getDateFin());
+
+        if ($diff->days > 30) {
+            $errors[] = 'Durée max : 30 jours.';
+        }
+    }
+
+    if ($evenement->getPlacesMax() !== null) {
+
+        if ($evenement->getPlacesMax() <= 0) {
+            $errors[] = 'Places > 0 obligatoire.';
+        }
+
+        if ($evenement->getPlacesMax() > 10000) {
+            $errors[] = 'Places max : 10000.';
+        }
+    }
+
+    return $errors;
+}
+
+#[Route('/client/mes-inscriptions', name: 'client_mes_inscriptions', methods: ['GET'])]
+public function mesInscriptions(EntityManagerInterface $em): Response
+{
+    $user = $this->getUser();
+    
+    if (!$user) {
+        return $this->redirectToRoute('app_login');
+    }
+
+    $inscriptions = $em->getRepository(InscriptionEvenement::class)
+        ->findBy(
+            ['utilisateur' => $user],
+            ['dateInscription' => 'DESC']
+        );
+
+    return $this->render('evenement/mes_inscriptions.html.twig', [
+        'inscriptions' => $inscriptions,
+    ]);
+}
+
+#[Route('/client/{id}/desinscrire', name: 'client_desinscrire', methods: ['POST'])]
+public function clientDesinscrire(Request $request, Evenement $evenement, EntityManagerInterface $em): Response
+{
+    $user = $this->getUser();
+    
+    if (!$user) {
+        return $this->redirectToRoute('app_login');
+    }
+
+    // Vérification du token CSRF
+    if (!$this->isCsrfTokenValid('desinscrire' . $evenement->getId(), $request->request->get('_token'))) {
+        $this->addFlash('error', 'Token CSRF invalide.');
+        return $this->redirectToRoute('evenements_client_mes_inscriptions');
+    }
+
+    // Vérification du délai de 24h
+    $now = new \DateTime();
+    $interval = $now->diff($evenement->getDateDebut());
+    $heuresRestantes = ($interval->days * 24) + $interval->h;
+    
+    if ($heuresRestantes < 24 && $interval->invert == 0) {
+        $this->addFlash('error', 'Désolé, vous ne pouvez plus vous désinscrire moins de 24h avant l\'événement.');
+        return $this->redirectToRoute('evenements_client_mes_inscriptions');
+    }
+
+    $inscription = $em->getRepository(InscriptionEvenement::class)
+        ->findOneBy(['evenement' => $evenement, 'utilisateur' => $user]);
+
+    if ($inscription) {
+        $em->remove($inscription);
+        $em->flush();
+        $this->addFlash('success', 'Votre désinscription a été effectuée avec succès.');
+    }
+
+    return $this->redirectToRoute('evenements_client_mes_inscriptions');
+}
+
+#[Route('/client/tous-les-evenements', name: 'client_all_events', methods: ['GET'])]
+public function clientAllEvents(Request $request, EvenementRepository $evenementRepository, EntityManagerInterface $em): Response
+{
+    // Vérifier que l'utilisateur a un rôle client valide
+    $allowedClientRoles = ['ROLE_MEDECIN', 'ROLE_RESPONSABLE_LABO', 'ROLE_RESPONSABLE_PARA', 'ROLE_PATIENT'];
+    $hasClientRole = false;
+    
+    foreach ($allowedClientRoles as $role) {
+        if ($this->isGranted($role)) {
+            $hasClientRole = true;
+            break;
+        }
+    }
+    
+    // Si admin, rediriger vers la page admin
+    if ($this->isGranted('ROLE_ADMIN')) {
+        return $this->redirectToRoute('evenements_evenement_list');
+    }
+    
+    // Si pas de rôle client valide et pas connecté, rediriger vers login
+    if (!$hasClientRole && !$this->getUser()) {
+        return $this->redirectToRoute('app_login');
+    }
+
+    $user = $this->getUser();
+    $type = $request->query->get('type');
+    $recherche = $request->query->get('recherche');
+    $page = $request->query->getInt('page', 1);
+    $limit = 9; // Nombre d'événements par page
+    
+    // Récupérer TOUS les événements pertinents pour le client
+    $evenements = [];
+    
+    if ($user) {
+        // 1. Événements publics ou pour ses groupes
+        $visibleEvents = $evenementRepository->findVisibleEventsForClient($user);
+        
+        // 2. Ses propres événements en attente d'approbation
+        $demandesEnAttente = $evenementRepository->findBy([
+            'createur' => $user,
+            'statutDemande' => 'en_attente_approbation'
+        ]);
+        
+        // 3. Ses propres événements approuvés
+        $mesEvenementsApprouves = $evenementRepository->findBy([
+            'createur' => $user,
+            'statut' => ['planifie', 'confirme', 'en_cours']
+        ]);
+        
+        // Fusionner tous les événements
+        $evenements = array_merge($visibleEvents, $demandesEnAttente, $mesEvenementsApprouves);
+        
+        // Supprimer les doublons
+        $evenements = array_reduce($evenements, function($carry, $item) {
+            $carry[$item->getId()] = $item;
+            return $carry;
+        }, []);
+        $evenements = array_values($evenements);
+        
+    } else {
+        // Utilisateur non connecté : seulement les événements publics
+        $evenements = $evenementRepository->findBy([
+            'statut' => ['planifie', 'confirme']
+        ], ['dateDebut' => 'ASC']);
+        
+        // Filtrer ceux qui ont des groupes cibles
+        $evenements = array_filter($evenements, function($event) {
+            return $event->getGroupeCibles()->isEmpty();
+        });
+    }
+    
+    // Appliquer les filtres
+    if ($type) {
+        $evenements = array_filter($evenements, function($evenement) use ($type) {
+            return strtolower($evenement->getType()) === strtolower($type);
+        });
+    }
+    
+    if ($recherche) {
+        $recherche = strtolower($recherche);
+        $evenements = array_filter($evenements, function($evenement) use ($recherche) {
+            return stripos(strtolower($evenement->getTitre()), $recherche) !== false || 
+                   stripos(strtolower($evenement->getDescription() ?? ''), $recherche) !== false;
+        });
+    }
+    
+    // Trier par date de début
+    usort($evenements, function($a, $b) {
+        return $a->getDateDebut() <=> $b->getDateDebut();
+    });
+    
+    // Pagination
+    $total = count($evenements);
+    $offset = ($page - 1) * $limit;
+    $evenementsPagines = array_slice($evenements, $offset, $limit);
+    $totalPages = ceil($total / $limit);
+    
+    // Compter les inscriptions pour chaque événement
+    foreach ($evenementsPagines as $evt) {
+        try {
+            $evt->inscriptionsCount = $em->getRepository(InscriptionEvenement::class)
+                ->count(['evenement' => $evt]);
+        } catch (\Exception $e) {
+            $evt->inscriptionsCount = 0;
+        }
+    }
+
+    // Statistiques
+    $now = new \DateTime();
+    $stats = [
+        'total' => $total,
+        'a_venir' => count(array_filter($evenements, function($e) use ($now) {
+            return $e->getDateDebut() > $now;
+        })),
+        'gratuits' => count(array_filter($evenements, function($e) {
+            return $e->getTarif() == 0 || $e->getTarif() === null;
+        })),
+        'payants' => count(array_filter($evenements, function($e) {
+            return $e->getTarif() > 0;
+        }))
+    ];
+
+    return $this->render('evenement/clients_evenements.html.twig', [
+        'evenements' => $evenementsPagines,
+        'stats' => $stats,
+        'type' => $type,
+        'recherche' => $recherche,
+        'page' => $page,
+        'totalPages' => $totalPages,
+        'total' => $total,
+        'has_permission_to_create' => $hasClientRole,
         'user' => $user,
     ]);
 }
+
+#[Route('/client/tous-les-evenements', name: 'client_all_evenements', methods: ['GET'])]
+public function clientEvenements(
+    Request $request, 
+    EvenementRepository $evenementRepository, 
+    EntityManagerInterface $em
+): Response {
+    // Vérifier que l'utilisateur a un rôle client valide (non admin)
+    $allowedClientRoles = ['ROLE_MEDECIN', 'ROLE_RESPONSABLE_LABO', 'ROLE_RESPONSABLE_PARA', 'ROLE_PATIENT'];
+    $hasClientRole = false;
+    
+    $user = $this->getUser();
+    
+    // Vérifier les rôles si l'utilisateur est connecté
+    if ($user) {
+        foreach ($allowedClientRoles as $role) {
+            if ($this->isGranted($role)) {
+                $hasClientRole = true;
+                break;
+            }
+        }
+    }
+    
+    // Si admin, rediriger vers la page admin
+    if ($this->isGranted('ROLE_ADMIN')) {
+        return $this->redirectToRoute('evenements_evenement_list');
+    }
+    
+    // Récupérer les paramètres de filtrage
+    $type = $request->query->get('type');
+    $recherche = $request->query->get('recherche');
+    $tri = $request->query->get('tri', 'date_asc');
+    $page = $request->query->getInt('page', 1);
+    $limit = 9; // Nombre d'événements par page
+    
+    // Récupérer tous les événements pertinents pour le client
+    $evenements = [];
+    
+    if ($user) {
+    // 1. Événements approuvés visibles (publics ou pour ses groupes)
+    $visibleEvents = $evenementRepository->findVisibleEventsForClient($user);
+    
+    // 2. Ses propres événements en attente d'approbation (UNIQUEMENT les siens)
+    $demandesEnAttente = $evenementRepository->findPendingEventsForUser($user);
+    
+    // 3. Ses propres événements approuvés
+    $mesEvenementsApprouves = $evenementRepository->findBy([
+        'createur' => $user,
+        'statut' => ['planifie', 'confirme', 'en_cours']
+    ]);
+    
+    // Fusionner tous les événements
+    $evenements = array_merge($visibleEvents, $demandesEnAttente, $mesEvenementsApprouves);
+    } else {
+        // Utilisateur non connecté : seulement les événements publics
+        $evenements = $evenementRepository->findBy([
+            'statut' => ['planifie', 'confirme']
+        ], ['dateDebut' => 'ASC']);
+        
+        // Filtrer ceux qui ont des groupes cibles (les exclure)
+        $evenements = array_filter($evenements, function($event) {
+            return $event->getGroupeCibles()->isEmpty();
+        });
+    }
+    
+    // Supprimer les doublons (basé sur l'ID)
+    $evenements = array_reduce($evenements, function($carry, $item) {
+        $carry[$item->getId()] = $item;
+        return $carry;
+    }, []);
+    $evenements = array_values($evenements);
+    
+    // Appliquer les filtres de type
+    if ($type) {
+        $evenements = array_filter($evenements, function($evenement) use ($type) {
+            return strtolower($evenement->getType()) === strtolower($type);
+        });
+    }
+    
+    // Appliquer les filtres de recherche
+    if ($recherche) {
+        $recherche = strtolower($recherche);
+        $evenements = array_filter($evenements, function($evenement) use ($recherche) {
+            return stripos(strtolower($evenement->getTitre()), $recherche) !== false || 
+                   stripos(strtolower($evenement->getDescription() ?? ''), $recherche) !== false;
+        });
+    }
+    
+    // Trier les événements
+    usort($evenements, function($a, $b) use ($tri) {
+        switch ($tri) {
+            case 'date_desc':
+                return $b->getDateDebut() <=> $a->getDateDebut();
+            case 'prix_asc':
+                $prixA = $a->getTarif() ?? 0;
+                $prixB = $b->getTarif() ?? 0;
+                return $prixA <=> $prixB;
+            case 'prix_desc':
+                $prixA = $a->getTarif() ?? 0;
+                $prixB = $b->getTarif() ?? 0;
+                return $prixB <=> $prixA;
+            case 'date_asc':
+            default:
+                return $a->getDateDebut() <=> $b->getDateDebut();
+        }
+    });
+    
+    // Compter les inscriptions pour chaque événement
+    foreach ($evenements as $evt) {
+        try {
+            $evt->inscriptionsCount = $em->getRepository(InscriptionEvenement::class)
+                ->count(['evenement' => $evt]);
+        } catch (\Exception $e) {
+            $evt->inscriptionsCount = 0;
+        }
+    }
+    
+    // Pagination
+    $total = count($evenements);
+    $offset = ($page - 1) * $limit;
+    $evenementsPagines = array_slice($evenements, $offset, $limit);
+    $totalPages = ceil($total / $limit);
+    
+    // Calculer les statistiques
+    $now = new \DateTime();
+    $stats = [
+        'total' => $total,
+        'a_venir' => count(array_filter($evenements, function($e) use ($now) {
+            return $e->getDateDebut() > $now;
+        })),
+        'gratuits' => count(array_filter($evenements, function($e) {
+            return $e->getTarif() == 0 || $e->getTarif() === null;
+        })),
+        'payants' => count(array_filter($evenements, function($e) {
+            return $e->getTarif() > 0;
+        }))
+    ];
+
+    return $this->render('evenement/clients_evenements.html.twig', [
+        'evenements' => $evenementsPagines,
+        'stats' => $stats,
+        'type' => $type,
+        'recherche' => $recherche,
+        'tri' => $tri,
+        'page' => $page,
+        'totalPages' => $totalPages,
+        'total' => $total,
+        'has_permission_to_create' => $hasClientRole,
+        'user' => $user,
+    ]);
+}
+
+
 }

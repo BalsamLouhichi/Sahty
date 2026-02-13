@@ -1,5 +1,4 @@
 {# templates/partials/header.html.twig #}
-
 <!-- Topbar Start -->
 <div class="container-fluid py-2 border-bottom d-none d-lg-block">
     <div class="container">
@@ -45,9 +44,42 @@
                 <div class="navbar-nav ms-auto py-0">
                     <a href="{{ path('app_home') }}" class="nav-item nav-link active">Accueil</a>
                     
-                    {# Admin/Medical staff events management panel #}
-                    {% if is_granted('ROLE_ADMIN') or is_granted('ROLE_MEDECIN') or is_granted('ROLE_RESPONSABLE_LABO') or is_granted('ROLE_RESPONSABLE_PARA') or is_granted('ROLE_PATIENT') %}
-                    <a href="{{ path('admin_evenement_list') }}" class="nav-item nav-link">Événements</a>
+                    <!-- Events link only for clients (not admins) -->
+                    {% if is_granted('ROLE_MEDECIN') or is_granted('ROLE_RESPONSABLE_LABO') or is_granted('ROLE_RESPONSABLE_PARA') or is_granted('ROLE_PATIENT') %}
+                         <a href="{{ path('evenements_client_events') }}" class="nav-item nav-link {{ app.current_route starts with 'evenements_client' ? 'active' : '' }}">
+        <i class="fas fa-calendar-alt me-1"></i>Événements
+    </a>
+    
+    <!-- Nouveau lien pour voir tous les événements -->
+    <a href="{{ path('evenements_client_all_events') }}" class="nav-item nav-link {{ app.current_route == 'evenements_client_all_events' ? 'active' : '' }}">
+        <i class="fas fa-list me-1"></i>Tous les événements
+    </a>
+    
+    <a href="{{ path('app_inscription_evenement_mes_inscriptions') }}" class="nav-item nav-link">
+        <i class="fas fa-ticket-alt me-1"></i>Mes inscriptions
+    </a>
+                    {% endif %}
+                    
+                    <!-- Dashboard Admin link - only for admins -->
+                    {% if is_granted('ROLE_ADMIN') %}
+                        <div class="nav-item dropdown">
+                            <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown">
+                                <i class="fa fa-calendar-check me-1"></i>Gestion Événements
+                            </a>
+                            <div class="dropdown-menu">
+                                <a href="{{ path('evenements_evenement_list') }}" class="dropdown-item">
+                                    <i class="fa fa-list me-2"></i>Tous les événements
+                                </a>
+                                <a href="{{ path('evenements_admin_demandes_evenements') }}" class="dropdown-item">
+
+                                    <i class="fa fa-inbox me-2"></i>Demandes
+                                </a>
+                            </div>
+                        </div>
+                        
+                        <a href="{{ path('dashboard_admin') }}" class="nav-item nav-link">
+                            <i class="fa fa-tachometer-alt me-1"></i>Dashboard
+                        </a>
                     {% endif %}
                     
                     <!-- User Authentication Section -->
@@ -57,18 +89,21 @@
                             <i class="fa fa-user me-1"></i>{{ app.user.prenom }} {{ app.user.nom }}
                         </a>
                         <div class="dropdown-menu dropdown-menu-end">
-                            <!-- Dashboard option for admins only -->
-                            {% if is_granted('ROLE_ADMIN') %}
-                            <a href="{{ path('admin_dashboard') }}" class="dropdown-item">
-                                <i class="fa fa-tachometer-alt me-2 text-warning"></i>
-                                <span class="fw-semibold">Dashboard Admin</span>
-                            </a>
-                            <hr class="dropdown-divider">
-                            {% endif %}
-                            
                             <a href="{{ path('app_profile') }}" class="dropdown-item">
                                 <i class="fa fa-user-circle me-2"></i>Mon Profil
                             </a>
+                            
+                            {% if is_granted('ROLE_MEDECIN')
+   or is_granted('ROLE_RESPONSABLE_LABO')
+   or is_granted('ROLE_RESPONSABLE_PARA')
+   or is_granted('ROLE_PATIENT') %}
+
+    <a href="{{ path('evenements_client_demande_evenement') }}" class="dropdown-item">
+        <i class="fa fa-paper-plane me-2"></i>Demander un événement
+    </a>
+
+{% endif %}
+                            
                             <hr class="dropdown-divider">
                             <a href="{{ path('app_logout') }}" class="dropdown-item text-danger">
                                 <i class="fa fa-sign-out-alt me-2"></i>Déconnexion
@@ -76,7 +111,7 @@
                         </div>
                     </div>
                     {% else %}
-                    <a href="{{ path('app_signup') }}" class="nav-item nav-link">S'inscrire</a>
+                    {# <a href="{{ path('app_register') }}" class="nav-item nav-link">S'inscrire</a> #}
                     <a href="{{ path('app_login') }}" class="nav-item nav-link btn btn-primary text-white px-3">Se connecter</a>
                     {% endif %}
                 </div>
@@ -84,4 +119,3 @@
         </nav>
     </div>
 </div>
-<!-- Navbar End -->

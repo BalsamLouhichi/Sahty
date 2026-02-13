@@ -80,6 +80,23 @@ private ?Utilisateur $createur = null;
 private Collection $groupeCibles;
 
 
+#[ORM\Column(type: 'string', length: 50, nullable: true)]
+private ?string $statutDemande = null;
+
+public function getStatutDemande(): ?string
+{
+    return $this->statutDemande;
+}
+
+public function setStatutDemande(?string $statutDemande): self
+{
+    $this->statutDemande = $statutDemande;
+
+    return $this;
+}
+
+
+
     public function __construct()
     {
         $this->inscriptions = new ArrayCollection();

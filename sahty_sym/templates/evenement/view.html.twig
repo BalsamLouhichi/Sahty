@@ -320,7 +320,7 @@
         <nav aria-label="breadcrumb" class="breadcrumb-nav">
             <ol class="breadcrumb">
                 <li class="breadcrumb-item"><a href="{{ path('app_home') }}">Accueil</a></li>
-                <li class="breadcrumb-item"><a href="{{ path('admin_evenement_list') }}">Événements</a></li>
+                <li class="breadcrumb-item"><a href="{{ path('evenements_evenement_list') }}">Événements</a></li>
                 <li class="breadcrumb-item active" aria-current="page">Détails</li>
             </ol>
         </nav>
@@ -331,7 +331,7 @@
                 <p class="mb-0 opacity-90">Détails complets de l'événement médical</p>
             </div>
             <div>
-                <a href="{{ path('admin_evenement_list') }}" class="back-btn">
+                <a href="{{ path('evenements_evenement_list') }}" class="back-btn">
                     <i class="fas fa-arrow-left"></i> Retour à la liste
                 </a>
             </div>
@@ -549,73 +549,6 @@ createur: {{ evenement.createur ? (evenement.createur.id ~ ' - ' ~ evenement.cre
                     {{ evenement.description ?: 'Aucune description fournie pour cet événement.' }}
                 </div>
             </div>
-            {% if is_granted('ROLE_ADMIN') %}
-<div class="event-card mt-4">
-    <h5 class="section-title"><i class="fas fa-users"></i> Participants ({{ nombreParticipants }})</h5>
-    
-    {% if nombreParticipants > 0 %}
-        <div class="table-responsive mt-3">
-            <table class="table table-hover">
-                <thead>
-                    <tr>
-                        <th>Nom</th>
-                        <th>Email</th>
-                        <th>Date d'inscription</th>
-                        <th>Statut</th>
-                        <th>Présence</th>
-                        <th>Groupe</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for inscription in evenement.inscriptions %}
-                    <tr>
-                        <td>
-                            {% if inscription.utilisateur %}
-                                {{ inscription.utilisateur.prenom }} {{ inscription.utilisateur.nom }}
-                            {% else %}
-                                <span class="text-muted">Utilisateur supprimé</span>
-                            {% endif %}
-                        </td>
-                        <td>
-                            {% if inscription.utilisateur %}
-                                {{ inscription.utilisateur.email }}
-                            {% else %}
-                                -
-                            {% endif %}
-                        </td>
-                        <td>{{ inscription.dateInscription|date('d/m/Y H:i') }}</td>
-                        <td>
-                            <span class="badge bg-{{ inscription.statut == 'confirme' ? 'success' : 'warning' }}">
-                                {{ inscription.statut }}
-                            </span>
-                        </td>
-                        <td>
-                            {% if inscription.present %}
-                                <span class="badge bg-success">Présent</span>
-                            {% else %}
-                                <span class="badge bg-secondary">Absent</span>
-                            {% endif %}
-                        </td>
-                        <td>
-                            {% if inscription.groupeCible %}
-                                <span class="badge bg-info">{{ inscription.groupeCible.nom }}</span>
-                            {% else %}
-                                <span class="text-muted">-</span>
-                            {% endif %}
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    {% else %}
-        <div class="alert alert-info mb-0">
-            <i class="fas fa-info-circle me-2"></i>
-            Aucun participant inscrit pour le moment.
-        </div>
-    {% endif %}
-</div>
-{% endif %}
         </div>
 
         <!-- Sidebar with Actions -->
@@ -666,7 +599,7 @@ createur: {{ evenement.createur ? (evenement.createur.id ~ ' - ' ~ evenement.cre
                     {# Bouton d'inscription/désinscription #}
                     {% if user_inscription %}
                         {# L'utilisateur est déjà inscrit #}
-                        <form method="post" action="{{ path('admin_evenement_desinscrire', {'id': evenement.id}) }}"
+                        <form method="post" action="{{ path('evenements_evenement_desinscrire', {'id': evenement.id}) }}"
                               onsubmit="return confirm('Êtes-vous sûr de vouloir vous désinscrire de cet événement ?');">
                             <input type="hidden" name="_token" value="{{ csrf_token('desinscrire' ~ evenement.id) }}">
                             <button type="submit" class="btn-unsubscribe">
@@ -675,7 +608,7 @@ createur: {{ evenement.createur ? (evenement.createur.id ~ ' - ' ~ evenement.cre
                         </form>
                     {% elseif perms.can_inscribe %}
                         {# L'utilisateur peut s'inscrire #}
-                        <form method="post" action="{{ path('admin_evenement_inscrire', {'id': evenement.id}) }}">
+                        <form method="post" action="{{ path('evenements_evenement_inscrire', {'id': evenement.id}) }}">
                             <input type="hidden" name="_token" value="{{ csrf_token('inscrire' ~ evenement.id) }}">
                             <button type="submit" class="btn-subscribe">
                                 <i class="fas fa-user-plus me-2"></i>S'inscrire
@@ -690,7 +623,7 @@ createur: {{ evenement.createur ? (evenement.createur.id ~ ' - ' ~ evenement.cre
 
                     {# Bouton d'approbation (admin seulement) #}
                     {% if is_granted('ROLE_ADMIN') and evenement.statut == 'en_attente_approbation' %}
-                        <form method="post" action="{{ path('admin_evenement_approuver', {'id': evenement.id}) }}"
+                        <form method="post" action="{{ path('evenements_evenement_approuver', {'id': evenement.id}) }}"
                               onsubmit="return confirm('Êtes-vous sûr de vouloir approuver cet événement ?');">
                             <input type="hidden" name="_token" value="{{ csrf_token('approuver' ~ evenement.id) }}">
                             <button type="submit" class="btn-approve">
@@ -701,14 +634,14 @@ createur: {{ evenement.createur ? (evenement.createur.id ~ ' - ' ~ evenement.cre
 
                     {# Bouton d'édition (créateur ou admin) #}
                     {% if perms.can_edit %}
-                        <a href="{{ path('admin_evenement_update', {'id': evenement.id}) }}" class="btn-edit">
+                        <a href="{{ path('evenements_evenement_update', {'id': evenement.id}) }}" class="btn-edit">
                             <i class="fas fa-edit me-2"></i>Modifier l'événement
                         </a>
                     {% endif %}
 
                     {# Bouton de suppression (créateur ou admin) #}
                     {% if perms.can_delete %}
-                        <form method="post" action="{{ path('admin_evenement_delete', {'id': evenement.id}) }}"
+                        <form method="post" action="{{ path('evenements_evenement_delete', {'id': evenement.id}) }}"
                               onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cet événement ? Cette action est irréversible.');">
                             <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ evenement.id) }}">
                             <button type="submit" class="btn-delete">
@@ -723,7 +656,7 @@ createur: {{ evenement.createur ? (evenement.createur.id ~ ' - ' ~ evenement.cre
 
                     {# Bouton pour voir les participants (admin seulement) #}
                     {% if is_granted('ROLE_ADMIN') %}
-                        <a href="{{ path('admin_evenement_participants', {'id': evenement.id}) }}" class="btn btn-outline-primary">
+                        <a href="{{ path('evenements_evenement_participants', {'id': evenement.id}) }}" class="btn btn-outline-primary">
                             <i class="fas fa-users me-2"></i>Voir les participants
                         </a>
                     {% endif %}
