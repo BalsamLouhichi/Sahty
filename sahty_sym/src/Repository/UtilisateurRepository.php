@@ -57,4 +57,44 @@ class UtilisateurRepository extends ServiceEntityRepository implements PasswordU
     //            ->getOneOrNullResult()
     //        ;
     //    }
+
+    /**
+     * Recherche avancée d'utilisateurs avec filtres
+     */
+    public function search(?string $query = null, ?string $role = null): array
+    {
+        $qb = $this->createQueryBuilder('u');
+        
+        if ($query) {
+            $qb->where('LOWER(u.nom) LIKE LOWER(:query) 
+                        OR LOWER(u.prenom) LIKE LOWER(:query) 
+                        OR LOWER(u.email) LIKE LOWER(:query)')
+               ->setParameter('query', '%' . $query . '%');
+        }
+        
+        if ($role) {
+            $qb->andWhere('u.role = :role')
+               ->setParameter('role', $role);
+        }
+        
+        return $qb->orderBy('u.creeLe', 'DESC')
+                  ->getQuery()
+                  ->getResult();
+    }
+
+    /**
+     * Compte les utilisateurs par rôle
+     */
+    public function countByRole(string $role): int
+    {
+        return $this->count(['role' => $role]);
+    }
+
+    /**
+     * Compte les utilisateurs actifs/inactifs
+     */
+    public function countByStatus(bool $estActif): int
+    {
+        return $this->count(['estActif' => $estActif]);
+    }
 }

@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
     <meta charset="utf-8">
-    <title>Sahty - Inscription</title>
+    <title>MEDINOVA - Inscription</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="{{ asset('css/bootstrap.min.css') }}" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.0/css/all.min.css" rel="stylesheet">
@@ -14,11 +14,12 @@
         .required-field::after { content: " *"; color: #dc3545; }
     </style>
 </head>
+ {% include 'partials/navbar.html.twig' %}
 <body>
 <div class="container py-5">
     <div class="row justify-content-center">
         <div class="col-lg-10">
-            <h2 class="text-center mb-4">Créer un compte Sahty</h2>
+            <h2 class="text-center mb-4">Créer un compte Medinova</h2>
 
             {# Affichage des messages flash #}
             {% for message in app.flashes('success') %}

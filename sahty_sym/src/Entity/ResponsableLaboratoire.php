@@ -1,5 +1,4 @@
 <?php
-// src/Entity/ResponsableLaboratoire.php
 
 namespace App\Entity;
 
@@ -31,20 +30,19 @@ class ResponsableLaboratoire extends Utilisateur
         if ($this->laboratoire !== null && $this->laboratoire->getResponsable() === $this) {
             $this->laboratoire->setResponsable(null);
         }
-        
+
         // Associer le nouveau laboratoire
         $this->laboratoire = $laboratoire;
-        
+
         if ($laboratoire !== null && $laboratoire->getResponsable() !== $this) {
             $laboratoire->setResponsable($this);
         }
-        
+
         return $this;
     }
 
     /**
-     * Méthode pour garder la compatibilité avec l'ancien code
-     * qui utilisait laboratoireId
+     * Compatibilité avec l'ancien code utilisant laboratoireId
      */
     public function getLaboratoireId(): ?int
     {
@@ -53,39 +51,25 @@ class ResponsableLaboratoire extends Utilisateur
 
     public function setLaboratoireId(?int $laboratoireId): self
     {
-        // Cette méthode est maintenant dépréciée
-        // Il est préférable d'utiliser setLaboratoire() directement
-        // Elle est gardée pour la compatibilité avec SignupController
+        // Déprécié mais gardé pour compatibilité avec SignupController
         return $this;
     }
 
-    /**
-     * Méthode pour obtenir le nom du laboratoire
-     */
     public function getNomLaboratoire(): ?string
     {
         return $this->laboratoire ? $this->laboratoire->getNom() : null;
     }
 
-    /**
-     * Méthode pour obtenir l'adresse du laboratoire
-     */
     public function getAdresseLaboratoire(): ?string
     {
         return $this->laboratoire ? $this->laboratoire->getAdresseComplete() : null;
     }
 
-    /**
-     * Méthode pour obtenir le téléphone du laboratoire
-     */
     public function getTelephoneLaboratoire(): ?string
     {
         return $this->laboratoire ? $this->laboratoire->getTelephone() : null;
     }
 
-    /**
-     * Méthode pour vérifier si le responsable a un laboratoire assigné
-     */
     public function hasLaboratoire(): bool
     {
         return $this->laboratoire !== null;
