@@ -4,7 +4,9 @@ namespace App\Controller\Admin;
 
 use App\Entity\Laboratoire;
 use App\Form\LaboratoireTypeAnalyseType;
+use App\Repository\LaboratoireRepository;
 use EasyCorp\Bundle\EasyAdminBundle\Config\Crud;
+use EasyCorp\Bundle\EasyAdminBundle\Config\KeyValueStore;
 use EasyCorp\Bundle\EasyAdminBundle\Controller\AbstractCrudController;
 use EasyCorp\Bundle\EasyAdminBundle\Field\IdField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\NumberField;
@@ -17,6 +19,10 @@ use EasyCorp\Bundle\EasyAdminBundle\Field\CollectionField;
 
 class LaboratoireCrudController extends AbstractCrudController
 {
+    public function __construct(private LaboratoireRepository $laboratoireRepository)
+    {
+    }
+
     public static function getEntityFqcn(): string
     {
         return Laboratoire::class;
@@ -24,7 +30,41 @@ class LaboratoireCrudController extends AbstractCrudController
 
     public function configureCrud(Crud $crud): Crud
     {
-        return $crud->setSearchFields(['nom']);
+        return $crud
+            ->setSearchFields(['nom'])
+            ->overrideTemplates([
+                'crud/index' => 'admin/laboratoire/index.html.twig',
+            ]);
+    }
+
+    public function configureResponseParameters(KeyValueStore $responseParameters): KeyValueStore
+    {
+        $responseParameters = parent::configureResponseParameters($responseParameters);
+
+        if (Crud::PAGE_INDEX !== $responseParameters->get('pageName')) {
+            return $responseParameters;
+        }
+
+        $total = $this->laboratoireRepository->count([]);
+        $disponibles = $this->laboratoireRepository->count(['disponible' => true]);
+        $indisponibles = $this->laboratoireRepository->count(['disponible' => false]);
+
+        $topVilles = $this->laboratoireRepository->createQueryBuilder('l')
+            ->select('l.ville AS ville, COUNT(l.id) AS total')
+            ->groupBy('l.ville')
+            ->orderBy('total', 'DESC')
+            ->setMaxResults(5)
+            ->getQuery()
+            ->getArrayResult();
+
+        $responseParameters->set('lab_stats', [
+            'total' => $total,
+            'disponibles' => $disponibles,
+            'indisponibles' => $indisponibles,
+            'top_villes' => $topVilles,
+        ]);
+
+        return $responseParameters;
     }
 
     public function configureFields(string $pageName): iterable

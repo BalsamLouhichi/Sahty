@@ -1017,6 +1017,18 @@
                     </a>
                 </li>
                 <li>
+                    <a href="/admin/laboratoire">
+                        <i class="fas fa-flask"></i>
+                        <span>Laboratoires</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ path('admin_responsables_labo') }}" {% if app.request.attributes.get('_route') in ['admin_responsables_labo'] %}class="active"{% endif %}>
+                        <i class="fas fa-user-tie"></i>
+                        <span>Responsable labo</span>
+                    </a>
+                </li>
+                <li>
                     <a href="#">
                         <i class="fas fa-chart-bar"></i>
                         <span>Rapports</span>

@@ -1,0 +1,41 @@
+{% extends '@EasyAdmin/crud/index.html.twig' %}
+
+{% block main %}
+    <div class="rl-header">
+        <a class="rl-back-link" href="{{ path('admin') }}">Retour Dashboard</a>
+    </div>
+
+    <section class="rl-stats">
+        <div class="rl-card rl-card-ink">
+            <div class="rl-card-title">Total responsables</div>
+            <div class="rl-card-value">{{ responsable_stats.total|default(0) }}</div>
+        </div>
+        <div class="rl-card rl-card-green">
+            <div class="rl-card-title">Actifs</div>
+            <div class="rl-card-value">{{ responsable_stats.actifs|default(0) }}</div>
+        </div>
+        <div class="rl-card rl-card-amber">
+            <div class="rl-card-title">Inactifs</div>
+            <div class="rl-card-value">{{ responsable_stats.inactifs|default(0) }}</div>
+        </div>
+    </section>
+
+    <section class="rl-top-cities">
+        <div class="rl-section-header">
+            <h2 class="rl-section-title">Top villes</h2>
+            <span class="rl-section-subtitle">Top 5</span>
+        </div>
+        <div class="rl-city-list">
+            {% for row in responsable_stats.top_villes|default([]) %}
+                <div class="rl-city-item">
+                    <span class="rl-city-name">{{ row.ville }}</span>
+                    <span class="rl-city-count">{{ row.total }}</span>
+                </div>
+            {% else %}
+                <div class="rl-city-empty">Aucune donnee.</div>
+            {% endfor %}
+        </div>
+    </section>
+
+    {{ parent() }}
+{% endblock %}
