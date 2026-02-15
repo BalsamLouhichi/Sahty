@@ -265,7 +265,7 @@ class EvenementController extends AbstractController
                 if ($isAdmin) {
                     return $this->redirectToRoute('evenements_evenement_view', ['id' => $evenement->getId()]);
                 } else {
-                    return $this->redirectToRoute('admin_client_event_view', ['id' => $evenement->getId()]);
+                    return $this->redirectToRoute('evenements_client_event_view', ['id' => $evenement->getId()]);
                 }
             }
         }
@@ -409,7 +409,7 @@ class EvenementController extends AbstractController
             if ($isAdmin) {
                 return $this->redirectToRoute('evenements_evenement_view', ['id' => $evenement->getId()]);
             } else {
-                return $this->redirectToRoute('admin_client_event_view', ['id' => $evenement->getId()]);
+                return $this->redirectToRoute('evenements_client_event_view', ['id' => $evenement->getId()]);
             }
         }
 
@@ -431,7 +431,7 @@ class EvenementController extends AbstractController
     {
       
         if (!$this->isGranted('ROLE_ADMIN')) {
-            return $this->redirectToRoute('admin_client_event_view', ['id' => $evenement->getId()]);
+            return $this->redirectToRoute('evenements_client_event_view', ['id' => $evenement->getId()]);
         }
         
         $user = $this->getUser();
@@ -696,7 +696,7 @@ public function home(Request $request, EvenementRepository $evenementRepository,
         
         if (!$canSubscribe['can_subscribe']) {
             $this->addFlash('warning', $canSubscribe['message']);
-            $route = $this->isGranted('ROLE_ADMIN') ? 'evenements_evenement_view' : 'admin_client_event_view';
+            $route = $this->isGranted('ROLE_ADMIN') ? 'evenements_evenement_view' : 'evenements_client_event_view';
             return $this->redirectToRoute($route, ['id' => $evenement->getId()]);
         }
 
@@ -705,7 +705,7 @@ public function home(Request $request, EvenementRepository $evenementRepository,
 
         if ($existing) {
             $this->addFlash('warning', 'Vous êtes déjà inscrit à cet événement.');
-            $route = $this->isGranted('ROLE_ADMIN') ? 'evenements_evenement_view' : 'admin_client_event_view';
+            $route = $this->isGranted('ROLE_ADMIN') ? 'evenements_evenement_view' : 'evenements_client_event_view';
             return $this->redirectToRoute($route, ['id' => $evenement->getId()]);
         }
 
@@ -715,7 +715,7 @@ public function home(Request $request, EvenementRepository $evenementRepository,
                 
             if ($inscriptionsCount >= $evenement->getPlacesMax()) {
                 $this->addFlash('danger', 'Désolé, cet événement est complet.');
-                $route = $this->isGranted('ROLE_ADMIN') ? 'evenements_evenement_view' : 'admin_client_event_view';
+                $route = $this->isGranted('ROLE_ADMIN') ? 'evenements_evenement_view' : 'evenements_client_event_view';
                 return $this->redirectToRoute($route, ['id' => $evenement->getId()]);
             }
         }
@@ -744,7 +744,7 @@ public function home(Request $request, EvenementRepository $evenementRepository,
         $em->flush();
 
         $this->addFlash('success', 'Inscription réussie !');
-        $route = $this->isGranted('ROLE_ADMIN') ? 'evenements_evenement_view' : 'admin_client_event_view';
+        $route = $this->isGranted('ROLE_ADMIN') ? 'evenements_evenement_view' : 'evenements_client_event_view';
         return $this->redirectToRoute($route, ['id' => $evenement->getId()]);
     }
 
@@ -766,7 +766,7 @@ public function home(Request $request, EvenementRepository $evenementRepository,
             $this->addFlash('success', 'Vous avez été désinscrit de cet événement.');
         }
 
-        $route = $this->isGranted('ROLE_ADMIN') ? 'evenements_evenement_view' : 'admin_client_event_view';
+        $route = $this->isGranted('ROLE_ADMIN') ? 'evenements_evenement_view' : 'evenements_client_event_view';
         return $this->redirectToRoute($route, ['id' => $evenement->getId()]);
     }
 
@@ -816,159 +816,100 @@ public function home(Request $request, EvenementRepository $evenementRepository,
         ]);
     }
 
-    // Page des événements pour les clients (non-admins)
     #[Route('/client/events', name: 'client_events', methods: ['GET'])]
 public function clientEvents(Request $request, EvenementRepository $evenementRepository, EntityManagerInterface $em): Response
 {
-    // Vérifier que l'utilisateur a un rôle client valide
+    // ... (Security checks remain the same) ...
     $allowedClientRoles = ['ROLE_MEDECIN', 'ROLE_RESPONSABLE_LABO', 'ROLE_RESPONSABLE_PARA', 'ROLE_PATIENT'];
     $hasClientRole = false;
-    
     foreach ($allowedClientRoles as $role) {
-        if ($this->isGranted($role)) {
-            $hasClientRole = true;
-            break;
-        }
+        if ($this->isGranted($role)) { $hasClientRole = true; break; }
     }
     
-    // Si admin, rediriger vers la page admin
-    if ($this->isGranted('ROLE_ADMIN')) {
-        return $this->redirectToRoute('evenements_evenement_list');
-    }
-    
-    // Si pas de rôle client valide et pas connecté, rediriger vers login
-    if (!$hasClientRole && !$this->getUser()) {
-        return $this->redirectToRoute('app_login');
-    }
+    if ($this->isGranted('ROLE_ADMIN')) { return $this->redirectToRoute('evenements_evenement_list'); }
+    if (!$hasClientRole && !$this->getUser()) { return $this->redirectToRoute('app_login'); }
 
     $user = $this->getUser();
     $type = $request->query->get('type');
     $recherche = $request->query->get('recherche');
     
-    // Récupérer TOUS les événements pertinents pour le client
-    $evenements = [];
+    $evenementsApprouves = [];
+    $demandesEnAttente = [];
     
     if ($user) {
-        // 1. Événements approuvés visibles (publics ou pour ses groupes)
-        $visibleEvents = $evenementRepository->findVisibleEventsForClient($user);
+        // 1. Get Visible Events
+        $rawEvents = $evenementRepository->findVisibleEventsForClient($user);
+
+        // --- CRITICAL FIX: STRICTLY FILTER OUT PENDING EVENTS ---
+        // This ensures they NEVER appear in the main list
+        $evenementsApprouves = array_filter($rawEvents, function($e) {
+            return !in_array($e->getStatut(), ['en_attente_approbation', 'annule', 'refuse']);
+        });
         
-        // 2. Ses propres événements en attente d'approbation (UNIQUEMENT les siens)
+        // 2. Get Pending Events Separately
         $demandesEnAttente = $evenementRepository->findBy([
             'createur' => $user,
             'statut' => 'en_attente_approbation'
-        ]);
-        
-        // 3. Ses propres événements approuvés (déjà dans visibleEvents mais on les garde pour éviter doublons)
-        $mesEvenementsApprouves = $evenementRepository->findBy([
-            'createur' => $user,
-            'statut' => ['planifie', 'confirme', 'en_cours']
-        ]);
-        
-        // Fusionner tous les événements
-        $evenements = array_merge($visibleEvents, $demandesEnAttente, $mesEvenementsApprouves);
-        
-        // Supprimer les doublons (basé sur l'ID)
-        $evenements = array_reduce($evenements, function($carry, $item) {
-            $carry[$item->getId()] = $item;
-            return $carry;
-        }, []);
-        $evenements = array_values($evenements);
-        
-        // Trier par date de début
-        usort($evenements, function($a, $b) {
-            return $a->getDateDebut() <=> $b->getDateDebut();
-        });
+        ], ['creeLe' => 'DESC']);
         
     } else {
-        // Utilisateur non connecté : seulement les événements publics approuvés
-        $evenements = $evenementRepository->findBy([
-            'statut' => ['planifie', 'confirme', 'en_cours']
-        ], ['dateDebut' => 'ASC']);
-        
-        // Filtrer ceux qui ont des groupes cibles (les exclure)
-        $evenements = array_filter($evenements, function($event) {
+        // Not connected logic
+        $evenementsApprouves = $evenementRepository->findBy(['statut' => ['planifie', 'confirme', 'en_cours']], ['dateDebut' => 'ASC']);
+        $evenementsApprouves = array_filter($evenementsApprouves, function($event) {
             return $event->getGroupeCibles()->isEmpty();
         });
     }
     
-    // Appliquer les filtres (type et recherche)
+    // Apply filters to Approved events only
     if ($type) {
-        $evenements = array_filter($evenements, function($evenement) use ($type) {
-            return strtolower($evenement->getType()) === strtolower($type);
-        });
+        $evenementsApprouves = array_filter($evenementsApprouves, fn($e) => strtolower($e->getType()) === strtolower($type));
     }
-    
     if ($recherche) {
         $recherche = strtolower($recherche);
-        $evenements = array_filter($evenements, function($evenement) use ($recherche) {
-            return stripos(strtolower($evenement->getTitre()), $recherche) !== false || 
-                   stripos(strtolower($evenement->getDescription() ?? ''), $recherche) !== false;
-        });
+        $evenementsApprouves = array_filter($evenementsApprouves, fn($e) => 
+            stripos(strtolower($e->getTitre()), $recherche) !== false || 
+            stripos(strtolower($e->getDescription() ?? ''), $recherche) !== false
+        );
     }
 
-    // Calculer les statistiques
+    // Calculate stats
     $now = new \DateTime();
     $stats = [
-        'totalEvents' => count($evenements),
-        'upcomingEvents' => count(array_filter($evenements, function($event) use ($now) {
-            return $event->getDateDebut() > $now;
-        })),
+        'totalEvents' => count($evenementsApprouves),
+        'upcomingEvents' => count(array_filter($evenementsApprouves, fn($e) => $e->getDateDebut() > $now)),
         'expertSpeakers' => 25,
         'happyParticipants' => 1200,
     ];
     
-    // Calculer les permissions pour chaque événement
+    // Actions logic
     $actions = [];
-    foreach ($evenements as $evt) {
-        $canEdit = $user && $evt->getCreateur() === $user && $evt->getStatut() === 'en_attente_approbation';
+    foreach ($evenementsApprouves as $evt) {
         $canInscrire = false;
-        
-        if ($user && $user !== $evt->getCreateur() && $evt->getStatut() !== 'en_attente_approbation') {
+        if ($user && $user !== $evt->getCreateur()) {
             $subscribeCheck = $this->canUserSubscribe($user, $evt, $em);
             $canInscrire = $subscribeCheck['can_subscribe'];
         }
-        
-        // Compter les inscriptions
-        try {
-            $evt->inscriptionsCount = $em->getRepository(InscriptionEvenement::class)
-                ->count(['evenement' => $evt]);
-        } catch (\Exception $e) {
-            $evt->inscriptionsCount = 0;
-        }
-
-        $actions[$evt->getId()] = [
-            'can_edit' => (bool) $canEdit,
-            'can_inscribe' => (bool) $canInscrire,
-        ];
-        
-        // Ajouter un indicateur de statut pour l'affichage
-        $evt->displayStatus = $evt->getStatut();
-        if ($evt->getStatut() === 'en_attente_approbation') {
-            $evt->displayBadge = 'warning';
-            $evt->displayMessage = 'En attente de validation';
-            $evt->isPendingRequest = true;
-        } elseif ($evt->getStatut() === 'planifie') {
-            $evt->displayBadge = 'success';
-            $evt->displayMessage = 'Planifié';
-        } elseif ($evt->getStatut() === 'confirme') {
-            $evt->displayBadge = 'info';
-            $evt->displayMessage = 'Confirmé';
-        } elseif ($evt->getStatut() === 'en_cours') {
-            $evt->displayBadge = 'primary';
-            $evt->displayMessage = 'En cours';
-        }
+        $actions[$evt->getId()] = ['can_edit' => false, 'can_inscribe' => (bool) $canInscrire];
+    }
+    
+    // Also add actions for Pending events (so they can be edited/deleted if your template allows)
+    foreach ($demandesEnAttente as $evt) {
+         $actions[$evt->getId()] = ['can_edit' => true, 'can_inscribe' => false];
     }
 
     return $this->render('evenement/client.html.twig', [
-        'evenements' => $evenements,
+        'evenements' => $evenementsApprouves, // Contains ONLY approved
+        'demandes_en_attente' => $demandesEnAttente, // Contains ONLY pending
         'actions' => $actions,
         'stats' => $stats,
         'type' => $type,
         'recherche' => $recherche,
         'has_permission_to_create' => $hasClientRole,
         'user' => $user,
+        'show_pending_section' => !empty($demandesEnAttente),
     ]);
-}   private function canUserSubscribe(Utilisateur $user, Evenement $evenement, EntityManagerInterface $em): array
+}
+  private function canUserSubscribe(Utilisateur $user, Evenement $evenement, EntityManagerInterface $em): array
     {
         if (!in_array($evenement->getStatut(), ['planifie', 'approuve'])) {
             return [
@@ -1078,110 +1019,99 @@ public function clientEvents(Request $request, EvenementRepository $evenementRep
 
   
 
- #[Route('/client/demande-evenement', name: 'client_demande_evenement', methods: ['GET', 'POST'])]
-public function demandeEvenement(Request $request, EntityManagerInterface $em): Response
-{
+#[Route('/client/demande-evenement', name: 'client_demande_evenement', methods: ['GET', 'POST'])]
+public function demandeEvenement(Request $request, EntityManagerInterface $em): Response {
     $user = $this->getUser();
     
-
     if (!$user) {
-        $this->addFlash('error', 'Vous devez être connecté pour faire une demande.');
+        $this->addFlash('error', 'Vous devez être connecté.');
         return $this->redirectToRoute('app_login');
     }
 
-    
-    if ($this->isGranted('ROLE_ADMIN')) {
-        $this->addFlash('info', 'Les administrateurs utilisent le formulaire de création standard.');
-        return $this->redirectToRoute('admin_evenement_add');
-    }
-
-    
-    $hasPermission = true;
-    
-
-    $roles = implode(', ', $user->getRoles());
-    $this->addFlash('debug', "Vos rôles actuels: {$roles}");
-
     $evenement = new Evenement();
-    $evenement->setStatut('en_attente_approbation');
+    
+    
+    $evenement->setStatut('en_attente_approbation'); 
     $evenement->setStatutDemande('en_attente_approbation');
+    $evenement->setCreeLe(new \DateTime());
+    $evenement->setCreateur($user);
 
+   
     $form = $this->createForm(EvenementType::class, $evenement, [
         'user_role' => $user->getRoles()[0] ?? 'ROLE_USER',
         'is_admin' => false,
-        'is_demande' => true,
+        'is_demande' => true, 
     ]);
 
     $form->handleRequest($request);
 
     if ($form->isSubmitted() && $form->isValid()) {
+        
+        
         $errors = $this->validateEvenement($evenement);
 
         if (!empty($errors)) {
             foreach ($errors as $error) {
                 $this->addFlash('error', $error);
             }
-
             return $this->render('evenement/client_ajout_demande.html.twig', [
                 'form' => $form->createView(),
             ]);
         }
 
-        $evenement->setCreeLe(new \DateTime());
-        $evenement->setCreateur($user);
-        $evenement->setStatutDemande('en_attente_approbation');
-
         $em->persist($evenement);
         $em->flush();
 
         $this->addFlash('success', 'Votre demande a été envoyée.');
-        $this->addFlash('info', 'Elle sera examinée sous 48h.');
-
         return $this->redirectToRoute('evenements_client_events');
+    }
+    
+  
+    if ($form->isSubmitted() && !$form->isValid()) {
+         foreach ($form->getErrors(true) as $error) {
+             $this->addFlash('error', $error->getMessage());
+         }
     }
 
     return $this->render('evenement/client_ajout_demande.html.twig', [
         'form' => $form->createView(),
     ]);
-}
-    #[Route('/admin/demandes-evenements', name: 'admin_demandes_evenements', methods: ['GET'])]
-    public function demandesEvenements(
-        Request $request,
-        EvenementRepository $evenementRepository
-    ): Response {
+}    #[Route('/admin/demandes-evenements', name: 'admin_demandes_evenements', methods: ['GET'])]
+public function demandesEvenements(
+    Request $request,
+    EvenementRepository $evenementRepository
+): Response {
 
-        $this->denyAccessUnlessGranted('ROLE_ADMIN');
+    $this->denyAccessUnlessGranted('ROLE_ADMIN');
 
-        $recherche = $request->query->get('recherche');
-        $type = $request->query->get('type');
+    $recherche = $request->query->get('recherche');
+    $type = $request->query->get('type');
 
-        $qb = $evenementRepository->createQueryBuilder('e')
-            ->where('e.statutDemande = :statut')
-            ->setParameter('statut', 'en_attente_approbation')
-            ->orderBy('e.creeLe', 'DESC');
+    $qb = $evenementRepository->createQueryBuilder('e')
+        ->where('e.statutDemande = :statut')
+        ->setParameter('statut', 'en_attente_approbation')
+        ->orderBy('e.creeLe', 'DESC');
 
-        if ($recherche) {
-
-            $qb->andWhere('e.titre LIKE :recherche OR e.description LIKE :recherche')
-               ->setParameter('recherche', '%' . $recherche . '%');
-        }
-
-        if ($type) {
-
-            $qb->andWhere('e.type = :type')
-               ->setParameter('type', $type);
-        }
-
-        $demandes = $qb->getQuery()->getResult();
-
-        return $this->render('evenement/admin_demandes_evenements.html.twig', [
-            'demandes' => $demandes,
-            'recherche' => $recherche,
-            'type' => $type,
-        ]);
+    if ($recherche) {
+        $qb->andWhere('e.titre LIKE :recherche OR e.description LIKE :recherche')
+           ->setParameter('recherche', '%' . $recherche . '%');
     }
 
+    if ($type) {
+        $qb->andWhere('e.type = :type')
+           ->setParameter('type', $type);
+    }
 
+    $demandes = $qb->getQuery()->getResult();
+
+    
+
+    return $this->render('evenement/admin_demandes_evenements.html.twig', [
+    'demandes' => $demandes,
+    'recherche' => $recherche,
+    'type' => $type,
+]);
+}
 
     #[Route('/admin/evenement/{id}/approuver', name: 'admin_evenement_approuver', methods: ['POST'])]
     public function approuverDemande(
@@ -1626,6 +1556,8 @@ public function clientEvenements(
         'user' => $user,
     ]);
 }
+
+
 
 
 }

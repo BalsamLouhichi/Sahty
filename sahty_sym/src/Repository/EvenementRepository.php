@@ -190,53 +190,36 @@ class EvenementRepository extends ServiceEntityRepository
               ->getResult();
 }
 
-public function findVisibleEventsForClient($user = null): array
-{
+public function findVisibleEventsForClient($user = null): array {
     $qb = $this->createQueryBuilder('e')
         ->orderBy('e.dateDebut', 'ASC');
 
-    // Seuls les événements avec statut approuvé sont visibles pour les clients
+    // 1. CRITICAL: Strictly filter ONLY approved statuses
+    // This removes "en_attente_approbation" completely from this list
     $qb->andWhere('e.statut IN (:statutsApprouves)')
        ->setParameter('statutsApprouves', ['planifie', 'confirme', 'en_cours']);
 
+    // 2. Filter by Groups (Target Audience)
     if ($user) {
         $userGroups = $user->getGroupes();
         
-        // L'utilisateur peut voir :
-        // 1. Les événements publics (sans groupe cible) ET approuvés
-        // 2. Les événements de ses groupes ET approuvés
         $qb->leftJoin('e.groupeCibles', 'g')
            ->andWhere(
                $qb->expr()->orX(
-                   'e.groupeCibles IS EMPTY',
-                   'g IN (:userGroups)'
+                   'e.groupeCibles IS EMPTY',        // Public events
+                   'g IN (:userGroups)',             // Events for my group
+                   'e.createur = :userId'            // AND my own APPROVED events
                )
            )
-           ->setParameter('userGroups', $userGroups ?: []);
-        
-        // Note: Les événements en attente ne sont PAS inclus ici
-        // Ils doivent être récupérés séparément avec une requête dédiée
+           ->setParameter('userGroups', $userGroups ?: [])
+           ->setParameter('userId', $user->getId());
     } else {
-        // Non connecté : seulement les événements publics approuvés
+        // If not logged in, only show public events
         $qb->andWhere('e.groupeCibles IS EMPTY');
     }
 
     return $qb->getQuery()->getResult();
 }
-
-// Nouvelle méthode pour récupérer les demandes en attente d'un utilisateur
-public function findPendingEventsForUser(Utilisateur $user): array
-{
-    return $this->createQueryBuilder('e')
-        ->where('e.createur = :userId')
-        ->andWhere('e.statut = :statut')
-        ->setParameter('userId', $user->getId())
-        ->setParameter('statut', 'en_attente_approbation')
-        ->orderBy('e.creeLe', 'DESC')
-        ->getQuery()
-        ->getResult();
-}
-
 
 
 public function findAllPendingEvents(): array
@@ -247,5 +230,25 @@ public function findAllPendingEvents(): array
         ->orderBy('e.creeLe', 'DESC')
         ->getQuery()
         ->getResult();
+}
+
+public function findByStatutDemande(string $statutDemande, ?string $type = null, ?string $recherche = null): array
+{
+    $qb = $this->createQueryBuilder('e')
+        ->where('e.statutDemande = :statutDemande')
+        ->setParameter('statutDemande', $statutDemande)
+        ->orderBy('e.creeLe', 'DESC');
+
+    if ($type) {
+        $qb->andWhere('e.type = :type')
+           ->setParameter('type', $type);
+    }
+
+    if ($recherche) {
+        $qb->andWhere('e.titre LIKE :recherche OR e.description LIKE :recherche')
+           ->setParameter('recherche', '%' . $recherche . '%');
+    }
+
+    return $qb->getQuery()->getResult();
 }
 }

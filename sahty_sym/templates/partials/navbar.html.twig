@@ -1,32 +1,155 @@
-<nav class="navbar navbar-expand-lg navbar-light bg-light">
+{# templates/partials/header.html.twig #}
+<!-- Topbar Start -->
+<div class="container-fluid py-2 border-bottom d-none d-lg-block bg-light">
     <div class="container">
-        <a class="navbar-brand" href="/">Medinova</a>
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-        <div class="collapse navbar-collapse" id="navbarNav">
-            <ul class="navbar-nav ms-auto">
-                <li class="nav-item"><a class="nav-link" href="/">Home</a></li>
-                <li class="nav-item"><a class="nav-link" href="#about">About</a></li>
-                <li class="nav-item"><a class="nav-link" href="#services">Services</a></li>
-                <li class="nav-item"><a class="nav-link" href="#appointment">Appointment</a></li>
-                
-                {# Admin eventos panel accessible to admin and medical staff who can manage their own events #}
-                {% if is_granted('ROLE_ADMIN') or is_granted('ROLE_MEDECIN') or is_granted('ROLE_RESPONSABLE_LABO') or is_granted('ROLE_RESPONSABLE_PARA') or is_granted('ROLE_PATIENT') %}
-                <li class="nav-item"><a class="nav-link" href="{{ path('admin_evenement_list') }}">Gestion Événements</a></li>
-                {% endif %}
-            </ul>
-
-            <!-- Boutons S'inscrire, Se connecter, Logout -->
-            <div class="d-flex ms-3">
-                {% if app.user %}
-                    <span class="me-3 align-self-center">{{ app.user.prenom }} {{ app.user.nom }}</span>
-                    <a href="{{ path('app_logout') }}" class="btn btn-danger">Logout</a>
-                {% else %}
-                    <a href="/signup" class="btn btn-outline-primary me-2">S'inscrire</a>
-                    <a href="/login" class="btn btn-primary">Se connecter</a>
-                {% endif %}
+        <div class="row">
+            <div class="col-md-6 text-center text-lg-start mb-2 mb-lg-0">
+                <div class="d-inline-flex align-items-center">
+                    <a class="text-decoration-none text-body pe-3" href="tel:+21670000000">
+                        <i class="bi bi-telephone me-2"></i>+216 70 000 000
+                    </a>
+                    <span class="text-body">|</span>
+                    <a class="text-decoration-none text-body px-3" href="mailto:contact@sahty.tn">
+                        <i class="bi bi-envelope me-2"></i>contact@sahty.tn
+                    </a>
+                </div>
+            </div>
+            <div class="col-md-6 text-center text-lg-end">
+                <div class="d-inline-flex align-items-center">
+                    <a class="text-body px-2" href="#!"><i class="fab fa-facebook-f"></i></a>
+                    <a class="text-body px-2" href="#!"><i class="fab fa-twitter"></i></a>
+                    <a class="text-body px-2" href="#!"><i class="fab fa-linkedin-in"></i></a>
+                    <a class="text-body px-2" href="#!"><i class="fab fa-instagram"></i></a>
+                    <a class="text-body ps-2" href="#!"><i class="fab fa-youtube"></i></a>
+                </div>
             </div>
         </div>
     </div>
-</nav>
+</div>
+<!-- Topbar End -->
+
+<!-- Navbar Start -->
+<div class="container-fluid sticky-top bg-white shadow-sm">
+    <div class="container">
+        <nav class="navbar navbar-expand-lg bg-white navbar-light py-3 py-lg-0">
+            <a href="{{ path('app_home') }}" class="navbar-brand">
+                <h1 class="m-0 text-uppercase text-primary">
+                    <i class="fa fa-heartbeat me-2"></i>SAHTY
+                </h1>
+            </a>
+            
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarCollapse">
+                {# Main Navigation - Left Side #}
+                <div class="navbar-nav mx-auto py-0">
+                    <a href="{{ path('app_home') }}" class="nav-item nav-link {{ app.current_route == 'app_home' ? 'active' : '' }}">
+                        <i class="fa fa-home me-1"></i>Accueil
+                    </a>
+                    
+                    {# Static pages for all users #}
+                    <a href="{{ path('app_about') }}" class="nav-item nav-link {{ app.current_route starts with 'app_about' ? 'active' : '' }}">
+                        <i class="fa fa-info-circle me-1"></i>À propos
+                    </a>
+                    
+                    <a href="{{ path('app_services') }}" class="nav-item nav-link {{ app.current_route starts with 'app_services' ? 'active' : '' }}">
+                        <i class="fa fa-cogs me-1"></i>Services
+                    </a>
+                    
+                    <a href="{{ path('app_contact') }}" class="nav-item nav-link {{ app.current_route starts with 'app_contact' ? 'active' : '' }}">
+                        <i class="fa fa-envelope me-1"></i>Contact
+                    </a>
+                </div>
+                
+                {# Right Side - User Specific Menus #}
+                <div class="navbar-nav ms-auto py-0">
+                    {% if app.user %}
+                        {# LOGGED IN USERS #}
+                        
+                        {# Client Menu (Médecin, Labo, Para, Patient) #}
+                        {% if is_granted('ROLE_MEDECIN') 
+                           or is_granted('ROLE_RESPONSABLE_LABO') 
+                           or is_granted('ROLE_RESPONSABLE_PARA') 
+                           or is_granted('ROLE_PATIENT') %}
+                            
+                            <a href="{{ path('evenements_client_events') }}" class="nav-item nav-link {{ app.current_route starts with 'evenements_client' ? 'active' : '' }}">
+                                <i class="fas fa-calendar-alt me-1"></i>Événements
+                            </a>
+                            
+                            <a href="{{ path('evenements_client_all_events') }}" class="nav-item nav-link {{ app.current_route == 'evenements_client_all_events' ? 'active' : '' }}">
+                                <i class="fas fa-list me-1"></i>Tous les événements
+                            </a>
+                            
+                            <a href="{{ path('app_inscription_evenement_mes_inscriptions') }}" class="nav-item nav-link {{ app.current_route starts with 'app_inscription_evenement' ? 'active' : '' }}">
+                                <i class="fas fa-ticket-alt me-1"></i>Mes inscriptions
+                            </a>
+                        {% endif %}
+                        
+                        {# Admin Menu #}
+                        {% if is_granted('ROLE_ADMIN') %}
+                            <div class="nav-item dropdown">
+                                <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown">
+                                    <i class="fa fa-calendar-check me-1"></i>Gestion Événements
+                                </a>
+                                <div class="dropdown-menu">
+                                    <a href="{{ path('evenements_evenement_list') }}" class="dropdown-item">
+                                        <i class="fa fa-list me-2"></i>Tous les événements
+                                    </a>
+                                    <a href="{{ path('evenements_admin_demandes_evenements') }}" class="dropdown-item">
+                                        <i class="fa fa-inbox me-2"></i>Demandes
+                                    </a>
+                                </div>
+                            </div>
+                            
+                            <a href="{{ path('dashboard_admin') }}" class="nav-item nav-link {{ app.current_route starts with 'dashboard' ? 'active' : '' }}">
+                                <i class="fa fa-tachometer-alt me-1"></i>Dashboard
+                            </a>
+                            
+                            <a href="{{ path('admin_principal') }}" class="nav-item nav-link {{ app.current_route == 'admin_principal' ? 'active' : '' }}">
+                                <i class="fa fa-shield-alt me-1"></i>Principal Admin
+                            </a>
+                        {% endif %}
+                        
+                        {# User Profile Dropdown #}
+                        <div class="nav-item dropdown">
+                            <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown">
+                                <i class="fa fa-user-circle me-1"></i>{{ app.user.prenom }} {{ app.user.nom }}
+                            </a>
+                            <div class="dropdown-menu dropdown-menu-end">
+                                <a href="{{ path('app_profile') }}" class="dropdown-item">
+                                    <i class="fa fa-id-card me-2"></i>Mon Profil
+                                </a>
+                                
+                                {% if is_granted('ROLE_MEDECIN')
+                                   or is_granted('ROLE_RESPONSABLE_LABO')
+                                   or is_granted('ROLE_RESPONSABLE_PARA')
+                                   or is_granted('ROLE_PATIENT') %}
+                                    <a href="{{ path('evenements_client_demande_evenement') }}" class="dropdown-item">
+                                        <i class="fa fa-paper-plane me-2"></i>Demander un événement
+                                    </a>
+                                {% endif %}
+                                
+                                <div class="dropdown-divider"></div>
+                                <a href="{{ path('app_logout') }}" class="dropdown-item text-danger">
+                                    <i class="fa fa-sign-out-alt me-2"></i>Déconnexion
+                                </a>
+                            </div>
+                        </div>
+                        
+                    {% else %}
+                        {# LOGGED OUT USERS #}
+                        <a href="{{ path('app_register') }}" class="nav-item nav-link {{ app.current_route == 'app_register' ? 'active' : '' }}">
+                            <i class="fa fa-user-plus me-1"></i>S'inscrire
+                        </a>
+                        <a href="{{ path('app_login') }}" class="nav-item nav-link btn btn-primary text-white px-3 ms-2">
+                            <i class="fa fa-sign-in-alt me-1"></i>Se connecter
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </nav>
+    </div>
+</div>
+<!-- Navbar End -->
