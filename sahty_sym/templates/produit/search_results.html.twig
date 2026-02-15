@@ -661,18 +661,23 @@
                 {% endif %}
             </div>
             
-            <!-- Colonne droite : Image produit -->
-            <div class="col-lg-6 col-md-12">
-                <div class="product-image-container">
-                    <!-- Placeholder pour l'image du produit -->
-                    <div class="text-center">
-                        <i class="bi bi-image" style="font-size: 100px; color: #ccc;"></i>
-                        <p class="mt-3 text-muted">Image du produit</p>
-                    </div>
-                </div>
+        <!-- Colonne droite : Image produit -->
+<div class="col-lg-6 col-md-12">
+    <div class="product-image-container">
+        {% if produit.image %}
+            <img src="{{ asset('uploads/images/produits/' ~ produit.image) }}" 
+                 alt="{{ produit.nom }}"
+                 class="product-image"
+                 onerror="this.onerror=null; this.src='{{ asset('uploads/products/' ~ produit.image) }}'; 
+                          this.onerror=function(){ this.onerror=null; this.src='https://via.placeholder.com/400x400?text=Image+non+disponible'; }">
+        {% else %}
+            <div class="text-center">
+                <i class="bi bi-image" style="font-size: 100px; color: #ccc;"></i>
+                <p class="mt-3 text-muted">Aucune image disponible</p>
             </div>
-        </div>
+        {% endif %}
     </div>
+</div>
     
     <!-- Caractéristiques détaillées -->
     {% if produit.caracteristiques is defined and produit.caracteristiques %}

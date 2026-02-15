@@ -337,7 +337,7 @@
         
         .pharmacies-scroll-container {
             position: relative;
-            padding: 20px 0;
+            padding: 20px 50px; /* Augmenté pour laisser de la place aux flèches */
         }
         
         .pharmacies-scroll-wrapper {
@@ -436,7 +436,7 @@
             position: absolute;
             top: 50%;
             transform: translateY(-50%);
-            background: rgba(13, 202, 240, 0.9);
+            background: var(--primary-color);
             color: white;
             border: none;
             width: 50px;
@@ -449,20 +449,27 @@
             transition: all 0.3s;
             z-index: 10;
             box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            border: 2px solid white;
         }
         
         .scroll-btn:hover {
-            background: rgba(13, 202, 240, 1);
+            background: var(--primary-hover);
             transform: translateY(-50%) scale(1.1);
             box-shadow: 0 6px 20px rgba(0,0,0,0.3);
         }
         
+        .scroll-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: translateY(-50%) scale(1);
+        }
+        
         .scroll-btn-left {
-            left: 20px;
+            left: 5px;
         }
         
         .scroll-btn-right {
-            right: 20px;
+            right: 5px;
         }
         
         .scroll-btn i {
@@ -510,24 +517,37 @@
             opacity: 0;
         }
         
+        .scroll-indicator {
+            text-align: center;
+            margin-top: 15px;
+            color: #666;
+        }
+        
+        .scroll-indicator .badge {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+        }
+        
         @media (max-width: 768px) {
             .pharmacy-item {
                 width: 250px;
                 padding: 20px;
             }
             
+            .pharmacies-scroll-container {
+                padding: 20px 40px;
+            }
+            
             .scroll-btn {
                 width: 40px;
                 height: 40px;
-                display: none; /* Cacher sur mobile */
             }
             
-            .scroll-btn-left {
-                left: 10px;
-            }
-            
-            .scroll-btn-right {
-                right: 10px;
+            .scroll-btn i {
+                font-size: 16px;
             }
             
             .product-card {
@@ -568,6 +588,14 @@
                 padding-left: 15px;
                 padding-right: 15px;
             }
+            
+            .scroll-btn-left {
+                left: 2px;
+            }
+            
+            .scroll-btn-right {
+                right: 2px;
+            }
         }
         
         /* Responsive pour les petits écrans */
@@ -583,6 +611,33 @@
             .product-content {
                 padding: 15px;
             }
+            
+            .pharmacies-scroll-container {
+                padding: 20px 30px;
+            }
+            
+            .scroll-btn {
+                width: 35px;
+                height: 35px;
+            }
+            
+            .scroll-btn-left {
+                left: 0px;
+            }
+            
+            .scroll-btn-right {
+                right: 0px;
+            }
+        }
+
+        /* Styles pour les flèches - Toujours visibles */
+        .scroll-btn {
+            display: flex !important; /* Force l'affichage des flèches */
+        }
+        
+        /* Amélioration du conteneur pour que les flèches ne soient pas coupées */
+        .pharmacies-scroll-container {
+            padding: 20px 60px; /* Plus d'espace pour les flèches */
         }
     </style>
 {% endblock %}
@@ -620,7 +675,7 @@
 <div class="container-fluid sticky-top bg-white shadow-sm">
     <div class="container">
         <nav class="navbar navbar-expand-lg bg-white navbar-light py-3 py-lg-0">
-          
+            <a href="#" class="navbar-brand">
                 <h1 class="m-0 text-uppercase text-primary">
                     <i class="fa fa-clinic-medical me-2"></i>Medinova
                 </h1>
@@ -636,9 +691,8 @@
                     <a href="#" class="nav-item nav-link">Laboratoire</a>
                     <a href="#" class="nav-item nav-link">Parapharmacie</a>
                     <a href="#" class="nav-item nav-link">Pricing</a>
-                   
                     <div class="nav-item dropdown">
-                        
+                        <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown">Pages</a>
                         <div class="dropdown-menu m-0">
                             <a href="#" class="dropdown-item">Blog Grid</a>
                             <a href="#" class="dropdown-item">Blog Detail</a>
@@ -646,18 +700,16 @@
                             <a href="#" class="dropdown-item">Testimonial</a>
                             <a href="#" class="dropdown-item">Appointment</a>
                             <a href="#" class="dropdown-item">Search</a>
-                         
-                         
                         </div>
                     </div>
                     <a href="#" class="nav-item nav-link">Contact</a>
-                    
-                   
                 </div>
             </div>
         </nav>
     </div>
 </div>
+<!-- Navbar End -->
+
 <!-- Famous Pharmacies Start -->
 <div class="container-fluid py-5 bg-light" style="padding-top: 0.5rem !important;">
     <div class="container">
@@ -668,7 +720,7 @@
         </div>
         
         <div class="pharmacies-scroll-container">
-            <button class="scroll-btn scroll-btn-left">
+            <button class="scroll-btn scroll-btn-left" id="scrollLeft" style="display: flex !important;">
                 <i class="fas fa-chevron-left"></i>
             </button>
             
@@ -698,9 +750,14 @@
                 {% endfor %}
             </div>
             
-            <button class="scroll-btn scroll-btn-right">
+            <button class="scroll-btn scroll-btn-right" id="scrollRight" style="display: flex !important;">
                 <i class="fas fa-chevron-right"></i>
             </button>
+        </div>
+        
+        <div class="scroll-indicator">
+            <span class="badge" id="pharmacyCount">{{ parapharmacies|length }} parapharmacies disponibles</span>
+           
         </div>
     </div>
 </div>
@@ -752,11 +809,11 @@
                     <div class="product-badge">POPULAIRE</div>
                     {% endif %}
                     
-                    
+                    <div class="product-price">{{ prod.prix }} €</div>
                     
                     <div class="product-image">
                         {% if prod.image is defined and prod.image %}
-                        <img src="{{ asset('uploads/products/' ~ prod.image) }}" alt="{{ prod.nom }}">
+                        <img src="{{ asset('uploads/images/produits/' ~ prod.image) }}" alt="{{ prod.nom }}">
                         {% else %}
                         <img src="https://images.unsplash.com/photo-1558618666-fcd25c85cd64?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=80" alt="{{ prod.nom }}">
                         {% endif %}
@@ -787,12 +844,10 @@
                         </div>
                         
                         <div class="product-actions">
-                          <a href="{{ path('app_produit_details', {'id': prod.id}) }}" class="btn-description">
-    <i class="fas fa-info-circle"></i>
-    <span>Description</span>
-</a>
-
-                           
+                            <a href="{{ path('app_produit_details', {'id': prod.id}) }}" class="btn-description">
+                                <i class="fas fa-info-circle"></i>
+                                <span>Description</span>
+                            </a>
                         </div>
                     </div>
                 </div>
@@ -808,8 +863,6 @@
             {% endfor %}
         </div>
         
-
-<!-- Search Section End -->
         <!-- Message aucun résultat -->
         <div class="no-results" id="noResultsMessage" style="display: none;">
             <i class="fas fa-search fa-3x mb-3" style="color: #ccc;"></i>
@@ -899,93 +952,88 @@
             
             // Scroll horizontal des parapharmacies
             const scrollWrapper = document.getElementById('pharmaciesScroll');
-            const scrollLeftBtn = document.querySelector('.scroll-btn-left');
-            const scrollRightBtn = document.querySelector('.scroll-btn-right');
+            const scrollLeftBtn = document.getElementById('scrollLeft');
+            const scrollRightBtn = document.getElementById('scrollRight');
             const scrollAmount = 300;
             
-            // Cacher les boutons de scroll si pas assez d'éléments
-            if (scrollWrapper.scrollWidth <= scrollWrapper.clientWidth) {
-                scrollLeftBtn.style.display = 'none';
-                scrollRightBtn.style.display = 'none';
-            }
-            
-            // Scroll vers la gauche
-            scrollLeftBtn.addEventListener('click', () => {
-                scrollWrapper.scrollBy({
-                    left: -scrollAmount,
-                    behavior: 'smooth'
-                });
-            });
-            
-            // Scroll vers la droite
-            scrollRightBtn.addEventListener('click', () => {
-                scrollWrapper.scrollBy({
-                    left: scrollAmount,
-                    behavior: 'smooth'
-                });
-            });
-            
-            // Afficher/masquer les boutons de scroll selon la position
-            scrollWrapper.addEventListener('scroll', () => {
-                const maxScrollLeft = scrollWrapper.scrollWidth - scrollWrapper.clientWidth;
+            // Vérifier si les éléments existent
+            if (scrollWrapper && scrollLeftBtn && scrollRightBtn) {
                 
-                // Bouton gauche
-                if (scrollWrapper.scrollLeft <= 10) {
-                    scrollLeftBtn.style.opacity = '0.5';
-                    scrollLeftBtn.style.pointerEvents = 'none';
-                } else {
-                    scrollLeftBtn.style.opacity = '1';
-                    scrollLeftBtn.style.pointerEvents = 'auto';
+                // Fonction pour vérifier et mettre à jour l'état des boutons
+                function updateScrollButtons() {
+                    const maxScrollLeft = scrollWrapper.scrollWidth - scrollWrapper.clientWidth;
+                    
+                    // Bouton gauche - désactivé si au début
+                    if (scrollWrapper.scrollLeft <= 5) {
+                        scrollLeftBtn.disabled = true;
+                        scrollLeftBtn.style.opacity = '0.5';
+                    } else {
+                        scrollLeftBtn.disabled = false;
+                        scrollLeftBtn.style.opacity = '1';
+                    }
+                    
+                    // Bouton droit - désactivé si à la fin
+                    if (scrollWrapper.scrollLeft >= maxScrollLeft - 5) {
+                        scrollRightBtn.disabled = true;
+                        scrollRightBtn.style.opacity = '0.5';
+                    } else {
+                        scrollRightBtn.disabled = false;
+                        scrollRightBtn.style.opacity = '1';
+                    }
+                    
+                    // Cacher complètement les boutons si pas assez d'éléments
+                    if (scrollWrapper.scrollWidth <= scrollWrapper.clientWidth) {
+                        scrollLeftBtn.style.display = 'none';
+                        scrollRightBtn.style.display = 'none';
+                    } else {
+                        scrollLeftBtn.style.display = 'flex';
+                        scrollRightBtn.style.display = 'flex';
+                    }
                 }
                 
-                // Bouton droit
-                if (scrollWrapper.scrollLeft >= maxScrollLeft - 10) {
-                    scrollRightBtn.style.opacity = '0.5';
-                    scrollRightBtn.style.pointerEvents = 'none';
-                } else {
-                    scrollRightBtn.style.opacity = '1';
-                    scrollRightBtn.style.pointerEvents = 'auto';
-                }
-            });
-            
-            // Navigation au clavier pour le carrousel
-            document.addEventListener('keydown', (e) => {
-                if (e.key === 'ArrowLeft') {
-                    scrollWrapper.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
-                } else if (e.key === 'ArrowRight') {
-                    scrollWrapper.scrollBy({ left: scrollAmount, behavior: 'smooth' });
-                }
-            });
-        });
-        
-        // Fonction pour afficher/masquer la description
-        function toggleDescription(productId) {
-            const descriptionElement = document.getElementById(`description-${productId}`);
-            const button = event.currentTarget;
-            const descriptionText = button.querySelector('.description-text');
-            
-            if (descriptionElement.classList.contains('show')) {
-                descriptionElement.classList.remove('show');
-                descriptionText.textContent = 'Description';
-                button.innerHTML = '<i class="fas fa-info-circle"></i><span class="description-text">Description</span>';
-            } else {
-                // Fermer toutes les autres descriptions
-                document.querySelectorAll('.product-full-description.show').forEach(el => {
-                    if (el.id !== `description-${productId}`) {
-                        el.classList.remove('show');
-                        const otherButton = el.closest('.product-card').querySelector('.btn-description');
-                        otherButton.innerHTML = '<i class="fas fa-info-circle"></i><span class="description-text">Description</span>';
+                // Scroll vers la gauche
+                scrollLeftBtn.addEventListener('click', () => {
+                    scrollWrapper.scrollBy({
+                        left: -scrollAmount,
+                        behavior: 'smooth'
+                    });
+                    setTimeout(updateScrollButtons, 300);
+                });
+                
+                // Scroll vers la droite
+                scrollRightBtn.addEventListener('click', () => {
+                    scrollWrapper.scrollBy({
+                        left: scrollAmount,
+                        behavior: 'smooth'
+                    });
+                    setTimeout(updateScrollButtons, 300);
+                });
+                
+                // Mettre à jour les boutons lors du scroll
+                scrollWrapper.addEventListener('scroll', updateScrollButtons);
+                
+                // Mettre à jour les boutons au redimensionnement de la fenêtre
+                window.addEventListener('resize', updateScrollButtons);
+                
+                // Initialiser l'état des boutons
+                setTimeout(updateScrollButtons, 100);
+                
+                // Navigation au clavier
+                document.addEventListener('keydown', (e) => {
+                    // Vérifier que l'utilisateur n'est pas en train de taper dans un champ de recherche
+                    if (document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') {
+                        if (e.key === 'ArrowLeft') {
+                            e.preventDefault();
+                            scrollWrapper.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
+                        } else if (e.key === 'ArrowRight') {
+                            e.preventDefault();
+                            scrollWrapper.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+                        }
                     }
                 });
-                
-                descriptionElement.classList.add('show');
-                descriptionText.textContent = 'Masquer';
-                button.innerHTML = '<i class="fas fa-eye-slash"></i><span class="description-text">Masquer</span>';
-                
-                // Faire défiler jusqu'à la description si nécessaire
-                descriptionElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            } else {
+                console.log('Éléments de scroll non trouvés');
             }
-        }
+        });
     </script>
-    
 {% endblock %}
