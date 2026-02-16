@@ -199,6 +199,32 @@
             border-radius: 1rem;
         }
 
+        /* Menu déroulant pour laboratoires */
+        .submenu {
+            list-style: none;
+            padding-left: 2.5rem !important;
+            margin: 0.25rem 0 !important;
+        }
+
+        .submenu li {
+            margin: 0.125rem 0 !important;
+        }
+
+        .submenu a {
+            padding: 0.5rem 1rem !important;
+            font-size: 0.8125rem !important;
+        }
+
+        .sidebar-menu .collapse-arrow {
+            margin-left: auto;
+            font-size: 0.75rem;
+            transition: transform 0.2s;
+        }
+
+        .sidebar-menu a[aria-expanded="true"] .collapse-arrow {
+            transform: rotate(90deg);
+        }
+
         .sidebar-footer {
             padding: 1rem 1.5rem;
             border-top: 1px solid var(--gray-200);
@@ -718,6 +744,11 @@
             color: var(--danger);
         }
 
+        .status-info {
+            background: var(--info-light);
+            color: var(--info);
+        }
+
         /* Role Badge */
         .role-badge {
             padding: 0.375rem 0.75rem;
@@ -796,6 +827,10 @@
             background: white;
             color: var(--gray-700);
             transition: var(--transition);
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
         }
 
         .btn-filter:hover {
@@ -981,75 +1016,151 @@
     </style>
 </head>
 <body>
-    <!-- Sidebar -->
-    <nav class="sidebar" id="sidebar">
-        <div class="sidebar-header">
-            <h3><i class="fas fa-heartbeat"></i> {{ app_name }}</h3>
-            <small>Système de Gestion Hospitalière</small>
-        </div>
+<!-- Sidebar -->
+<nav class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+        <h3><i class="fas fa-heartbeat"></i> {{ app_name }}</h3>
+        <small>Système de Gestion Hospitalière</small>
+    </div>
 
-        <div class="sidebar-menu">
-            <ul>
-                <li>
-                    <a href="{{ path('admin_index') }}" {% if app.request.attributes.get('_route') == 'admin_index' %}class="active"{% endif %}>
-                        <i class="fas fa-tachometer-alt"></i>
-                        <span>Tableau de bord</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="{{ path('admin_users') }}" {% if app.request.attributes.get('_route') in ['admin_users', 'admin_user_new', 'admin_user_edit', 'admin_user_delete', 'admin_user_toggle_status'] %}class="active"{% endif %}>
-                        <i class="fas fa-users"></i>
-                        <span>Utilisateurs</span>
-                        <span class="badge">{{ totalUsers|default(0) }}</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="{{ path('admin_all_appointments') }}" {% if app.request.attributes.get('_route') in ['admin_all_appointments', 'admin_view_appointment'] %}class="active"{% endif %}>
-                        <i class="fas fa-calendar-check"></i>
-                        <span>Rendez-vous</span>
-                        <span class="badge">{{ stats.todays_appointments|default(0) }}</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="{{ path('admin_all_medical_records') }}" {% if app.request.attributes.get('_route') in ['admin_all_medical_records', 'admin_view_medical_record', 'admin_edit_medical_record'] %}class="active"{% endif %}>
-                        <i class="fas fa-file-medical"></i>
-                        <span>Fiches médicales</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="/admin/laboratoire">
-                        <i class="fas fa-flask"></i>
-                        <span>Laboratoires</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="{{ path('admin_responsables_labo') }}" {% if app.request.attributes.get('_route') in ['admin_responsables_labo'] %}class="active"{% endif %}>
-                        <i class="fas fa-user-tie"></i>
-                        <span>Responsable labo</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="#">
-                        <i class="fas fa-chart-bar"></i>
-                        <span>Rapports</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="#">
-                        <i class="fas fa-cog"></i>
-                        <span>Paramètres</span>
-                    </a>
-                </li>
-            </ul>
-        </div>
+    <div class="sidebar-menu">
+        <ul>
+            <li>
+                <a href="{{ path('admin_index') }}" {% if app.request.attributes.get('_route') == 'admin_index' %}class="active"{% endif %}>
+                    <i class="fas fa-tachometer-alt"></i>
+                    <span>Tableau de bord</span>
+                </a>
+            </li>
+            <li>
+                <a href="{{ path('admin_users') }}" {% if app.request.attributes.get('_route') in ['admin_users', 'admin_user_new', 'admin_user_edit', 'admin_user_delete', 'admin_user_toggle_status'] %}class="active"{% endif %}>
+                    <i class="fas fa-users"></i>
+                    <span>Utilisateurs</span>
+                    <span class="badge">{{ totalUsers|default(0) }}</span>
+                </a>
+            </li>
+            
+            <!-- MENU LABORATOIRES AVEC SOUS-MENU DÉROULANT -->
+            <li>
+                <a href="#laboratoireSubmenu" data-bs-toggle="collapse" aria-expanded="{{ app.request.attributes.get('_route') starts with 'admin_laboratoire' or app.request.attributes.get('_route') starts with 'admin_type_analyse' or app.request.attributes.get('_route') starts with 'admin_demande_analyse' ? 'true' : 'false' }}" class="{% if app.request.attributes.get('_route') starts with 'admin_laboratoire' or app.request.attributes.get('_route') starts with 'admin_type_analyse' or app.request.attributes.get('_route') starts with 'admin_demande_analyse' %}active{% endif %}">
+                    <i class="fas fa-flask"></i>
+                    <span>Laboratoires</span>
+                    <span class="badge">{{ totalLaboratoires|default(0) }}</span>
+                    <i class="fas fa-chevron-right collapse-arrow"></i>
+                </a>
+                <ul class="submenu collapse {% if app.request.attributes.get('_route') starts with 'admin_laboratoire' or app.request.attributes.get('_route') starts with 'admin_type_analyse' or app.request.attributes.get('_route') starts with 'admin_demande_analyse' %}show{% endif %}" id="laboratoireSubmenu">
+                    <li>
+                        <a href="{{ path('admin_laboratoires') }}" {% if app.request.attributes.get('_route') in ['admin_laboratoires', 'admin_laboratoire_view', 'admin_laboratoire_edit'] %}class="active"{% endif %}>
+                            <i class="fas fa-list"></i>
+                            <span>Tous les laboratoires</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{{ path('admin_laboratoire_new') }}" {% if app.request.attributes.get('_route') == 'admin_laboratoire_new' %}class="active"{% endif %}>
+                            <i class="fas fa-plus-circle"></i>
+                            <span>Ajouter un laboratoire</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{{ path('admin_type_analyse_list') }}" {% if app.request.attributes.get('_route') starts with 'admin_type_analyse' %}class="active"{% endif %}>
+                            <i class="fas fa-flask"></i>
+                            <span>Types d'analyse</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{{ path('admin_demande_analyse_list') }}" {% if app.request.attributes.get('_route') starts with 'admin_demande_analyse' %}class="active"{% endif %}>
+                            <i class="fas fa-file-medical"></i>
+                            <span>Demandes d'analyse</span>
+                            <span class="badge">{{ stats.demandes_en_attente|default(0) }}</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{{ path('admin_laboratoires_stats') }}" {% if app.request.attributes.get('_route') == 'admin_laboratoires_stats' %}class="active"{% endif %}>
+                            <i class="fas fa-chart-bar"></i>
+                            <span>Statistiques</span>
+                        </a>
+                    </li>
+                </ul>
+            </li>
+            
+            <!-- MENU PARAPHARMACIES (NOUVEAU) -->
+            <li>
+                <a href="#parapharmacieSubmenu" data-bs-toggle="collapse" aria-expanded="{{ app.request.attributes.get('_route') starts with 'admin_parapharmacie' ? 'true' : 'false' }}" class="{% if app.request.attributes.get('_route') starts with 'admin_parapharmacie' %}active{% endif %}">
+                    <i class="fas fa-capsules"></i>
+                    <span>Parapharmacies</span>
+                    <span class="badge">{{ totalParapharmacies|default(0) }}</span>
+                    <i class="fas fa-chevron-right collapse-arrow"></i>
+                </a>
+                <ul class="submenu collapse {% if app.request.attributes.get('_route') starts with 'admin_parapharmacie' %}show{% endif %}" id="parapharmacieSubmenu">
+                    <li>
+                        <a href="#" {% if app.request.attributes.get('_route') in ['admin_parapharmacies', 'admin_parapharmacie_view', 'admin_parapharmacie_edit'] %}class="active"{% endif %}>
+                            <i class="fas fa-list"></i>
+                            <span>Toutes les parapharmacies</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" {% if app.request.attributes.get('_route') == 'admin_parapharmacie_new' %}class="active"{% endif %}>
+                            <i class="fas fa-plus-circle"></i>
+                            <span>Ajouter une parapharmacie</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" {% if app.request.attributes.get('_route') starts with 'admin_produits_parapharmacie' %}class="active"{% endif %}>
+                            <i class="fas fa-box"></i>
+                            <span>Produits</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" {% if app.request.attributes.get('_route') starts with 'admin_commandes_parapharmacie' %}class="active"{% endif %}>
+                            <i class="fas fa-shopping-cart"></i>
+                            <span>Commandes</span>
+                            <span class="badge">{{ stats.commandes_en_attente|default(0) }}</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" {% if app.request.attributes.get('_route') == 'admin_parapharmacies_stats' %}class="active"{% endif %}>
+                            <i class="fas fa-chart-bar"></i>
+                            <span>Statistiques</span>
+                        </a>
+                    </li>
+                </ul>
+            </li>
+            
+            <li>
+                <a href="{{ path('admin_all_appointments') }}" {% if app.request.attributes.get('_route') in ['admin_all_appointments', 'admin_view_appointment'] %}class="active"{% endif %}>
+                    <i class="fas fa-calendar-check"></i>
+                    <span>Rendez-vous</span>
+                    <span class="badge">{{ stats.todays_appointments|default(0) }}</span>
+                </a>
+            </li>
+            <li>
+                <a href="{{ path('admin_all_medical_records') }}" {% if app.request.attributes.get('_route') in ['admin_all_medical_records', 'admin_view_medical_record', 'admin_edit_medical_record'] %}class="active"{% endif %}>
+                    <i class="fas fa-file-medical"></i>
+                    <span>Fiches médicales</span>
+                </a>
+            </li>
+            
+            <li>
+                <a href="#">
+                    <i class="fas fa-chart-bar"></i>
+                    <span>Rapports</span>
+                </a>
+            </li>
+            <li>
+                <a href="#">
+                    <i class="fas fa-cog"></i>
+                    <span>Paramètres</span>
+                </a>
+            </li>
+        </ul>
+    </div>
 
-        <div class="sidebar-footer">
-            <a href="{{ path('app_logout') }}" class="btn">
-                <i class="fas fa-sign-out-alt"></i>
-                <span>Déconnexion</span>
-            </a>
-        </div>
-    </nav>
+    <div class="sidebar-footer">
+        <a href="{{ path('app_logout') }}" class="btn">
+            <i class="fas fa-sign-out-alt"></i>
+            <span>Déconnexion</span>
+        </a>
+    </div>
+</nav>
 
     <!-- Main Content -->
     <div class="main-content" id="mainContent">
@@ -1166,7 +1277,7 @@
                 </div>
             </div>
 
-            <!-- Second Row Stats -->
+            <!-- Second Row Stats - Including Laboratory Stats -->
             <div class="stats-grid">
                 <div class="stat-card animate-slide-in" style="animation-delay: 0.5s;">
                     <div class="stat-card-header">
@@ -1186,8 +1297,8 @@
                 <div class="stat-card animate-slide-in" style="animation-delay: 0.6s;">
                     <div class="stat-card-header">
                         <div class="stat-card-content">
-                            <h3>{{ totalResponsableLabo|default(0) }}</h3>
-                            <p>Responsables Labo</p>
+                            <h3>{{ totalLaboratoires|default(0) }}</h3>
+                            <p>Laboratoires</p>
                         </div>
                         <div class="stat-card-icon info">
                             <i class="fas fa-flask"></i>
@@ -1201,11 +1312,11 @@
                 <div class="stat-card animate-slide-in" style="animation-delay: 0.7s;">
                     <div class="stat-card-header">
                         <div class="stat-card-content">
-                            <h3>{{ totalResponsablePara|default(0) }}</h3>
-                            <p>Responsables Parapharmacie</p>
+                            <h3>{{ totalResponsableLabo|default(0) }}</h3>
+                            <p>Responsables Labo</p>
                         </div>
-                        <div class="stat-card-icon warning">
-                            <i class="fas fa-capsules"></i>
+                        <div class="stat-card-icon info">
+                            <i class="fas fa-user-tie"></i>
                         </div>
                     </div>
                     <span class="stat-card-change positive">
@@ -1216,11 +1327,11 @@
                 <div class="stat-card animate-slide-in" style="animation-delay: 0.8s;">
                     <div class="stat-card-header">
                         <div class="stat-card-content">
-                            <h3>{{ stats.todays_appointments|default(0) }}</h3>
-                            <p>Rendez-vous Aujourd'hui</p>
+                            <h3>{{ stats.demandes_en_attente|default(0) }}</h3>
+                            <p>Demandes en attente</p>
                         </div>
-                        <div class="stat-card-icon danger">
-                            <i class="fas fa-calendar-check"></i>
+                        <div class="stat-card-icon warning">
+                            <i class="fas fa-clock"></i>
                         </div>
                     </div>
                     <span class="stat-card-change negative">
@@ -1298,14 +1409,19 @@
                             <small>Cas urgents</small>
                         </div>
                         <div class="quick-stat-item">
-                            <i class="fas fa-file-invoice-dollar text-danger"></i>
-                            <h4>{{ stats.pending_bills|default(0) }}</h4>
-                            <small>Factures en attente</small>
+                            <i class="fas fa-flask text-info"></i>
+                            <h4>{{ totalLaboratoires|default(0) }}</h4>
+                            <small>Laboratoires</small>
                         </div>
                     </div>
-                    <a href="{{ path('admin_user_new') }}" class="btn btn-primary w-100 mt-4">
-                        <i class="fas fa-plus-circle"></i> Créer un nouvel utilisateur
-                    </a>
+                    <div class="d-flex gap-2 mt-4">
+                        <a href="{{ path('admin_laboratoire_new') }}" class="btn btn-primary w-50">
+                            <i class="fas fa-plus-circle"></i> Nouveau labo
+                        </a>
+                        <a href="{{ path('admin_demande_analyse_new') }}" class="btn btn-outline-primary w-50">
+                            <i class="fas fa-file-medical"></i> Nouvelle demande
+                        </a>
+                    </div>
                 </div>
 
                 <div class="chart-container animate-slide-in" style="animation-delay: 1.2s;">
@@ -1322,14 +1438,14 @@
                             <small>Total rendez-vous</small>
                         </div>
                         <div class="quick-stat-item">
-                            <i class="fas fa-user-md text-primary"></i>
-                            <h4>{{ totalMedecins|default(0) }}</h4>
-                            <small>Médecins</small>
+                            <i class="fas fa-flask text-primary"></i>
+                            <h4>{{ stats.analyses_en_cours|default(0) }}</h4>
+                            <small>Analyses en cours</small>
                         </div>
                         <div class="quick-stat-item">
-                            <i class="fas fa-user-injured text-warning"></i>
-                            <h4>{{ totalPatients|default(0) }}</h4>
-                            <small>Patients</small>
+                            <i class="fas fa-check-circle text-success"></i>
+                            <h4>{{ stats.analyses_terminees|default(0) }}</h4>
+                            <small>Analyses terminées</small>
                         </div>
                     </div>
                 </div>
@@ -1357,9 +1473,182 @@
                 </div>
             </div>
 
-            <!-- Recent Appointments -->
+            <!-- Laboratory Section - Recent Laboratories -->
             <div class="content-grid mt-4">
                 <div class="table-container animate-slide-in" style="animation-delay: 1.4s;">
+                    <div class="table-header">
+                        <h5><i class="fas fa-flask"></i> Laboratoires récents</h5>
+                        <a href="{{ path('admin_laboratoires') }}" class="btn btn-primary btn-sm">
+                            Voir tous <i class="fas fa-arrow-right ms-1"></i>
+                        </a>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Laboratoire</th>
+                                    <th>Ville</th>
+                                    <th>Responsable</th>
+                                    <th>Téléphone</th>
+                                    <th>Statut</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for laboratoire in recent_laboratoires|default([]) %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <div class="user-avatar-sm" style="background: var(--info-light); color: var(--info);">
+                                                <i class="fas fa-flask"></i>
+                                            </div>
+                                            <div>
+                                                <div class="fw-medium">{{ laboratoire.nom }}</div>
+                                                <small class="text-muted">{{ laboratoire.email }}</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>{{ laboratoire.ville }}</td>
+                                    <td>
+                                        {% if laboratoire.responsable %}
+                                            <span>{{ laboratoire.responsable.prenom }} {{ laboratoire.responsable.nom }}</span>
+                                        {% else %}
+                                            <span class="text-muted">—</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ laboratoire.telephone }}</td>
+                                    <td>
+                                        <span class="status-badge {{ laboratoire.disponible ? 'status-active' : 'status-inactive' }}">
+                                            <i class="fas fa-{{ laboratoire.disponible ? 'check-circle' : 'times-circle' }}"></i>
+                                            {{ laboratoire.disponible ? 'Disponible' : 'Indisponible' }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="row-actions">
+                                            <a href="{{ path('admin_laboratoire_view', {id: laboratoire.id}) }}" class="row-action-btn" title="Voir">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            <a href="{{ path('admin_laboratoire_edit', {id: laboratoire.id}) }}" class="row-action-btn" title="Modifier">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            <a href="{{ path('admin_demande_analyse_list', {laboratoire: laboratoire.id}) }}" class="row-action-btn" title="Voir les demandes">
+                                                <i class="fas fa-file-medical"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="6" class="text-center text-muted py-4">
+                                        <i class="fas fa-flask fa-2x mb-2"></i>
+                                        <p class="mb-0">Aucun laboratoire trouvé</p>
+                                        <a href="{{ path('admin_laboratoire_new') }}" class="btn btn-primary btn-sm mt-2">
+                                            <i class="fas fa-plus"></i> Ajouter un laboratoire
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Recent Demandes d'analyse -->
+                <div class="table-container animate-slide-in" style="animation-delay: 1.5s;">
+                    <div class="table-header">
+                        <h5><i class="fas fa-file-medical"></i> Demandes d'analyse récentes</h5>
+                        <a href="{{ path('admin_demande_analyse_list') }}" class="btn btn-primary btn-sm">
+                            Voir toutes <i class="fas fa-arrow-right ms-1"></i>
+                        </a>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Patient</th>
+                                    <th>Laboratoire</th>
+                                    <th>Type</th>
+                                    <th>Date</th>
+                                    <th>Statut</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for demande in recent_demandes_analyse|default([]) %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center gap-2">
+                                            {% if demande.patient and demande.patient.photoProfil %}
+                                                <img src="{{ asset(demande.patient.photoProfil) }}" alt="{{ demande.patient.prenom }}" class="user-avatar-sm">
+                                            {% else %}
+                                                <div class="user-avatar-sm">
+                                                    {{ demande.patient ? (demande.patient.prenom[:1]|upper ~ demande.patient.nom[:1]|upper) : '?' }}
+                                                </div>
+                                            {% endif %}
+                                            <span class="fw-medium">{{ demande.patient ? demande.patient.prenom ~ ' ' ~ demande.patient.nom : 'Patient inconnu' }}</span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        {% if demande.laboratoire %}
+                                            <span class="fw-medium">{{ demande.laboratoire.nom }}</span>
+                                        {% else %}
+                                            <span class="text-muted">—</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ demande.typeBilan }}</td>
+                                    <td>{{ demande.dateDemande|date('d/m/Y') }}</td>
+                                    <td>
+                                        <span class="status-badge 
+                                            {% if demande.statut == 'termine' %}status-active
+                                            {% elseif demande.statut == 'en_attente' %}status-pending
+                                            {% elseif demande.statut == 'en_cours' %}status-info
+                                            {% elseif demande.statut == 'annule' %}status-inactive
+                                            {% endif %}">
+                                            <i class="fas 
+                                                {% if demande.statut == 'termine' %}fa-check-circle
+                                                {% elseif demande.statut == 'en_attente' %}fa-clock
+                                                {% elseif demande.statut == 'en_cours' %}fa-spinner
+                                                {% elseif demande.statut == 'annule' %}fa-times-circle
+                                                {% endif %}">
+                                            </i>
+                                            {{ demande.statut|replace({'_': ' '})|capitalize }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="row-actions">
+                                            <a href="{{ path('admin_demande_analyse_view', {id: demande.id}) }}" class="row-action-btn" title="Voir">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            {% if demande.statut != 'termine' %}
+                                            <a href="{{ path('admin_demande_analyse_edit', {id: demande.id}) }}" class="row-action-btn" title="Modifier">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            {% endif %}
+                                            {% if demande.resultatPdf %}
+                                            <a href="{{ asset('uploads/resultats/' ~ demande.resultatPdf) }}" class="row-action-btn" title="Télécharger résultat" target="_blank">
+                                                <i class="fas fa-download"></i>
+                                            </a>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="6" class="text-center text-muted py-4">
+                                        <i class="fas fa-file-medical fa-2x mb-2"></i>
+                                        <p class="mb-0">Aucune demande d'analyse</p>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Appointments -->
+            <div class="content-grid mt-4">
+                <div class="table-container animate-slide-in" style="animation-delay: 1.6s;">
                     <div class="table-header">
                         <h5><i class="fas fa-calendar-check"></i> Rendez-vous récents</h5>
                         <a href="{{ path('admin_all_appointments') }}" class="btn btn-primary btn-sm">
@@ -1434,7 +1723,7 @@
                 </div>
 
                 <!-- Recent Users -->
-                <div class="table-container animate-slide-in" style="animation-delay: 1.5s;">
+                <div class="table-container animate-slide-in" style="animation-delay: 1.7s;">
                     <div class="table-header">
                         <h5><i class="fas fa-users"></i> Utilisateurs récents</h5>
                         <a href="{{ path('admin_user_new') }}" class="btn btn-primary btn-sm">
@@ -1490,23 +1779,32 @@
                                             <i class="fas fa-{{ user.estActif ? 'check-circle' : 'times-circle' }}"></i>
                                             {{ user.estActif ? 'Actif' : 'Inactif' }}
                                         </span>
-                                    </td>
                                     <td>
-                                        <div class="row-actions">
-                                            <a href="{{ path('admin_user_edit', {id: user.id}) }}" class="row-action-btn" title="Modifier">
-                                                <i class="fas fa-edit"></i>
-                                            </a>
-                                            <a href="{{ path('admin_user_appointments', {id: user.id}) }}" class="row-action-btn" title="Rendez-vous">
-                                                <i class="fas fa-calendar-check"></i>
-                                            </a>
-                                            {% if user.role == 'patient' %}
-                                            <a href="{{ path('admin_patient_medical_records', {id: user.id}) }}" class="row-action-btn" title="Fiches médicales">
-                                                <i class="fas fa-file-medical"></i>
-                                            </a>
-                                            {% endif %}
-                                        </div>
-                                    </td>
-                                </tr>
+    <div class="row-actions">
+        <a href="{{ path('admin_user_edit', {id: user.id}) }}" class="row-action-btn" title="Modifier">
+            <i class="fas fa-edit"></i>
+        </a>
+        <a href="{{ path('admin_user_appointments', {id: user.id}) }}" class="row-action-btn" title="Rendez-vous">
+            <i class="fas fa-calendar-check"></i>
+        </a>
+        {% if user.role == 'patient' %}
+            <a href="{{ path('admin_patient_medical_records', {id: user.id}) }}" class="row-action-btn" title="Fiches médicales">
+                <i class="fas fa-file-medical"></i>
+            </a>
+        {% endif %}
+        {% if user.role == 'responsable_labo' %}
+            {% if user.laboratoire is not null %}
+                <a href="{{ path('admin_laboratoire_view', {id: user.laboratoire.id}) }}" class="row-action-btn" title="Voir laboratoire">
+                    <i class="fas fa-flask"></i>
+                </a>
+            {% else %}
+                <span class="row-action-btn opacity-50" title="Laboratoire non assigné" style="cursor: not-allowed;">
+                    <i class="fas fa-flask text-muted"></i>
+                </span>
+            {% endif %}
+        {% endif %}
+    </div>
+</td>
                                 {% else %}
                                 <tr>
                                     <td colspan="4" class="text-center text-muted py-4">
@@ -1523,7 +1821,7 @@
 
             <!-- Recent Medical Records -->
             <div class="content-grid mt-4">
-                <div class="table-container animate-slide-in" style="animation-delay: 1.6s;">
+                <div class="table-container animate-slide-in" style="animation-delay: 1.8s;">
                     <div class="table-header">
                         <h5><i class="fas fa-file-medical"></i> Fiches médicales récentes</h5>
                         <a href="{{ path('admin_all_medical_records') }}" class="btn btn-primary btn-sm">
@@ -1539,7 +1837,6 @@
                                     <th>IMC</th>
                                     <th>Catégorie</th>
                                     <th>Statut</th>
-                                    
                                 </tr>
                             </thead>
                             <tbody>
@@ -1581,11 +1878,10 @@
                                             {{ record.statut|capitalize }}
                                         </span>
                                     </td>
-                                    
                                 </tr>
                                 {% else %}
                                 <tr>
-                                    <td colspan="6" class="text-center text-muted py-4">
+                                    <td colspan="5" class="text-center text-muted py-4">
                                         <i class="fas fa-file-medical fa-2x mb-2"></i>
                                         <p class="mb-0">Aucune fiche médicale récente</p>
                                     </td>
@@ -1595,11 +1891,10 @@
                         </table>
                     </div>
                 </div>
-
-                
+            </div>
 
             <!-- Footer -->
-            <footer class="animate-slide-in" style="animation-delay: 1.8s;">
+            <footer class="animate-slide-in" style="animation-delay: 2s;">
                 <div class="row align-items-center">
                     <div class="col-md-6">
                         <p>&copy; {{ "now"|date("Y") }} {{ app_name }}. Tous droits réservés.</p>

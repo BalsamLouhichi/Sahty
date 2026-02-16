@@ -63,7 +63,7 @@
                         <i class="fa fa-home me-1"></i>Accueil
                     </a>
                    
-                    
+                   
                     <!-- MENU ADMIN - GESTION ADMIN COMPLÈTE -->
                     {% if is_granted('ROLE_ADMIN') %}
                         <div class="nav-item dropdown">
@@ -75,7 +75,7 @@
                                     <i class="fa fa-chart-line me-2"></i>Dashboard
                                 </a>
                                 <div class="dropdown-divider"></div>
-                                
+                               
                                 <h6 class="dropdown-header">Gestion des laboratoires</h6>
                                 <a href="{{ path('admin_laboratoires') }}" class="dropdown-item">
                                     <i class="fa fa-flask me-2"></i>Tous les laboratoires
@@ -83,7 +83,10 @@
                                 <a href="{{ path('admin_laboratoire_new') }}" class="dropdown-item">
                                     <i class="fa fa-plus-circle me-2"></i>Ajouter un laboratoire
                                 </a>
-                                
+                                {# <a href="{{ path('app_demande_analyse_index') }}" class="dropdown-item">
+                                    <i class="fa fa-file-medical me-2"></i>Demandes d'analyses
+                                </a> #}
+                               
                                 <div class="dropdown-divider"></div>
                                 <h6 class="dropdown-header">Gestion des événements</h6>
                                 <a href="{{ path('evenements_evenement_list') }}" class="dropdown-item">
@@ -95,7 +98,7 @@
                             </div>
                         </div>
                     {% endif %}
-                    
+                   
                     <!-- MENU RENDEZ-VOUS - POUR MÉDECINS ET PATIENTS UNIQUEMENT -->
                     {% if is_granted('ROLE_MEDECIN') or is_granted('ROLE_PATIENT') %}
                         <div class="nav-item dropdown">
@@ -119,7 +122,7 @@
                             </div>
                         </div>
                     {% endif %}
-                    
+                   
                     <!-- MENU LABORATOIRE - POUR RESPONSABLES LABO ET PATIENTS -->
                     {% if is_granted('ROLE_RESPONSABLE_LABO') or is_granted('ROLE_PATIENT') %}
                         <div class="nav-item dropdown">
@@ -128,6 +131,13 @@
                             </a>
                             <div class="dropdown-menu m-0">
                                 {% if is_granted('ROLE_RESPONSABLE_LABO') %}
+                                    {# <a href="{{ path('app_laboratoire_dashboard') }}" class="dropdown-item">
+                                        <i class="fa fa-tachometer-alt me-2"></i>Dashboard
+                                    </a> #}
+                                   
+                                    {# <a href="{{ path('app_labo_new') }}" class="dropdown-item">
+                                        <i class="fa fa-plus-circle me-2"></i>Nouveau Labo
+                                    </a> #}
                                     <a href="{{ path('app_demande_analyse_index') }}" class="dropdown-item">
                                         <i class="fa fa-file-medical me-2"></i>Demandes d'analyses
                                     </a>
@@ -143,7 +153,7 @@
                             </div>
                         </div>
                     {% endif %}
-                    
+                   
                     <!-- MENU ÉVÉNEMENTS - POUR TOUS LES UTILISATEURS CONNECTÉS SAUF ADMIN -->
                     {% if app.user and not is_granted('ROLE_ADMIN') %}
                         <div class="nav-item dropdown">
@@ -160,18 +170,14 @@
                                 <a href="{{ path('evenements_client_mes_inscriptions') }}" class="dropdown-item">
                                     <i class="fas fa-ticket-alt me-2"></i>Mes inscriptions
                                 </a>
-                                
-                                {# NE PAS AFFICHER "Demander un événement" POUR LES PATIENTS #}
-                                {% if not is_granted('ROLE_PATIENT') %}
-                                    <div class="dropdown-divider"></div>
-                                    <a href="{{ path('evenements_client_demande_evenement') }}" class="dropdown-item">
-                                        <i class="fa fa-paper-plane me-2"></i>Demander un événement
-                                    </a>
-                                {% endif %}
+                                <div class="dropdown-divider"></div>
+                                <a href="{{ path('evenements_client_demande_evenement') }}" class="dropdown-item">
+                                    <i class="fa fa-paper-plane me-2"></i>Demander un événement
+                                </a>
                             </div>
                         </div>
                     {% endif %}
-                    
+                   
                     <!-- MENU MÉDECIN - ESPACE MÉDECIN (complémentaire) -->
                     {% if is_granted('ROLE_MEDECIN') %}
                         <div class="nav-item dropdown">
@@ -188,7 +194,7 @@
                             </div>
                         </div>
                     {% endif %}
-                    
+                   
                     <!-- MENU RESPONSABLE PARA - PARAPHARMACIE -->
                     {% if is_granted('ROLE_RESPONSABLE_PARA') %}
                         <div class="nav-item dropdown">
@@ -208,7 +214,7 @@
                             </div>
                         </div>
                     {% endif %}
-                    
+                   
                     <!-- MENU PATIENT - ESPACE PATIENT (complémentaire) -->
                     {% if is_granted('ROLE_PATIENT') and not is_granted('ROLE_MEDECIN') and not is_granted('ROLE_RESPONSABLE_LABO') and not is_granted('ROLE_RESPONSABLE_PARA') %}
                         <div class="nav-item dropdown">
@@ -226,7 +232,7 @@
                         </div>
                     {% endif %}
                 </div>
-                
+               
                 <!-- User Menu - Design Premium Amélioré -->
                 <div class="d-flex align-items-center ms-lg-3 mt-3 mt-lg-0">
                     {% if app.user %}
@@ -250,17 +256,14 @@
                                 <a href="{{ path('app_profile') }}" class="dropdown-item" style="border-radius: 8px; padding: 0.6rem 1rem;">
                                     <i class="fa fa-user-circle me-2" style="color: var(--primary);"></i>Mon Profil
                                 </a>
-                                
-                                {# Lien rapide vers les événements pour tous les clients SAUF PATIENTS #}
+                               
+                                {# Lien rapide vers les événements pour tous les clients #}
                                 {% if app.user and not is_granted('ROLE_ADMIN') %}
-                                    {# Vérifier que l'utilisateur n'est PAS un patient #}
-                                    {% if not is_granted('ROLE_PATIENT') %}
-                                        <a href="{{ path('evenements_client_demande_evenement') }}" class="dropdown-item" style="border-radius: 8px; padding: 0.6rem 1rem;">
-                                            <i class="fa fa-paper-plane me-2" style="color: var(--primary);"></i>Demander un événement
-                                        </a>
-                                    {% endif %}
+                                    <a href="{{ path('evenements_client_demande_evenement') }}" class="dropdown-item" style="border-radius: 8px; padding: 0.6rem 1rem;">
+                                        <i class="fa fa-paper-plane me-2" style="color: var(--primary);"></i>Demander un événement
+                                    </a>
                                 {% endif %}
-                                
+                               
                                 <hr class="dropdown-divider">
                                 <a href="{{ path('app_logout') }}" class="dropdown-item text-danger" style="border-radius: 8px; padding: 0.6rem 1rem;">
                                     <i class="fa fa-sign-out-alt me-2"></i>Déconnexion
@@ -438,12 +441,12 @@
     .navbar-nav {
         padding: 1rem 0;
     }
-    
+   
     .navbar-nav .nav-link {
         border-radius: 8px;
         padding: 0.7rem 1rem !important;
     }
-    
+   
     .dropdown-menu {
         box-shadow: none;
         border: 1px solid rgba(29, 93, 155, 0.1);
@@ -457,7 +460,7 @@
 document.addEventListener('DOMContentLoaded', function() {
     const currentPath = window.location.pathname;
     const navLinks = document.querySelectorAll('.navbar-nav .nav-link');
-    
+   
     navLinks.forEach(link => {
         if (link.getAttribute('href') === currentPath) {
             link.classList.add('active');
