@@ -20,8 +20,10 @@
 </head>
 <body>
 
-    {# Navbar partial #}
-    {% include 'partials/navbar.html.twig' %}
+    {# Header / Navbar #}
+    {% block header %}
+        {% include 'partials/navbar.html.twig' %}
+    {% endblock %}
 
     <main class="container mt-4">
         {% block body %}{% endblock %}
