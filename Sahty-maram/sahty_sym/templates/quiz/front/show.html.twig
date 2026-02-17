@@ -1,0 +1,79 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ quiz.name }}{% endblock %}
+
+{% block body %}
+
+
+<section class="py-5">
+    <div class="container">
+        <div class="text-center mb-5">
+            <h1 class="display-5 fw-bold text-primary">{{ quiz.name }}</h1>
+            <p class="lead text-muted">{{ quiz.description }}</p>
+        </div>
+
+        <form method="POST" action="{{ path('app_quiz_submit', {'id': quiz.id}) }}" novalidate class="needs-validation">
+            {% for question in quiz.questions %}
+                <div class="card mb-4 shadow-sm border-0 rounded-4">
+                    <div class="card-body p-4">
+                        <h5 class="card-title fw-bold mb-4">{{ question.text }}</h5>
+
+                        {% set name = 'answers[' ~ question.id ~ ']' %}
+
+                        {% if question.type == 'likert_0_4' %}
+                            <div class="d-flex flex-wrap justify-content-between gap-2">
+                                {% for value in 0..4 %}
+                                    <div class="form-check form-check-inline flex-fill text-center">
+                                        <input class="form-check-input" type="radio" name="{{ name }}" id="q{{ question.id }}_{{ value }}" value="{{ value }}" required>
+                                        <label class="form-check-label d-block mt-2 fw-medium" for="q{{ question.id }}_{{ value }}">
+                                            {{ value }}<br>
+                                            <small class="text-muted">
+                                                {% if value == 0 %}Jamais{% elseif value == 1 %}Rarement{% elseif value == 2 %}Parfois{% elseif value == 3 %}Souvent{% else %}Très souvent{% endif %}
+                                            </small>
+                                        </label>
+                                    </div>
+                                {% endfor %}
+                            </div>
+
+                        {% elseif question.type == 'likert_1_5' %}
+                            <div class="d-flex flex-wrap justify-content-between gap-2">
+                                {% for value in 1..5 %}
+                                    <div class="form-check form-check-inline flex-fill text-center">
+                                        <input class="form-check-input" type="radio" name="{{ name }}" id="q{{ question.id }}_{{ value }}" value="{{ value }}" required>
+                                        <label class="form-check-label d-block mt-2 fw-medium" for="q{{ question.id }}_{{ value }}">
+                                            {{ value }}<br>
+                                            <small class="text-muted">
+                                                {% if value == 1 %}Pas du tout{% elseif value == 2 %}Un peu{% elseif value == 3 %}Modérément{% elseif value == 4 %}Beaucoup{% else %}Extrêmement{% endif %}
+                                            </small>
+                                        </label>
+                                    </div>
+                                {% endfor %}
+                            </div>
+
+                        {% elseif question.type == 'yes_no' %}
+                            <div class="d-flex justify-content-center gap-5">
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="{{ name }}" id="q{{ question.id }}_0" value="0" required>
+                                    <label class="form-check-label fs-5 fw-bold" for="q{{ question.id }}_0">Non</label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="{{ name }}" id="q{{ question.id }}_1" value="1" required>
+                                    <label class="form-check-label fs-5 fw-bold" for="q{{ question.id }}_1">Oui</label>
+                                </div>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endfor %}
+
+            <div class="text-center mt-5">
+                <button type="submit" class="btn btn-primary btn-lg px-5 py-3 fw-bold rounded-pill shadow-lg">
+                    <i class="bi bi-check-circle-fill me-2"></i> Valider mes réponses
+                </button>
+            </div>
+        </form>
+    </div>
+</section>
+
+
+{% endblock %}

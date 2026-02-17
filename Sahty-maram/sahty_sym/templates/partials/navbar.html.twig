@@ -1,0 +1,46 @@
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <div class="container">
+        <a href="{{ path('home') }}" class="navbar-brand">
+            <h1 class="m-0 text-uppercase text-primary">
+                <i class="fa fa-heartbeat me-2"></i>Sahty
+            </h1>
+        </a>
+        
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ms-auto">
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ path('home') }}">Home</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#about">About</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#services">Services</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#appointment">Appointment</a>
+                </li>
+                <li class="nav-item">
+                    <a href="{{ path('app_quiz_front_list') }}" class="nav-link fw-bold text-primary">
+                        <i class="fas fa-question-circle me-1"></i> Quizzes
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="{{ path('app_recommandation_front_list') }}" class="nav-link fw-bold text-primary">
+                        <i class="fas fa-lightbulb me-1"></i> Recommandations
+                    </a>
+                </li>
+            </ul>
+
+            <!-- Boutons S'inscrire et Se connecter -->
+            <div class="d-flex ms-3">
+                <a href="{{ path('app_sign') }}" class="btn btn-outline-primary me-2">S'inscrire</a>
+                <a href="{{ path('app_login') }}" class="btn btn-primary">Se connecter</a>
+            </div>
+        </div>
+    </div>
+</nav>

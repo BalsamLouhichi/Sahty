@@ -1,0 +1,113 @@
+    {% extends 'base.html.twig' %}
+
+    {% block title %}Résultats - {{ quiz.name }}{% endblock %}
+
+    {% block body %}
+    <div class="container py-5">
+        <div class="text-center mb-5">
+            <h1 class="display-5 fw-bold text-primary">Résultats de {{ quiz.name }}</h1>
+        </div>
+
+        <!-- Score global -->
+        <div class="card text-center shadow-lg mb-5 border-0">
+            <div class="card-body p-5">
+                <h2 class="display-1 fw-bold {% if result.totalScore <= 14 %}text-success{% elseif result.totalScore <= 24 %}text-warning{% else %}text-danger{% endif %}">
+                    {{ result.totalScore }} / {{ result.maxScore }}
+                </h2>
+                <p class="fs-4 mt-3 fw-bold">{{ result.interpretation }}</p>
+            </div>
+        </div>
+
+        <!-- Radar chart (Chart.js) -->
+        <div class="card shadow mb-5">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Répartition par catégorie</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="radarChart" height="300"></canvas>
+            </div>
+        </div>
+
+        <!-- Recommandations -->
+        {% if result.recommendations|length > 0 %}
+        <div class="card shadow">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0">Recommandations personnalisées</h5>
+            </div>
+            <div class="card-body">
+                <div class="accordion" id="recoAccordion">
+                    {% for reco in result.recommendations %}
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button {% if loop.first %}show{% else %}collapsed{% endif %}" type="button" data-bs-toggle="collapse" data-bs-target="#reco{{ loop.index }}">
+                                    <span class="badge me-3 {% if reco.severity == 'high' %}bg-danger{% elseif reco.severity == 'medium' %}bg-warning{% else %}bg-success{% endif %}">
+                                        {{ reco.severity|capitalize }}
+                                    </span>
+                                    {{ reco.title ?: reco.name }}
+                                </button>
+                            </h2>
+                            <div id="reco{{ loop.index }}" class="accordion-collapse collapse {% if loop.first %}show{% endif %}" data-bs-parent="#recoAccordion">
+                                <div class="accordion-body">
+                                    <p>{{ reco.description }}</p>
+                                    {% if reco.tips %}
+                                        <ul class="list-group list-group-flush mt-3">
+                                            {% for tip in reco.tips|split('\n') %}
+                                                {% if tip|trim %}
+                                                    <li class="list-group-item border-0">
+                                                        <i class="bi bi-check-circle-fill text-success me-2"></i>{{ tip|trim }}
+                                                    </li>
+                                                {% endif %}
+                                            {% endfor %}
+                                        </ul>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% else %}
+            <div class="alert alert-info text-center p-5">
+                <i class="bi bi-info-circle-fill fs-1 me-3"></i>
+                Aucune recommandation spécifique pour ce score.
+            </div>
+        {% endif %}
+
+        <div class="text-center mt-5">
+            <a href="{{ path('app_quiz_show', {id: quiz.id}) }}" class="btn btn-primary btn-lg px-5 py-3 me-3">
+                Refaire le quiz
+            </a>
+            <a href="{{ path('app_quiz_front_list') }}" class="btn btn-outline-secondary btn-lg px-5 py-3">
+                Retour aux quizzes
+            </a>
+        </div>
+    </div>
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+    const ctx = document.getElementById('radarChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'radar',
+        data: {
+            labels: Object.keys({{ result.categoryScores|json_encode|raw }}),
+            datasets: [{
+                label: 'Votre score',
+                data: Object.values({{ result.categoryScores|json_encode|raw }}),
+                backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                borderColor: 'rgba(54, 162, 235, 1)',
+                borderWidth: 2
+            }]
+        },
+        options: {
+            scales: {
+                r: {
+                    beginAtZero: true,
+                    max: 20  {# Ajuste selon ton échelle max par catégorie #}
+                }
+            }
+        }
+    });
+    </script>
+    {% endblock %}

@@ -1,0 +1,276 @@
+{% extends 'admin/base_admin.html.twig' %}
+
+{% block title %}{% if form.vars.data.id %}Modifier{% else %}Ajouter{% endif %} Recommandation - Sahty{% endblock %}
+
+{% block content %}
+    <style>
+        .form-section {
+            background: white;
+            border-radius: 10px;
+            padding: 2rem;
+            box-shadow: 0 3px 12px rgba(0,0,0,0.06);
+            margin-bottom: 2rem;
+        }
+
+        .form-section h2 {
+            font-size: 1.5rem;
+            margin-bottom: 1.5rem;
+            color: #1D2A4D;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            font-weight: 600;
+            color: #1D2A4D;
+            margin-bottom: 0.75rem;
+            display: block;
+        }
+
+        .form-control {
+            padding: 0.75rem 1rem;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            font-size: 0.95rem;
+            width: 100%;
+        }
+
+        .form-control:focus {
+            border-color: #13C5DD;
+            box-shadow: 0 0 0 3px rgba(19, 197, 221, 0.1);
+            outline: none;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 6px;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background-color: #13C5DD;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: #0FB4C9;
+        }
+
+        .btn-secondary {
+            background-color: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background-color: #5a6268;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+    </style>
+
+    <div class="form-section">
+        <h2>
+            <i class="fas fa-lightbulb"></i>
+            {% if form.vars.data.id %}Modifier{% else %}Créer{% endif %} une Recommandation
+        </h2>
+
+        {{ form_start(form, {'attr': {'class': 'form-recommandation', 'novalidate': 'novalidate'}}) }}
+
+            <div class="form-group">
+                {{ form_label(form.name, 'Nom de la Recommandation') }}
+                {{ form_widget(form.name, {'attr': {'class': 'form-control', 'placeholder': 'Ex: Gestion du stress et de l\'anxiété'}}) }}
+                {% if form.name.vars.errors|length > 0 %}
+                    <div class="text-danger small mt-1">{{ form_errors(form.name) }}</div>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                {{ form_label(form.title, 'Titre Court (Affichage)') }}
+                {{ form_widget(form.title, {'attr': {'class': 'form-control', 'placeholder': 'Ex: Anxiété - Conseil pratique'}}) }}
+                {% if form.title.vars.errors|length > 0 %}
+                    <div class="text-danger small mt-1">{{ form_errors(form.title) }}</div>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                {{ form_label(form.description, 'Description Complète') }}
+                {{ form_widget(form.description, {'attr': {'class': 'form-control', 'rows': '4', 'placeholder': 'Décrivez en détail cette recommandation et ses bénéfices...'}}) }}
+                    {% if form.description.vars.errors|length > 0 %}
+                    <div class="text-danger small mt-1">{{ form_errors(form.description) }}</div>
+                    {% endif %}
+            </div>
+
+            <div class="form-group">
+                {{ form_label(form.tips, 'Conseils Pratiques') }}
+                {{ form_widget(form.tips, {'attr': {'class': 'form-control', 'rows': '3', 'placeholder': '• Conseil 1\n• Conseil 2\n• Conseil 3'}}) }}
+                {% if form.tips.vars.errors|length > 0 %}
+                    <div class="text-danger small mt-1">{{ form_errors(form.tips) }}</div>
+                {% endif %}
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    {{ form_label(form.quiz, 'Quiz Associé') }}
+                    {{ form_widget(form.quiz, {'attr': {'class': 'form-control'}}) }}
+                    {% if form.quiz.vars.errors|length > 0 %}
+                        <div class="text-danger small mt-1">{{ form_errors(form.quiz) }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="form-group">
+                    {{ form_label(form.type_probleme, 'Type de Problème') }}
+                    {{ form_widget(form.type_probleme, {'attr': {'class': 'form-control'}}) }}
+                    {% if form.type_probleme.vars.errors|length > 0 %}
+                        <div class="text-danger small mt-1">{{ form_errors(form.type_probleme) }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="form-group">
+                    {{ form_label(form.severity, 'Niveau de Sévérité') }}
+                    {{ form_widget(form.severity, {'attr': {'class': 'form-control'}}) }}
+                    {% if form.severity.vars.errors|length > 0 %}
+                        <div class="text-danger small mt-1">{{ form_errors(form.severity) }}</div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    {{ form_label(form.min_score, 'Score Minimum') }}
+                    {{ form_widget(form.min_score, {'attr': {'class': 'form-control', 'type': 'number', 'min': '0'}}) }}
+                    {% if form.min_score.vars.errors|length > 0 %}
+                        <div class="text-danger small mt-1">{{ form_errors(form.min_score) }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="form-group">
+                    {{ form_label(form.max_score, 'Score Maximum') }}
+                    {{ form_widget(form.max_score, {'attr': {'class': 'form-control', 'type': 'number', 'min': '0'}}) }}
+                    {% if form.max_score.vars.errors|length > 0 %}
+                        <div class="text-danger small mt-1">{{ form_errors(form.max_score) }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="form-group">
+                    {{ form_label(form.target_categories, 'Catégories Concernées') }}
+                    {{ form_widget(form.target_categories, {'attr': {'class': 'form-control', 'placeholder': 'Ex: stress,concentration,sommeil'}}) }}
+                    {% if form.target_categories.vars.errors|length > 0 %}
+                        <div class="text-danger small mt-1">{{ form_errors(form.target_categories) }}</div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="button-group">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i>
+                    {% if form.vars.data.id %}Modifier{% else %}Créer{% endif %} la Recommandation
+                </button>
+                <a href="{{ path('admin_recommandation_index') }}" class="btn btn-secondary">
+                    <i class="fas fa-times"></i>Annuler
+                </a>
+            </div>
+
+            {{ form_end(form) }}
+    </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const quizSelect = document.getElementById('recommandation_quiz')
+        || document.querySelector('select[name$="[quiz]"]')
+        || document.querySelector('select[name$="[quiz_id]"]');
+
+    const typeSelect = document.getElementById('recommandation_type_probleme')
+        || document.querySelector('select[name$="[type_probleme]"]');
+
+    if (!quizSelect || !typeSelect) {
+        return; // nothing to do if elements are missing
+    }
+
+    const getQuestionsUrl = `{{ path('app_recommandation_get_questions', {quizId: 'QUIZ_ID'}) }}`;
+
+    function setOptions(questions, placeholder = '— Choisir une question —') {
+        typeSelect.disabled = false;
+        typeSelect.innerHTML = '';
+        const placeholderOpt = document.createElement('option');
+        placeholderOpt.value = '';
+        placeholderOpt.textContent = placeholder;
+        typeSelect.appendChild(placeholderOpt);
+
+        questions.forEach(q => {
+            const o = document.createElement('option');
+            o.value = q.text ?? q.id ?? '';
+            o.textContent = (q.text ?? q.id) + (q.id ? ` (ID: ${q.id})` : '');
+            typeSelect.appendChild(o);
+        });
+    }
+
+    function resetPlaceholder(msg = '— Choisissez d\'abord un quiz —') {
+        typeSelect.disabled = true;
+        typeSelect.innerHTML = '';
+        const o = document.createElement('option');
+        o.value = '';
+        o.textContent = msg;
+        typeSelect.appendChild(o);
+    }
+
+    async function updateTypeProbleme() {
+        const quizId = quizSelect.value;
+        if (!quizId) {
+            resetPlaceholder();
+            return;
+        }
+
+        try {
+            const res = await fetch(getQuestionsUrl.replace('QUIZ_ID', quizId));
+            if (!res.ok) throw new Error(res.statusText || res.status);
+            const data = await res.json();
+
+            if (!Array.isArray(data) || data.length === 0) {
+                resetPlaceholder('Aucune question dans ce quiz');
+                return;
+            }
+
+            setOptions(data);
+
+            // Try to preserve previous value if any
+            const prev = {{ (form.type_probleme.vars.value is not null) ? ('"' ~ form.type_probleme.vars.value|e('js') ~ '"') : 'null' }};
+            if (prev) {
+                const found = Array.from(typeSelect.options).find(o => o.value === prev);
+                if (found) typeSelect.value = prev;
+            }
+
+        } catch (e) {
+            console.error('Erreur lors du chargement des questions:', e);
+            resetPlaceholder('Erreur lors du chargement');
+        }
+    }
+
+    quizSelect.addEventListener('change', updateTypeProbleme, { passive: true });
+
+    // Initialize on load
+    updateTypeProbleme();
+});
+</script>
+{% endblock %}

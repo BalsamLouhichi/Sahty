@@ -1,0 +1,888 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Recommandations Personnalisées - Sahty{% endblock %}
+
+{% block body %}
+<!-- Hero section premium avec animation -->
+<section class="position-relative py-5 overflow-hidden" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #4fc3f7 100%); min-height: 50vh;">
+    <!-- Particules animées -->
+    <div id="particles-js" class="position-absolute w-100 h-100 top-0 start-0"></div>
+    
+    <!-- Vagues décoratives -->
+    <div class="position-absolute bottom-0 start-0 w-100" style="height: 150px; background: url('data:image/svg+xml;utf8,<svg viewBox=\"0 0 1440 320\" xmlns=\"http://www.w3.org/2000/svg\"><path fill=\"%23ffffff\" fill-opacity=\"0.1\" d=\"M0,96L48,112C96,128,192,160,288,160C384,160,480,128,576,122.7C672,117,768,139,864,154.7C960,171,1056,181,1152,170.7C1248,160,1344,128,1392,112L1440,96L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z\"></path></svg>') bottom/cover no-repeat;"></div>
+
+    <div class="container text-center text-white position-relative z-2 py-5">
+        <!-- Badge d'introduction -->
+        <span class="badge bg-white text-primary px-4 py-2 rounded-pill mb-4 animate__animated animate__fadeInDown">
+            <i class="bi bi-stars me-2"></i>Conseils personnalisés
+        </span>
+
+        <h1 class="display-4 fw-bold mb-4 animate__animated animate__fadeInDown">
+            Recommandations personnalisées
+        </h1>
+        <p class="lead fs-4 mb-4 opacity-90 animate__animated animate__fadeInUp animate__delay-1s">
+            Conseils adaptés à vos résultats • Bien-être optimisé
+        </p>
+        <p class="fs-5 mb-5 opacity-85 animate__animated animate__fadeInUp animate__delay-1s">
+            Découvrez les recommandations générées automatiquement après vos quizzes
+        </p>
+
+        <!-- Statistiques en temps réel -->
+        <div class="row justify-content-center g-4 mb-5 animate__animated animate__fadeInUp animate__delay-2s">
+            <div class="col-md-4">
+                <div class="stat-card bg-white bg-opacity-10 backdrop-blur rounded-4 p-4">
+                    <i class="bi bi-lightbulb-fill fs-1 mb-3"></i>
+                    <h3 class="h2 fw-bold mb-2">{{ total_recommandations|default(recommandations|length) }}</h3>
+                    <p class="mb-0">Recommandations actives</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="stat-card bg-white bg-opacity-10 backdrop-blur rounded-4 p-4">
+                    <i class="bi bi-check2-circle fs-1 mb-3"></i>
+                    <h3 class="h2 fw-bold mb-2">{{ total_appliquees|default(0) }}</h3>
+                    <p class="mb-0">Conseils appliqués</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="stat-card bg-white bg-opacity-10 backdrop-blur rounded-4 p-4">
+                    <i class="bi bi-star-fill fs-1 mb-3"></i>
+                    <h3 class="h2 fw-bold mb-2">{{ satisfaction_rate|default(92) }}%</h3>
+                    <p class="mb-0">Taux de satisfaction</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Badge total amélioré -->
+        <div class="d-inline-block bg-white bg-opacity-25 backdrop-blur px-5 py-4 rounded-pill shadow-lg">
+            <span class="fs-4 fw-bold">
+                <i class="bi bi-lightbulb me-2"></i>
+                {{ total_recommandations|default(recommandations|length) }} recommandation{{ (total_recommandations|default(recommandations|length)) > 1 ? 's' : '' }} pour vous
+            </span>
+        </div>
+    </div>
+</section>
+
+<!-- Filtres et recherche avancée -->
+{% if recommandations|length > 0 %}
+<div class="container mt-n5 position-relative z-3">
+    <div class="card shadow-lg border-0 rounded-4 p-4 bg-white">
+        <form method="get" class="row g-4" id="filterForm">
+            <div class="col-md-4">
+                <label class="form-label fw-semibold"><i class="bi bi-funnel me-2"></i>Filtrer par type</label>
+                <select name="type" class="form-select form-select-lg" onchange="this.form.submit()">
+                    <option value="">Tous les types</option>
+                    <option value="stress" {{ app.request.query.get('type') == 'stress' ? 'selected' : '' }}>😟 Gestion du stress</option>
+                    <option value="sommeil" {{ app.request.query.get('type') == 'sommeil' ? 'selected' : '' }}>😴 Qualité du sommeil</option>
+                    <option value="alimentation" {{ app.request.query.get('type') == 'alimentation' ? 'selected' : '' }}>🥗 Alimentation</option>
+                    <option value="activite" {{ app.request.query.get('type') == 'activite' ? 'selected' : '' }}>🏃 Activité physique</option>
+                    <option value="humeur" {{ app.request.query.get('type') == 'humeur' ? 'selected' : '' }}>😊 Humeur & émotions</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label fw-semibold"><i class="bi bi-sort-down me-2"></i>Trier par</label>
+                <select name="sort" class="form-select form-select-lg" onchange="this.form.submit()">
+                    <option value="recent" {{ app.request.query.get('sort') == 'recent' ? 'selected' : '' }}>Plus récentes</option>
+                    <option value="popular" {{ app.request.query.get('sort') == 'popular' ? 'selected' : '' }}>Plus populaires</option>
+                    <option value="score_asc" {{ app.request.query.get('sort') == 'score_asc' ? 'selected' : '' }}>Score min. croissant</option>
+                    <option value="score_desc" {{ app.request.query.get('sort') == 'score_desc' ? 'selected' : '' }}>Score max. décroissant</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label fw-semibold"><i class="bi bi-search me-2"></i>Recherche</label>
+                <div class="input-group">
+                    <input type="text" name="search" class="form-control form-control-lg" 
+                           placeholder="Mot-clé..." value="{{ app.request.query.get('search') }}">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-search"></i>
+                    </button>
+                    {% if app.request.query.get('search') %}
+                    <a href="{{ path('app_recommandations_list') }}" class="btn btn-outline-secondary">
+                        <i class="bi bi-x-circle"></i>
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+{% endif %}
+
+<!-- Section des recommandations -->
+<section class="py-5 bg-light">
+    <div class="container">
+        {% if recommandations|length > 0 %}
+            <!-- En-tête avec résultats -->
+            <div class="d-flex flex-wrap align-items-center justify-content-between mb-4">
+                <div>
+                    <h2 class="h3 fw-bold mb-1">
+                        {% if app.request.query.get('type') %}
+                            Recommandations : {{ app.request.query.get('type')|capitalize }}
+                        {% else %}
+                            Toutes les recommandations
+                        {% endif %}
+                    </h2>
+                    <p class="text-muted mb-0">
+                        <i class="bi bi-grid-3x3-gap-fill me-2"></i>
+                        {{ recommandations|length }} recommandation{{ recommandations|length > 1 ? 's' : '' }} trouvée{{ recommandations|length > 1 ? 's' : '' }}
+                    </p>
+                </div>
+                <div class="btn-group" role="group">
+                    <button type="button" class="btn btn-outline-primary active" id="gridView">
+                        <i class="bi bi-grid-3x3-gap-fill"></i>
+                    </button>
+                    <button type="button" class="btn btn-outline-primary" id="listView">
+                        <i class="bi bi-list-ul"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Tags rapides -->
+            <div class="d-flex flex-wrap gap-2 mb-4">
+                <span class="text-muted me-2"><i class="bi bi-tags"></i> Populaires :</span>
+                <a href="?type=stress" class="badge bg-light text-dark text-decoration-none px-3 py-2 rounded-pill hover-bg-primary">😟 Stress</a>
+                <a href="?type=sommeil" class="badge bg-light text-dark text-decoration-none px-3 py-2 rounded-pill hover-bg-primary">😴 Sommeil</a>
+                <a href="?type=alimentation" class="badge bg-light text-dark text-decoration-none px-3 py-2 rounded-pill hover-bg-primary">🥗 Alimentation</a>
+                <a href="?type=activite" class="badge bg-light text-dark text-decoration-none px-3 py-2 rounded-pill hover-bg-primary">🏃 Activité</a>
+                <a href="?type=humeur" class="badge bg-light text-dark text-decoration-none px-3 py-2 rounded-pill hover-bg-primary">😊 Humeur</a>
+            </div>
+
+            <!-- Grille des recommandations -->
+            <div class="row g-4" id="recoGrid">
+                {% for reco in recommandations %}
+                    <div class="col-lg-4 col-md-6">
+                        <div class="card h-100 shadow border-0 rounded-4 overflow-hidden hover-lift bg-white reco-card"
+                             data-type="{{ reco.typeProbleme|default('general')|lower }}"
+                             data-score="{{ reco.minScore|default(0) }}">
+                            
+                            <!-- En-tête avec gradient dynamique selon le type -->
+                            <div class="card-header position-relative text-white py-4 text-center" 
+                                 style="background: linear-gradient(135deg, {{ reco.gradientStart|default('#667eea') }}, {{ reco.gradientEnd|default('#764ba2') }});">
+                                <div class="position-absolute top-0 start-0 w-100 h-100 opacity-25" 
+                                     style="background: repeating-linear-gradient(45deg, rgba(255,255,255,0.1) 0px, rgba(255,255,255,0.1) 10px, transparent 10px, transparent 20px);">
+                                </div>
+                                <i class="bi bi-{{ reco.icon|default('lightbulb') }} fs-1 mb-2 d-block"></i>
+                                <h5 class="mb-0 fw-bold position-relative z-2">{{ reco.nom|default('Recommandation') }}</h5>
+                            </div>
+
+                            <div class="card-body p-4 d-flex flex-column">
+                                <!-- Description avec lecture plus -->
+                                <div class="description-container mb-4">
+                                    <p class="text-muted description-short" id="desc-short-{{ loop.index }}">
+                                        {{ reco.description|default('Conseil personnalisé pour votre bien-être')|slice(0, 100) }}...
+                                        <a href="#" class="text-primary text-decoration-none read-more" data-id="{{ loop.index }}">Lire plus</a>
+                                    </p>
+                                    <p class="text-muted description-full d-none" id="desc-full-{{ loop.index }}">
+                                        {{ reco.description|default('Conseil personnalisé pour votre bien-être') }}
+                                        <a href="#" class="text-primary text-decoration-none read-less" data-id="{{ loop.index }}">Voir moins</a>
+                                    </p>
+                                </div>
+
+                                <!-- Badges d'information -->
+                                <div class="d-flex flex-wrap gap-2 mb-4">
+                                    <span class="badge bg-primary-subtle text-primary rounded-pill px-3 py-2">
+                                        <i class="bi bi-bar-chart me-1"></i>
+                                        Score: {{ reco.minScore|default(0) }}-{{ reco.maxScore|default(20) }}
+                                    </span>
+                                    <span class="badge bg-{{ reco.typeCouleur|default('info') }} rounded-pill px-3 py-2">
+                                        <i class="bi bi-tag me-1"></i>
+                                        {{ reco.typeProbleme|default('Général') }}
+                                    </span>
+                                    {% if reco.difficulte|default('facile') == 'facile' %}
+                                        <span class="badge bg-success-subtle text-success rounded-pill px-3 py-2">
+                                            <i class="bi bi-emoji-smile me-1"></i>Facile
+                                        </span>
+                                    {% elseif reco.difficulte|default('facile') == 'moyen' %}
+                                        <span class="badge bg-warning-subtle text-warning rounded-pill px-3 py-2">
+                                            <i class="bi bi-emoji-neutral me-1"></i>Moyen
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-danger-subtle text-danger rounded-pill px-3 py-2">
+                                            <i class="bi bi-emoji-frown me-1"></i>Avancé
+                                        </span>
+                                    {% endif %}
+                                </div>
+
+                                <!-- Conseils pratiques -->
+                                {% if reco.tips|default([])|length > 0 %}
+                                    <div class="tips-section mb-4">
+                                        <h6 class="fw-bold mb-3">
+                                            <i class="bi bi-check2-circle text-success me-2"></i>Conseils pratiques :
+                                        </h6>
+                                        <ul class="list-unstyled">
+                                            {% for tip in reco.tips|slice(0, 3) %}
+                                                <li class="mb-2 small">
+                                                    <i class="bi bi-arrow-right-circle-fill text-primary me-2"></i>
+                                                    {{ tip }}
+                                                </li>
+                                            {% endfor %}
+                                        </ul>
+                                    </div>
+                                {% endif %}
+
+                                <!-- Quiz associé -->
+                                {% if reco.quiz is defined and reco.quiz %}
+                                    <div class="associated-quiz mb-4 p-3 bg-light rounded-3">
+                                        <div class="d-flex align-items-center">
+                                            <i class="bi bi-link-45deg fs-4 text-primary me-3"></i>
+                                            <div>
+                                                <small class="text-muted d-block">Basé sur le quiz :</small>
+                                                <strong>{{ reco.quiz.nom|default(reco.quiz.name) }}</strong>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endif %}
+
+                                <!-- Statistiques d'utilité -->
+                                <div class="d-flex justify-content-between align-items-center mb-4">
+                                    <div class="d-flex align-items-center">
+                                        <i class="bi bi-hand-thumbs-up-fill text-success me-2"></i>
+                                        <span class="small">{{ reco.likes|default(0) }} personnes ont trouvé utile</span>
+                                    </div>
+                                    <div class="rating">
+                                        {% for i in 1..5 %}
+                                            <i class="bi bi-star{{ i <= reco.rating|default(4) ? '-fill' : '' }} text-warning small"></i>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+
+                                <!-- Boutons d'action -->
+                                <div class="mt-auto">
+                                    <div class="d-grid gap-2">
+                                        <button class="btn btn-primary w-100 py-3 rounded-pill fw-bold shadow-sm apply-reco" 
+                                                data-reco-id="{{ reco.id }}"
+                                                data-bs-toggle="modal" 
+                                                data-bs-target="#applyModal">
+                                            <i class="bi bi-check2-circle me-2"></i> Marquer comme appliqué
+                                        </button>
+                                        <a href="{{ path('app_quiz_front_list') }}" 
+                                           class="btn btn-outline-primary w-100 py-2 rounded-pill">
+                                            <i class="bi bi-play-circle me-2"></i> Faire un quiz similaire
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Footer avec date et partage -->
+                            <div class="card-footer bg-light border-0 py-3">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <small class="text-muted">
+    <i class="bi bi-calendar-event me-1"></i>
+    {{ reco.createdAt ? reco.createdAt|date('d/m/Y') : 'Récent' }}
+</small>
+                                    <div class="dropdown">
+                                        <button class="btn btn-sm btn-outline-secondary rounded-circle" data-bs-toggle="dropdown">
+                                            <i class="bi bi-share"></i>
+                                        </button>
+                                        <ul class="dropdown-menu dropdown-menu-end">
+                                            <li><a class="dropdown-item" href="#"><i class="bi bi-whatsapp text-success me-2"></i>WhatsApp</a></li>
+                                            <li><a class="dropdown-item" href="#"><i class="bi bi-facebook text-primary me-2"></i>Facebook</a></li>
+                                            <li><a class="dropdown-item" href="#"><i class="bi bi-twitter text-info me-2"></i>Twitter</a></li>
+                                            <li><a class="dropdown-item" href="#"><i class="bi bi-envelope text-danger me-2"></i>Email</a></li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+
+            <!-- Vue liste alternative -->
+            <div class="d-none" id="recoList">
+                {% for reco in recommandations %}
+                    <div class="card mb-3 border-0 shadow-sm rounded-4 hover-lift">
+                        <div class="row g-0">
+                            <div class="col-md-2 bg-gradient text-white d-flex align-items-center justify-content-center rounded-start-4"
+                                 style="background: linear-gradient(135deg, {{ reco.gradientStart|default('#667eea') }}, {{ reco.gradientEnd|default('#764ba2') }});">
+                                <i class="bi bi-{{ reco.icon|default('lightbulb') }} fs-1"></i>
+                            </div>
+                            <div class="col-md-10">
+                                <div class="card-body p-4">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div>
+                                            <h5 class="card-title fw-bold mb-2">{{ reco.nom|default('Recommandation') }}</h5>
+                                            <p class="card-text text-muted">{{ reco.description|default('')|slice(0, 200) }}</p>
+                                        </div>
+                                        <span class="badge bg-primary px-3 py-2">{{ reco.typeProbleme|default('Général') }}</span>
+                                    </div>
+                                    <div class="d-flex flex-wrap gap-3 mt-3">
+                                        <span class="small"><i class="bi bi-bar-chart me-1"></i>Score: {{ reco.minScore|default(0) }}-{{ reco.maxScore|default(20) }}</span>
+                                        <span class="small"><i class="bi bi-hand-thumbs-up me-1"></i>{{ reco.likes|default(0) }} utiles</span>
+                                    </div>
+                                    <button class="btn btn-primary mt-3 rounded-pill apply-reco-list" data-reco-id="{{ reco.id }}">
+                                        <i class="bi bi-check2-circle me-2"></i> Appliquer
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+
+            <!-- Pagination simple (sans knp) -->
+            {% if total_pages is defined and total_pages > 1 %}
+            <div class="d-flex justify-content-center mt-5">
+                <nav aria-label="Navigation des recommandations">
+                    <ul class="pagination pagination-lg">
+                        <li class="page-item {{ current_page <= 1 ? 'disabled' : '' }}">
+                            <a class="page-link rounded-start-pill" href="{{ path('app_recommandations_list', {page: current_page - 1}) }}" aria-label="Précédent">
+                                <span aria-hidden="true">&laquo;</span>
+                            </a>
+                        </li>
+                        
+                        {% for i in 1..total_pages %}
+                            <li class="page-item {{ i == current_page ? 'active' : '' }}">
+                                <a class="page-link" href="{{ path('app_recommandations_list', {page: i}) }}">{{ i }}</a>
+                            </li>
+                        {% endfor %}
+                        
+                        <li class="page-item {{ current_page >= total_pages ? 'disabled' : '' }}">
+                            <a class="page-link rounded-end-pill" href="{{ path('app_recommandations_list', {page: current_page + 1}) }}" aria-label="Suivant">
+                                <span aria-hidden="true">&raquo;</span>
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+            {% endif %}
+
+        {% else %}
+            <!-- État vide amélioré -->
+            <div class="text-center py-5 my-5">
+                <div class="bg-white p-5 p-md-6 rounded-5 shadow-lg border border-light">
+                    <!-- Illustration animée -->
+                    <div class="position-relative mb-5">
+                        <i class="bi bi-lightbulb display-1 text-warning opacity-25"></i>
+                        <i class="bi bi-arrow-repeat display-4 text-primary position-absolute top-50 start-50 translate-middle animate-spin-slow"></i>
+                    </div>
+                    
+                    <h4 class="display-6 fw-bold mb-4 text-dark">Aucune recommandation disponible</h4>
+                    <p class="lead text-muted mb-5 mx-auto" style="max-width: 500px;">
+                        Pour débloquer des conseils personnalisés, commencez par faire un quiz bien-être. 
+                        Nous analyserons vos réponses pour vous proposer des recommandations adaptées.
+                    </p>
+
+                    <!-- Suggestions de quizzes -->
+                    <h5 class="fw-bold mb-4">Quizzes recommandés pour commencer :</h5>
+                    <div class="row g-3 justify-content-center mb-5">
+                        <div class="col-md-3">
+                            <div class="card border-0 shadow-sm rounded-4 p-3 bg-light">
+                                <i class="bi bi-emoji-smile fs-1 text-primary mb-2"></i>
+                                <h6>Gestion du stress</h6>
+                                <small class="text-muted">5 minutes</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card border-0 shadow-sm rounded-4 p-3 bg-light">
+                                <i class="bi bi-moon-stars fs-1 text-primary mb-2"></i>
+                                <h6>Qualité du sommeil</h6>
+                                <small class="text-muted">4 minutes</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card border-0 shadow-sm rounded-4 p-3 bg-light">
+                                <i class="bi bi-egg-fried fs-1 text-primary mb-2"></i>
+                                <h6>Alimentation</h6>
+                                <small class="text-muted">6 minutes</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-center gap-3">
+                        <a href="{{ path('app_quiz_front_list') }}" 
+                           class="btn btn-primary btn-lg px-5 py-3 rounded-pill shadow-lg hover-lift">
+                            <i class="bi bi-play-fill me-2"></i> Commencer un quiz
+                        </a>
+                        <a href="{{ path('app_home') }}" 
+                           class="btn btn-outline-primary btn-lg px-5 py-3 rounded-pill">
+                            <i class="bi bi-house me-2"></i> Accueil
+                        </a>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</section>
+
+<!-- Section statistiques et témoignages -->
+{% if recommandations|length > 0 %}
+<section class="py-5 bg-white">
+    <div class="container">
+        <h2 class="text-center fw-bold mb-5">
+            <i class="bi bi-graph-up-arrow text-primary me-2"></i>
+            Impact de nos recommandations
+        </h2>
+        <div class="row g-4 text-center">
+            <div class="col-md-3">
+                <div class="stat-card p-4 rounded-4 bg-light">
+                    <div class="display-4 fw-bold text-primary mb-2 stats-counter" data-target="{{ total_appliquees|default(0) }}">0</div>
+                    <p class="text-muted mb-0">Recommandations appliquées</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card p-4 rounded-4 bg-light">
+                    <div class="display-4 fw-bold text-primary mb-2 stats-counter" data-target="{{ amelioration_rate|default(78) }}">0%</div>
+                    <p class="text-muted mb-0">Taux d'amélioration</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card p-4 rounded-4 bg-light">
+                    <div class="display-4 fw-bold text-primary mb-2 stats-counter" data-target="{{ utilisateurs_actifs|default(1234) }}">0</div>
+                    <p class="text-muted mb-0">Utilisateurs actifs</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card p-4 rounded-4 bg-light">
+                    <div class="display-4 fw-bold text-primary mb-2 stats-counter" data-target="{{ satisfaction_rate|default(92) }}">0%</div>
+                    <p class="text-muted mb-0">Recommandent à un ami</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Section témoignages -->
+<section class="py-5 bg-light">
+    <div class="container">
+        <h2 class="text-center fw-bold mb-5">
+            <i class="bi bi-chat-quote-fill text-primary me-2"></i>
+            Ils ont appliqué nos conseils
+        </h2>
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="card border-0 shadow-sm rounded-4 p-4 h-100">
+                    <div class="d-flex align-items-center mb-3">
+                        <img src="https://ui-avatars.com/api/?name=Marie+L&background=4fc3f7&color=fff&size=50" 
+                             class="rounded-circle me-3" width="50" height="50" alt="Avatar">
+                        <div>
+                            <h6 class="fw-bold mb-1">Marie L.</h6>
+                            <small class="text-muted">Il y a 2 jours</small>
+                        </div>
+                    </div>
+                    <p class="text-muted mb-3">
+                        "Les recommandations sur la gestion du stress m'ont énormément aidée. 
+                        J'ai appliqué les exercices de respiration et je me sens beaucoup mieux !"
+                    </p>
+                    <div class="rating">
+                        <i class="bi bi-star-fill text-warning"></i>
+                        <i class="bi bi-star-fill text-warning"></i>
+                        <i class="bi bi-star-fill text-warning"></i>
+                        <i class="bi bi-star-fill text-warning"></i>
+                        <i class="bi bi-star-fill text-warning"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card border-0 shadow-sm rounded-4 p-4 h-100">
+                    <div class="d-flex align-items-center mb-3">
+                        <img src="https://ui-avatars.com/api/?name=Thomas+P&background=764ba2&color=fff&size=50" 
+                             class="rounded-circle me-3" width="50" height="50" alt="Avatar">
+                        <div>
+                            <h6 class="fw-bold mb-1">Thomas P.</h6>
+                            <small class="text-muted">Il y a 1 semaine</small>
+                        </div>
+                    </div>
+                    <p class="text-muted mb-3">
+                        "Grâce aux conseils sur le sommeil, j'ai enfin trouvé une routine qui fonctionne pour moi. 
+                        Je dors beaucoup mieux maintenant !"
+                    </p>
+                    <div class="rating">
+                        <i class="bi bi-star-fill text-warning"></i>
+                        <i class="bi bi-star-fill text-warning"></i>
+                        <i class="bi bi-star-fill text-warning"></i>
+                        <i class="bi bi-star-fill text-warning"></i>
+                        <i class="bi bi-star-half text-warning"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card border-0 shadow-sm rounded-4 p-4 h-100">
+                    <div class="d-flex align-items-center mb-3">
+                        <img src="https://ui-avatars.com/api/?name=Sarah+M&background=00acc1&color=fff&size=50" 
+                             class="rounded-circle me-3" width="50" height="50" alt="Avatar">
+                        <div>
+                            <h6 class="fw-bold mb-1">Sarah M.</h6>
+                            <small class="text-muted">Il y a 3 semaines</small>
+                        </div>
+                    </div>
+                    <p class="text-muted mb-3">
+                        "Les recommandations en nutrition sont très pratiques et faciles à suivre. 
+                        J'ai déjà perdu 3 kg sans me priver !"
+                    </p>
+                    <div class="rating">
+                        <i class="bi bi-star-fill text-warning"></i>
+                        <i class="bi bi-star-fill text-warning"></i>
+                        <i class="bi bi-star-fill text-warning"></i>
+                        <i class="bi bi-star-fill text-warning"></i>
+                        <i class="bi bi-star-fill text-warning"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endif %}
+
+<!-- Modal pour appliquer une recommandation -->
+<div class="modal fade" id="applyModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4">
+            <div class="modal-header bg-success text-white border-0">
+                <h5 class="modal-title fw-bold">
+                    <i class="bi bi-check2-circle me-2"></i>
+                    Confirmer l'application
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <p class="fs-5 mb-4">Souhaitez-vous marquer cette recommandation comme appliquée ?</p>
+                
+                <!-- Feedback optionnel -->
+                <div class="mb-4">
+                    <label class="form-label fw-semibold">Cette recommandation vous a-t-elle aidé ?</label>
+                    <div class="rating-input d-flex gap-3 justify-content-center fs-3">
+                        <i class="bi bi-emoji-frown text-danger rating-option" data-rating="1"></i>
+                        <i class="bi bi-emoji-neutral text-warning rating-option" data-rating="2"></i>
+                        <i class="bi bi-emoji-smile text-success rating-option" data-rating="3"></i>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label fw-semibold">Votre commentaire (optionnel)</label>
+                    <textarea class="form-control" rows="3" placeholder="Partagez votre expérience..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle me-2"></i>Annuler
+                </button>
+                <button type="button" class="btn btn-success rounded-pill px-4" id="confirmApply">
+                    <i class="bi bi-check2-circle me-2"></i>Confirmer
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Newsletter section -->
+<section class="py-5 bg-gradient-sahty text-white">
+    <div class="container text-center">
+        <h3 class="fw-bold mb-4">Recevez des recommandations personnalisées</h3>
+        <p class="mb-4 opacity-90">Inscrivez-vous pour recevoir chaque semaine des conseils adaptés à vos besoins.</p>
+        <form class="row g-3 justify-content-center">
+            <div class="col-md-5">
+                <input type="email" class="form-control form-control-lg bg-white bg-opacity-25 border-0 text-white" 
+                       placeholder="Votre adresse email" style="backdrop-filter: blur(5px);">
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-light btn-lg w-100 fw-bold rounded-pill">
+                    <i class="bi bi-envelope me-2"></i> S'inscrire
+                </button>
+            </div>
+        </form>
+        <small class="text-white-50 mt-3 d-block">Désinscription possible à tout moment</small>
+    </div>
+</section>
+
+{% include 'partials/footer.html.twig' %}
+
+<!-- Styles améliorés -->
+<style>
+    .bg-gradient-sahty {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    
+    .hover-lift {
+        transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .hover-lift:hover {
+        transform: translateY(-12px) scale(1.02);
+        box-shadow: 0 30px 60px rgba(102, 126, 234, 0.3) !important;
+    }
+    
+    .stat-card {
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        cursor: default;
+    }
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1) !important;
+    }
+    
+    .backdrop-blur {
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+    }
+    
+    .hover-bg-primary:hover {
+        background-color: var(--bs-primary) !important;
+        color: white !important;
+    }
+    
+    .reco-card {
+        position: relative;
+        z-index: 1;
+    }
+    
+    .reco-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        border-radius: 1rem;
+        padding: 2px;
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+        mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+        -webkit-mask-composite: xor;
+        mask-composite: exclude;
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+    
+    .reco-card:hover::before {
+        opacity: 1;
+    }
+    
+    .rating-option {
+        cursor: pointer;
+        transition: transform 0.2s ease, opacity 0.2s ease;
+        opacity: 0.6;
+    }
+    
+    .rating-option:hover {
+        transform: scale(1.2);
+        opacity: 1;
+    }
+    
+    .rating-option.selected {
+        opacity: 1;
+        transform: scale(1.1);
+    }
+    
+    .animate-spin-slow {
+        animation: spin 3s linear infinite;
+    }
+    
+    @keyframes spin {
+        from { transform: translate(-50%, -50%) rotate(0deg); }
+        to { transform: translate(-50%, -50%) rotate(360deg); }
+    }
+    
+    /* Badge colors dynamiques */
+    .badge.bg-primary-subtle {
+        background-color: rgba(102, 126, 234, 0.1) !important;
+    }
+    .badge.bg-success-subtle {
+        background-color: rgba(40, 167, 69, 0.1) !important;
+    }
+    .badge.bg-warning-subtle {
+        background-color: rgba(255, 193, 7, 0.1) !important;
+    }
+    .badge.bg-danger-subtle {
+        background-color: rgba(220, 53, 69, 0.1) !important;
+    }
+    .badge.bg-info-subtle {
+        background-color: rgba(23, 162, 184, 0.1) !important;
+    }
+    
+    /* Pagination stylisée */
+    .pagination .page-link {
+        border: none;
+        margin: 0 5px;
+        border-radius: 8px;
+        color: #667eea;
+        font-weight: 500;
+        padding: 0.75rem 1.25rem;
+        transition: all 0.3s ease;
+    }
+    
+    .pagination .page-link:hover {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+    }
+    
+    .pagination .page-item.active .page-link {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+    }
+    
+    .pagination .page-item.disabled .page-link {
+        background-color: transparent;
+        color: #ccc;
+    }
+    
+    /* Animations */
+    .animate__animated {
+        animation-duration: 1s;
+    }
+</style>
+
+<!-- Scripts -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Toggle vue grille/liste
+    const gridView = document.getElementById('gridView');
+    const listView = document.getElementById('listView');
+    const recoGrid = document.getElementById('recoGrid');
+    const recoList = document.getElementById('recoList');
+
+    if (gridView && listView) {
+        gridView.addEventListener('click', function() {
+            gridView.classList.add('active');
+            listView.classList.remove('active');
+            recoGrid.classList.remove('d-none');
+            recoList.classList.add('d-none');
+        });
+
+        listView.addEventListener('click', function() {
+            listView.classList.add('active');
+            gridView.classList.remove('active');
+            recoGrid.classList.add('d-none');
+            recoList.classList.remove('d-none');
+        });
+    }
+
+    // Lecture plus / moins
+    document.querySelectorAll('.read-more').forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            const id = this.dataset.id;
+            document.getElementById(`desc-short-${id}`).classList.add('d-none');
+            document.getElementById(`desc-full-${id}`).classList.remove('d-none');
+        });
+    });
+
+    document.querySelectorAll('.read-less').forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            const id = this.dataset.id;
+            document.getElementById(`desc-short-${id}`).classList.remove('d-none');
+            document.getElementById(`desc-full-${id}`).classList.add('d-none');
+        });
+    });
+
+    // Rating input dans le modal
+    const ratingOptions = document.querySelectorAll('.rating-option');
+    ratingOptions.forEach(option => {
+        option.addEventListener('click', function() {
+            ratingOptions.forEach(opt => opt.classList.remove('selected'));
+            this.classList.add('selected');
+        });
+    });
+
+    // Animation des compteurs
+    const counters = document.querySelectorAll('.stats-counter');
+    
+    if (counters.length > 0) {
+        const animateCounter = (counter) => {
+            const target = parseInt(counter.getAttribute('data-target'));
+            const isPercentage = counter.textContent.includes('%');
+            const count = parseInt(counter.textContent) || 0;
+            const increment = target / 50;
+
+            if (count < target) {
+                const newCount = Math.ceil(count + increment);
+                counter.textContent = newCount + (isPercentage ? '%' : '');
+                setTimeout(() => animateCounter(counter), 20);
+            } else {
+                counter.textContent = target + (isPercentage ? '%' : '');
+            }
+        };
+
+        // Observer pour lancer les compteurs quand ils sont visibles
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    animateCounter(entry.target);
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.5 });
+
+        counters.forEach(counter => observer.observe(counter));
+    }
+
+    // Boutons appliquer
+    document.querySelectorAll('.apply-reco, .apply-reco-list').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const recoId = this.dataset.recoId;
+            document.getElementById('confirmApply').dataset.recoId = recoId;
+        });
+    });
+
+    document.getElementById('confirmApply')?.addEventListener('click', function() {
+        const recoId = this.dataset.recoId;
+        const selectedRating = document.querySelector('.rating-option.selected')?.dataset.rating;
+        const comment = document.querySelector('.modal-body textarea')?.value;
+        
+        // Ici vous pouvez ajouter la logique AJAX pour marquer comme appliqué
+        alert('Recommandation marquée comme appliquée ! Merci de votre retour.');
+        
+        // Fermer le modal
+        const modal = bootstrap.Modal.getInstance(document.getElementById('applyModal'));
+        modal.hide();
+        
+        // Reset du formulaire
+        ratingOptions.forEach(opt => opt.classList.remove('selected'));
+        if (document.querySelector('.modal-body textarea')) {
+            document.querySelector('.modal-body textarea').value = '';
+        }
+    });
+
+    // Auto-submit des filtres
+    const filterForm = document.getElementById('filterForm');
+    if (filterForm) {
+        const filterInputs = filterForm.querySelectorAll('select');
+        filterInputs.forEach(input => {
+            input.addEventListener('change', () => filterForm.submit());
+        });
+    }
+
+    // Smooth scroll pour les ancres
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function (e) {
+            e.preventDefault();
+            const target = document.querySelector(this.getAttribute('href'));
+            if (target) {
+                target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        });
+    });
+});
+
+// Particules pour le hero (optionnel)
+if (document.getElementById('particles-js')) {
+    particlesJS('particles-js', {
+        particles: {
+            number: { value: 60, density: { enable: true, value_area: 800 } },
+            color: { value: '#ffffff' },
+            shape: { type: 'circle' },
+            opacity: { value: 0.3, random: true },
+            size: { value: 2, random: true },
+            line_linked: { enable: true, distance: 150, color: '#ffffff', opacity: 0.2, width: 1 },
+            move: { enable: true, speed: 1, direction: 'none', random: true, straight: false, out_mode: 'out' }
+        },
+        interactivity: {
+            detect_on: 'canvas',
+            events: { onhover: { enable: true, mode: 'repulse' }, onclick: { enable: true, mode: 'push' } },
+            modes: { repulse: { distance: 100, duration: 0.4 }, push: { particles_nb: 4 } }
+        },
+        retina_detect: true
+    });
+}
+</script>
+
+<!-- Particules.js -->
+<script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
+
+<!-- Animate.css -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+{% endblock %}
