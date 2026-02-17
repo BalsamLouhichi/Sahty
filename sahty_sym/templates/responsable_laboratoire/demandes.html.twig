@@ -4,10 +4,6 @@
 
 {% block title %}Gestion des demandes d'analyse - MEDINOVA{% endblock %}
 
-{% block header %}
-    {% include 'partial/header.html.twig' %}
-{% endblock %}
-
 {% block stylesheets %}
     {{ parent() }}
     {# Google Fonts #}
@@ -570,6 +566,15 @@
                     </div>
                 </div>
                 
+                <div class="row mt-4">
+                    <div class="col-12">
+                        <div class="d-flex gap-2 flex-wrap">
+                            <a href="{{ path('app_responsable_labo_edit') }}" class="btn-hero">
+                                <i class="fas fa-flask me-2"></i>Modifier laboratoire
+                            </a>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- Stats Cards -->

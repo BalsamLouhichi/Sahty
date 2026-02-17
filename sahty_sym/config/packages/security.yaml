@@ -31,7 +31,7 @@ security:
                 enable_csrf: true
                 csrf_parameter: _csrf_token
                 csrf_token_id: authenticate
-                default_target_path: app_home  
+                default_target_path: app_login_redirect
                 always_use_default_target_path: true
                 failure_path: app_login
             

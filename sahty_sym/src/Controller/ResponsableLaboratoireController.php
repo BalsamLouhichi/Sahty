@@ -217,12 +217,61 @@ class ResponsableLaboratoireController extends AbstractController
             return;
         }
 
+                $patientName = $demandeAnalyse->getPatient()?->getNomComplet() ?: 'Patient';
+                $medecinName = $demandeAnalyse->getMedecin()?->getNomComplet() ?: 'Medecin';
+                $laboratoireName = $demandeAnalyse->getLaboratoire()?->getNom() ?: 'Laboratoire';
+                $typeBilan = $demandeAnalyse->getTypeBilan() ?: 'Non precise';
+                $dateDemande = $demandeAnalyse->getDateDemande()?->format('d/m/Y H:i') ?: '-';
+
+                $safePatientName = htmlspecialchars($patientName, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+                $safeMedecinName = htmlspecialchars($medecinName, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+                $safeLaboratoireName = htmlspecialchars($laboratoireName, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+                $safeTypeBilan = htmlspecialchars($typeBilan, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+                $safeDateDemande = htmlspecialchars($dateDemande, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+
+                $textBody = "Bonjour,\n\n"
+                        . "Le resultat d'analyse pour la demande #" . $demandeAnalyse->getId() . " est disponible.\n\n"
+                        . "Patient : " . $patientName . "\n"
+                        . "Medecin : " . $medecinName . "\n"
+                        . "Laboratoire : " . $laboratoireName . "\n"
+                        . "Type de bilan : " . $typeBilan . "\n"
+                        . "Date de la demande : " . $dateDemande . "\n\n"
+                        . "Veuillez trouver le PDF en piece jointe.\n\n"
+                        . "Cordialement,\n"
+                        . $laboratoireName;
+
+                $htmlBody = <<<HTML
+<div style="margin:0;padding:24px;background:#f5f7fb;font-family:Arial,sans-serif;color:#1f2937;">
+    <div style="max-width:620px;margin:0 auto;background:#ffffff;border-radius:12px;overflow:hidden;border:1px solid #e5e7eb;">
+        <div style="background:#2563eb;color:#ffffff;padding:16px 24px;font-size:18px;font-weight:700;">
+            Resultat d'analyse disponible
+        </div>
+        <div style="padding:24px;line-height:1.55;">
+            <p style="margin:0 0 12px 0;">Bonjour,</p>
+            <p style="margin:0 0 16px 0;">Le resultat d'analyse pour la demande <strong>#{$demandeAnalyse->getId()}</strong> est disponible.</p>
+
+            <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;padding:14px 16px;margin:0 0 16px 0;">
+                <p style="margin:0 0 6px 0;"><strong>Patient :</strong> {$safePatientName}</p>
+                <p style="margin:0 0 6px 0;"><strong>Medecin :</strong> {$safeMedecinName}</p>
+                <p style="margin:0 0 6px 0;"><strong>Laboratoire :</strong> {$safeLaboratoireName}</p>
+                <p style="margin:0 0 6px 0;"><strong>Type de bilan :</strong> {$safeTypeBilan}</p>
+                <p style="margin:0;"><strong>Date de la demande :</strong> {$safeDateDemande}</p>
+            </div>
+
+            <p style="margin:0 0 16px 0;">Le document PDF est joint a ce message.</p>
+            <p style="margin:0;">Cordialement,<br><strong>{$safeLaboratoireName}</strong></p>
+        </div>
+    </div>
+</div>
+HTML;
+
         $from = $fromEmail ?: 'no-reply@sahty.local';
         $email = (new Email())
             ->from($from)
             ->to(...$recipients)
             ->subject('Resultat d\'analyse - Demande #' . $demandeAnalyse->getId())
-            ->text("Votre resultat d'analyse est disponible. Veuillez trouver le PDF en piece jointe.")
+                        ->text($textBody)
+                        ->html($htmlBody)
             ->attachFromPath($filePath, 'resultat-analyse.pdf', 'application/pdf');
 
         $mailer->send($email);

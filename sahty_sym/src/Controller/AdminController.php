@@ -66,6 +66,16 @@ class AdminController extends AbstractController
         $totalInactive = $this->userRepo->count(['estActif' => false]);
         $totalActive = $totalUsers - $totalInactive;
 
+        // AJOUT: Statistiques pour la sidebar
+        $totalRendezVous = $rdvRepo->count([]);
+        $totalEvenements = $this->em->createQueryBuilder()
+            ->select('COUNT(e.id)')
+            ->from('App\Entity\Evenement', 'e')
+            ->getQuery()
+            ->getSingleScalarResult();
+        
+        $totalFichesMedicales = $ficheRepo->count([]);
+
         // Statistiques des demandes d'analyse
         $demandesEnAttente = $demandeRepo->count(['statut' => 'en_attente']);
         $demandesEnCours = $demandeRepo->count(['statut' => 'en_cours']);
@@ -141,6 +151,9 @@ class AdminController extends AbstractController
             'totalResponsablePara' => $totalResponsablePara,
             'totalLaboratoires' => $totalLaboratoires,
             'totalDemandesAnalyse' => $totalDemandesAnalyse,
+            'totalRendezVous' => $totalRendezVous, // AJOUT
+            'totalEvenements' => $totalEvenements, // AJOUT
+            'totalFichesMedicales' => $totalFichesMedicales, // AJOUT
             'recent_laboratoires' => $recentLaboratoires,
             'recent_demandes_analyse' => $recentDemandes,
             'stats' => [
@@ -156,6 +169,8 @@ class AdminController extends AbstractController
                 'demandes_terminees' => $demandesTerminees,
                 'analyses_en_cours' => $demandesEnCours,
                 'analyses_terminees' => $demandesTerminees,
+                'commandes_en_attente' => 0, // À ajouter si nécessaire
+                'demandes_evenements' => 0, // À ajouter si nécessaire
             ],
             'charts' => [
                 'months' => $months,
