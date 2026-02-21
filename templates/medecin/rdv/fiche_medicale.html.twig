@@ -222,6 +222,42 @@
             border-left-color: var(--danger);
         }
 
+        /* Bouton dictée vocale */
+        .btn.dictation-btn {
+            margin: 8px 0 10px 0;
+            padding: 8px 14px;
+            border-radius: 999px;
+            border: 1px solid rgba(29, 93, 155, 0.35);
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(232, 244, 248, 0.9) 100%);
+            color: var(--primary-dark);
+            font-weight: 700;
+            letter-spacing: 0.2px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 6px 16px rgba(22, 58, 95, 0.14);
+            transition: all 0.22s ease;
+        }
+
+        .btn.dictation-btn:hover {
+            border-color: rgba(29, 93, 155, 0.55);
+            background: linear-gradient(135deg, rgba(232, 244, 248, 1) 0%, rgba(180, 228, 255, 0.75) 100%);
+            color: var(--primary);
+            transform: translateY(-1px);
+            box-shadow: 0 10px 22px rgba(22, 58, 95, 0.2);
+        }
+
+        .btn.dictation-btn i {
+            font-size: 0.85rem;
+        }
+
+        .btn.dictation-btn:disabled {
+            opacity: 0.85;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: 0 4px 10px rgba(22, 58, 95, 0.14);
+        }
+
         .alert-success {
             background: linear-gradient(135deg, var(--success-light) 0%, #C8E6C9 100%);
             color: var(--secondary-dark);
@@ -961,7 +997,6 @@
                 btn = document.createElement('button');
                 btn.type = 'button';
                 btn.className = 'btn btn-secondary dictation-btn';
-                btn.style.cssText = 'margin: 8px 0 10px 0; padding: 8px 14px;';
                 btn.innerHTML = '<i class="fas fa-microphone"></i> Dicter';
                 wrapper.insertBefore(btn, field);
             }
