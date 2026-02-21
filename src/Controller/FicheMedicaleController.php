@@ -398,7 +398,7 @@ public function searchAjax(
     }
     
     /**
-     * 📝 Route pour créer une fiche avec un patient spécifiquee
+     * 📝 Route pour créer une fiche avec un patient spécifique
      */
     #[Route('/new-for-patient/{patientId}', name: 'app_fiche_medicale_new_for_patient', methods: ['GET', 'POST'])]
     public function newForPatient(
@@ -414,7 +414,7 @@ public function searchAjax(
             return $this->redirectToRoute('app_fiche_medicale_index');
         }
         
-        // Vérifier les permissions
+        // Vérifier les permissions 
         $user = $this->getUser();
         if ($user instanceof Patient && $user->getId() !== $patient->getId()) {
             $this->addFlash('error', '❌ Vous ne pouvez créer une fiche que pour vous-même');
@@ -434,7 +434,7 @@ public function searchAjax(
                 $fiche->setStatut('actif');
             }
             
-            // Calculer l'IMC
+            // Calculer l'IMC correctement
             $fiche->calculerImc();
             
             $entityManager->persist($fiche);
