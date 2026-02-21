@@ -195,24 +195,42 @@ public function findVisibleEventsForClient($user = null): array {
         ->orderBy('e.dateDebut', 'ASC');
 
     // 1. CRITICAL: Strictly filter ONLY approved statuses
-    // This removes "en_attente_approbation" completely from this list
     $qb->andWhere('e.statut IN (:statutsApprouves)')
        ->setParameter('statutsApprouves', ['planifie', 'confirme', 'en_cours']);
 
     // 2. Filter by Groups (Target Audience)
     if ($user) {
-        $userGroups = $user->getGroupes();
+        // SAFELY check if user has getGroupes method
+        $userGroups = [];
+        if (method_exists($user, 'getGroupes')) {
+            $userGroups = $user->getGroupes();
+        }
         
-        $qb->leftJoin('e.groupeCibles', 'g')
-           ->andWhere(
-               $qb->expr()->orX(
-                   'e.groupeCibles IS EMPTY',        // Public events
-                   'g IN (:userGroups)',             // Events for my group
-                   'e.createur = :userId'            // AND my own APPROVED events
+        // If userGroups is empty (either no method or empty collection), 
+        // we need to handle it differently
+        if (empty($userGroups)) {
+            // User has no groups, only show public events or their own events
+            $qb->leftJoin('e.groupeCibles', 'g')
+               ->andWhere(
+                   $qb->expr()->orX(
+                       'e.groupeCibles IS EMPTY',        // Public events
+                       'e.createur = :userId'            // Their own events
+                   )
                )
-           )
-           ->setParameter('userGroups', $userGroups ?: [])
-           ->setParameter('userId', $user->getId());
+               ->setParameter('userId', $user->getId());
+        } else {
+            // User has groups, show public events, group events, and their own events
+            $qb->leftJoin('e.groupeCibles', 'g')
+               ->andWhere(
+                   $qb->expr()->orX(
+                       'e.groupeCibles IS EMPTY',        // Public events
+                       'g IN (:userGroups)',             // Events for their groups
+                       'e.createur = :userId'            // Their own events
+                   )
+               )
+               ->setParameter('userGroups', $userGroups)
+               ->setParameter('userId', $user->getId());
+        }
     } else {
         // If not logged in, only show public events
         $qb->andWhere('e.groupeCibles IS EMPTY');
@@ -220,7 +238,6 @@ public function findVisibleEventsForClient($user = null): array {
 
     return $qb->getQuery()->getResult();
 }
-
 
 public function findAllPendingEvents(): array
 {
@@ -251,4 +268,102 @@ public function findByStatutDemande(string $statutDemande, ?string $type = null,
 
     return $qb->getQuery()->getResult();
 }
+
+
+public function findUserEvents(int $userId, \DateTime $start, \DateTime $end): array
+    {
+        return $this->createQueryBuilder('e')
+            ->join('e.inscriptions', 'i')
+            ->join('i.utilisateur', 'u')
+            ->where('u.id = :userId')
+            ->andWhere('e.dateDebut BETWEEN :start AND :end')
+            ->setParameter('userId', $userId)
+            ->setParameter('start', $start->format('Y-m-d H:i:s'))
+            ->setParameter('end', $end->format('Y-m-d H:i:s'))
+            ->orderBy('e.dateDebut', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    public function findEventsByType(string $type, \DateTime $start, \DateTime $end): array
+    {
+        return $this->createQueryBuilder('e')
+            ->where('e.type = :type')
+            ->andWhere('e.dateDebut BETWEEN :start AND :end')
+            ->setParameter('type', $type)
+            ->setParameter('start', $start->format('Y-m-d H:i:s'))
+            ->setParameter('end', $end->format('Y-m-d H:i:s'))
+            ->getQuery()
+            ->getResult();
+    }
+
+public function findRecommendedEvents(array $categories, array $keywords, \DateTime $start, \DateTime $end): array
+    {
+        $qb = $this->createQueryBuilder('e')
+            ->where('e.dateDebut BETWEEN :start AND :end')
+            ->setParameter('start', $start->format('Y-m-d H:i:s'))
+            ->setParameter('end', $end->format('Y-m-d H:i:s'));
+        
+        if (!empty($categories)) {
+            $qb->andWhere('e.type IN (:categories)')
+               ->setParameter('categories', $categories);
+        }
+        
+        if (!empty($keywords)) {
+            $keywordConditions = [];
+            foreach ($keywords as $i => $keyword) {
+                $keywordConditions[] = 'e.titre LIKE :keyword' . $i . ' OR e.description LIKE :keyword' . $i;
+                $qb->setParameter('keyword' . $i, '%' . $keyword . '%');
+            }
+            $qb->andWhere(implode(' OR ', $keywordConditions));
+        }
+        
+        return $qb->orderBy('e.dateDebut', 'ASC')
+                  ->getQuery()
+                  ->getResult();
+    }
+
+    public function findSchedulingConflicts(Evenement $evenement, ?int $excludeEventId = null): array
+    {
+        if (!$evenement->getDateDebut() || !$evenement->getDateFin()) {
+            return [];
+        }
+
+        $qb = $this->createQueryBuilder('e');
+        $qb->andWhere('e.dateDebut < :newEnd')
+            ->andWhere('e.dateFin > :newStart')
+            ->setParameter('newStart', $evenement->getDateDebut())
+            ->setParameter('newEnd', $evenement->getDateFin());
+
+        if ($excludeEventId !== null) {
+            $qb->andWhere('e.id != :excludeEventId')
+                ->setParameter('excludeEventId', $excludeEventId);
+        }
+
+        $visibilityStatuses = [
+            'planifie',
+            'confirme',
+            'en_cours',
+            'en_attente_approbation',
+        ];
+        $qb->andWhere('e.statut IN (:statuses)')
+            ->setParameter('statuses', $visibilityStatuses);
+
+        $location = trim((string) $evenement->getLieu());
+        $mode = $evenement->getMode();
+        $isPhysicalMode = in_array($mode, ['presentiel', 'hybride'], true);
+
+        if ($isPhysicalMode && $location !== '') {
+            $qb->andWhere('LOWER(e.lieu) = :location')
+                ->andWhere('e.mode IN (:physicalModes)');
+            $qb->setParameter('location', mb_strtolower($location))
+                ->setParameter('physicalModes', ['presentiel', 'hybride']);
+        } else {
+            return [];
+        }
+
+        $qb->orderBy('e.dateDebut', 'ASC');
+
+        return $qb->getQuery()->getResult();
+    }
 }

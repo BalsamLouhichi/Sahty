@@ -2,10 +2,19 @@
 
 namespace App\Controller;
 
+// Keep ALL your event-related imports
 use App\Entity\Evenement;
 use App\Entity\Utilisateur;
 use App\Entity\InscriptionEvenement;
 use App\Repository\EvenementRepository;
+
+// Add Balsam's additional entity imports (they might be useful)
+use App\Entity\Medecin;
+use App\Entity\Patient;
+use App\Entity\ResponsableLaboratoire;
+use App\Entity\ResponsableParapharmacie;
+use App\Repository\UtilisateurRepository;
+
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -103,6 +112,7 @@ class HomeController extends AbstractController
         ]);
     }
 
+    // Note: Balsam had a duplicate profil() method - we keep yours only
     #[Route('/profil', name: 'app_profile')]
     public function profil(): Response
     {

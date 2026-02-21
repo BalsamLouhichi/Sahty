@@ -80,8 +80,8 @@
     </div>
 
     <div class="col-md-4 d-flex align-items-center justify-content-end">
-        {% if referrer == 'admin_evenement_add' %}
-            <a href="{{ path('admin_evenement_add') }}"
+        {% if referrer == 'evenements_evenement_add' %}
+            <a href="{{ path('evenements_evenement_add') }}"
                class="btn btn-outline-secondary">
                 <i class="fas fa-arrow-left me-2"></i>Retour à l'événement
             </a>
@@ -151,8 +151,8 @@
 
     <!-- Buttons -->
   <div class="d-flex justify-content-end mt-4">
-    {% if referrer == 'admin_evenement_add' %}
-        <a href="{{ path('admin_evenement_add') }}"
+    {% if referrer == 'evenements_evenement_add' %}
+        <a href="{{ path('evenements_evenement_add') }}"
            class="btn btn-secondary me-2">
             Annuler
         </a>

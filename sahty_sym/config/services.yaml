@@ -4,6 +4,18 @@
 # Put parameters here that don't need to change on each machine where the app is deployed
 # https://symfony.com/doc/current/best_practices.html#use-parameters-for-application-configuration
 parameters:
+    event_resource_stock:
+        chaises: 150
+        tables: 30
+        micros: 4
+        projecteurs: 2
+        linens: 40
+        kits_accueil: 180
+        kits_depistage: 60
+        kits_atelier: 70
+        gants: 400
+        masques: 220
+        speaker_monitors: 1
 
 
 services:
@@ -20,6 +32,32 @@ services:
             - '../src/DependencyInjection/'
             - '../src/Entity/'
             - '../src/Kernel.php'
+
+    App\Service\EvenementOperationalInsightsService:
+        arguments:
+            $mapboxAccessToken: '%env(string:MAPBOX_ACCESS_TOKEN)%'
+
+    App\Service\EvenementResourcePlanningService:
+        arguments:
+            $stockSnapshot: '%event_resource_stock%'
+
+    App\Service\StripeCheckoutService:
+        arguments:
+            $stripeSecretKey: '%env(string:STRIPE_SECRET_KEY)%'
+            $stripeWebhookSecret: '%env(string:STRIPE_WEBHOOK_SECRET)%'
+
+    App\Service\TwilioMessagingService:
+        arguments:
+            $accountSid: '%env(string:TWILIO_ACCOUNT_SID)%'
+            $authToken: '%env(string:TWILIO_AUTH_TOKEN)%'
+            $smsFrom: '%env(string:TWILIO_SMS_FROM)%'
+            $whatsappFrom: '%env(string:TWILIO_WHATSAPP_FROM)%'
+
+    App\Service\EventRegistrationEmailService:
+        arguments:
+            $mailFrom: '%env(default::EVENT_MAIL_FROM)%'
+            $appUrl: '%env(default::APP_URL)%'
+            $mailerDsn: '%env(default::MAILER_DSN)%'
 
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones

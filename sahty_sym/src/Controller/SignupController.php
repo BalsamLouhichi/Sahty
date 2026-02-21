@@ -7,23 +7,26 @@ use App\Entity\Patient;
 use App\Entity\Medecin;
 use App\Entity\ResponsableLaboratoire;
 use App\Entity\ResponsableParapharmacie;
+use App\Entity\Laboratoire; // Keep Balsam's addition
 use App\Form\SignupType;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
-use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Routing\Attribute\Route; // Keep YOUR Attribute (not Annotation)
+use Symfony\Component\String\Slugger\SluggerInterface; // Keep Balsam's addition for better file handling
 
 class SignupController extends AbstractController
 {
-    #[Route('/signup', name: 'app_signup', methods: ['GET', 'POST'])]
+    #[Route('/signup', name: 'app_signup', methods: ['GET', 'POST'])] // Keep YOUR route name and methods
     public function signup(
         Request $request,
         EntityManagerInterface $em,
-        UserPasswordHasherInterface $passwordHasher
+        UserPasswordHasherInterface $passwordHasher,
+        SluggerInterface $slugger // Add Balsam's Slugger for better file handling
     ): Response {
-        // If user is already logged in, redirect to home
+        // If user is already logged in, redirect to home (keep YOUR redirect)
         if ($this->getUser()) {
             return $this->redirectToRoute('app_home');
         }
@@ -56,12 +59,12 @@ class SignupController extends AbstractController
                         return $this->render('signup/signup.html.twig', ['form' => $form]);
                     }
 
-                    // Dynamically instantiate user based on role
+                    // Dynamically instantiate user based on role (keep YOUR match syntax)
                     $user = match($roleSelected) {
                         'admin' => new Administrateur(),
-                        'medecin' => $this->createMedecin($request),
-                        'responsable_labo' => new ResponsableLaboratoire(),
-                        'responsable_para' => new ResponsableParapharmacie(),
+                        'medecin' => $this->createMedecin($request, $slugger), // Pass slugger
+                        'responsable_labo' => $this->createResponsableLaboratoire($request, $em), // New method from Balsam
+                        'responsable_para' => $this->createResponsableParapharmacie($request), // New method
                         'patient' => $this->createPatient($request),
                         default => throw new \InvalidArgumentException("Role invalide: {$roleSelected}")
                     };
@@ -82,11 +85,14 @@ class SignupController extends AbstractController
                     $hashedPassword = $passwordHasher->hashPassword($user, $password);
                     $user->setPassword($hashedPassword);
 
-                    // Handle profile photo if provided
+                    // Handle profile photo if provided (use Balsam's slugger for better filenames)
                     $photoProfil = $form->get('photoProfil')->getData();
                     if ($photoProfil) {
                         try {
-                            $newFilename = uniqid() . '.' . $photoProfil->guessExtension();
+                            $originalFilename = pathinfo($photoProfil->getClientOriginalName(), PATHINFO_FILENAME);
+                            $safeFilename = $slugger->slug($originalFilename);
+                            $newFilename = $safeFilename . '-' . uniqid() . '.' . $photoProfil->guessExtension();
+                            
                             $uploadDir = $this->getParameter('kernel.project_dir') . '/public/uploads/profiles';
                             
                             if (!is_dir($uploadDir)) {
@@ -118,7 +124,7 @@ class SignupController extends AbstractController
                     }
                 }
             } else {
-                // Collect form errors
+                // Collect form errors (keep YOUR error handling)
                 $errors = [];
                 foreach ($form->getErrors(true) as $error) {
                     $errors[] = $error->getMessage();
@@ -140,22 +146,30 @@ class SignupController extends AbstractController
     /**
      * Create a Medecin user with medical-specific fields
      */
-    private function createMedecin(Request $request): Medecin
+    private function createMedecin(Request $request, SluggerInterface $slugger): Medecin // Add slugger
     {
         $user = new Medecin();
         
-        // Medical specific fields
+        // Medical specific fields (keep YOUR fields + add Balsam's additional fields)
         $user->setSpecialite($request->request->get('signup[specialite]', ''));
         $user->setAnneeExperience((int)$request->request->get('signup[annee_experience]', 0));
         $user->setGrade($request->request->get('signup[grade]', ''));
         $user->setAdresseCabinet($request->request->get('signup[adresse_cabinet]', ''));
         $user->setTelephoneCabinet($request->request->get('signup[telephone_cabinet]', ''));
         
-        // Handle document PDF if provided
+        // Add Balsam's additional fields
+        $user->setNomEtablissement($request->request->get('signup[nom_etablissement]', ''));
+        $user->setNumeroUrgence($request->request->get('signup[numero_urgence]', ''));
+        $user->setDisponibilite($request->request->get('signup[disponibilite]', ''));
+        
+        // Handle document PDF if provided (use slugger for better filename)
         $documentPdf = $request->files->get('signup[document_pdf]');
         if ($documentPdf) {
             try {
-                $newFilename = uniqid() . '.' . $documentPdf->guessExtension();
+                $originalFilename = pathinfo($documentPdf->getClientOriginalName(), PATHINFO_FILENAME);
+                $safeFilename = $slugger->slug($originalFilename);
+                $newFilename = $safeFilename . '-' . uniqid() . '.' . $documentPdf->guessExtension();
+                
                 $uploadDir = $this->getParameter('kernel.project_dir') . '/public/uploads/documents';
                 
                 if (!is_dir($uploadDir)) {
@@ -173,7 +187,35 @@ class SignupController extends AbstractController
     }
 
     /**
-     * Create a Patient user with patient-specific fields
+     * Create a ResponsableLaboratoire user (NEW from Balsam)
+     */
+    private function createResponsableLaboratoire(Request $request, EntityManagerInterface $em): ResponsableLaboratoire
+    {
+        $user = new ResponsableLaboratoire();
+        
+        $laboratoireId = (int)$request->request->get('signup[laboratoire_id]', 0);
+        if ($laboratoireId > 0) {
+            $laboratoire = $em->getRepository(Laboratoire::class)->find($laboratoireId);
+            if ($laboratoire) {
+                $user->setLaboratoire($laboratoire);
+            }
+        }
+        
+        return $user;
+    }
+
+    /**
+     * Create a ResponsableParapharmacie user (NEW from Balsam)
+     */
+    private function createResponsableParapharmacie(Request $request): ResponsableParapharmacie
+    {
+        $user = new ResponsableParapharmacie();
+        $user->setParapharmacieId((int)$request->request->get('signup[parapharmacie_id]', 0));
+        return $user;
+    }
+
+    /**
+     * Create a Patient user with patient-specific fields (keep YOUR version)
      */
     private function createPatient(Request $request): Patient
     {

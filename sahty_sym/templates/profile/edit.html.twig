@@ -3,69 +3,524 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Modifier mon profil - MEDINOVA</title>
-    <link href="{{ asset('css/bootstrap.min.css') }}" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <title>Modifier mon profil - SAHTY</title>
+    
+    <!-- Bootstrap & Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.9.1/font/bootstrap-icons.css" rel="stylesheet">
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800;900&display=swap" rel="stylesheet">
+
     <style>
-        body { background-color: #f8f9fa; }
-        .profile-edit-card { border: none; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
-        .profile-header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 15px 15px 0 0; }
-        .profile-avatar { width: 150px; height: 150px; border-radius: 50%; border: 5px solid white; object-fit: cover; }
-        .avatar-container { position: relative; display: inline-block; }
-        .avatar-change-btn { position: absolute; bottom: 10px; right: 10px; background: rgba(0,0,0,0.7); color: white; border: none; border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
-        .form-group { margin-bottom: 1.5rem; }
-        .btn-save { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none; }
-        .btn-save:hover { background: linear-gradient(135deg, #5a6fd8 0%, #6a4090 100%); }
-        .current-photo { max-width: 100%; border-radius: 10px; margin-top: 10px; }
-        .info-section { background: #f8f9fa; border-radius: 10px; padding: 20px; margin-bottom: 25px; }
-        .section-title { color: #667eea; border-bottom: 2px solid #e9ecef; padding-bottom: 10px; margin-bottom: 20px; }
+        :root {
+            --primary: #1D5D9B;
+            --primary-light: #E8F4F8;
+            --primary-dark: #163A5F;
+            --secondary: #304D30;
+            --accent: #75C2F6;
+            --light: #F4F6FF;
+            --dark: #1A2332;
+            --success: #4A7C59;
+            --danger: #C1666B;
+            --warning: #D4A574;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, var(--light) 0%, #ffffff 100%);
+            min-height: 100vh;
+        }
+
+        /* ============ NAVBAR BALSAM (Premium) ============ */
+        .profile-navbar {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            padding: 15px 0;
+            box-shadow: 0 8px 32px rgba(29, 93, 155, 0.3);
+        }
+
+        .profile-navbar .navbar-brand {
+            font-size: 2rem;
+            font-weight: 900;
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+        }
+
+        .profile-navbar .navbar-brand i {
+            filter: drop-shadow(0 2px 8px rgba(255,255,255,0.3));
+        }
+
+        .profile-navbar .nav-link {
+            color: white !important;
+            font-weight: 600;
+            padding: 10px 18px;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            text-decoration: none;
+        }
+
+        .profile-navbar .nav-link:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .profile-navbar .dropdown-menu {
+            border: none;
+            border-radius: 20px;
+            padding: 15px 0;
+            background: white;
+            box-shadow: 0 20px 60px rgba(29, 93, 155, 0.2);
+            border: 2px solid rgba(117, 194, 246, 0.2);
+            margin-top: 15px;
+        }
+
+        .profile-navbar .dropdown-item {
+            padding: 12px 25px;
+            font-weight: 600;
+            color: var(--dark);
+            transition: all 0.3s ease;
+            border-radius: 12px;
+            margin: 3px 10px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+        }
+
+        .profile-navbar .dropdown-item:hover {
+            background: linear-gradient(135deg, var(--primary-light) 0%, rgba(117, 194, 246, 0.15) 100%);
+            color: var(--primary);
+            transform: translateX(5px);
+        }
+
+        .profile-navbar .dropdown-item i {
+            width: 22px;
+        }
+
+        .profile-navbar .dropdown-item.text-danger:hover {
+            background: rgba(193, 102, 107, 0.1);
+            color: var(--danger) !important;
+        }
+
+        /* ============ CARTE D'ÉDITION MARAM ============ */
+        .edit-container {
+            padding: 50px 0;
+        }
+
+        .profile-edit-card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 25px 60px rgba(29, 93, 155, 0.15);
+            overflow: hidden;
+        }
+
+        .profile-header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .profile-header h3 {
+            font-weight: 800;
+            font-size: 2rem;
+            margin: 0;
+        }
+
+        .profile-header h3 i {
+            margin-right: 10px;
+        }
+
+        .card-body {
+            padding: 50px;
+        }
+
+        /* ============ AVATAR MARAM ============ */
+        .avatar-container {
+            position: relative;
+            display: inline-block;
+        }
+
+        .profile-avatar {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            border: 5px solid var(--primary-light);
+            object-fit: cover;
+            box-shadow: 0 10px 30px rgba(29, 93, 155, 0.2);
+        }
+
+        .profile-avatar-placeholder {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            background: var(--primary-light);
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 4rem;
+            border: 5px solid var(--primary-light);
+        }
+
+        .avatar-change-btn {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            background: var(--primary);
+            color: white;
+            border: 3px solid white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(29, 93, 155, 0.3);
+        }
+
+        .avatar-change-btn:hover {
+            background: var(--primary-dark);
+            transform: scale(1.1) rotate(15deg);
+        }
+
+        /* ============ INFO SECTION MARAM ============ */
+        .info-section {
+            background: var(--light);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            border: 2px solid rgba(117, 194, 246, 0.1);
+        }
+
+        .section-title {
+            color: var(--primary);
+            font-weight: 800;
+            font-size: 1.2rem;
+            border-bottom: 2px solid rgba(117, 194, 246, 0.2);
+            padding-bottom: 15px;
+            margin-bottom: 25px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section-title i {
+            width: 30px;
+            height: 30px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 0.9rem;
+        }
+
+        /* ============ INFOS COMPTE ============ */
+        .info-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(117, 194, 246, 0.1);
+        }
+
+        .info-item:last-child {
+            border-bottom: none;
+        }
+
+        .info-icon {
+            width: 40px;
+            height: 40px;
+            background: white;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--primary);
+        }
+
+        .info-label {
+            font-size: 0.85rem;
+            color: var(--primary);
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .info-value {
+            font-weight: 600;
+            color: var(--dark);
+            margin-top: 2px;
+        }
+
+        .badge-role {
+            background: var(--primary-light);
+            color: var(--primary);
+            padding: 5px 15px;
+            border-radius: 25px;
+            display: inline-block;
+            font-size: 0.9rem;
+        }
+
+        /* ============ FORMULAIRES MARAM ============ */
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+            font-weight: 600;
+            color: var(--dark);
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .form-label i {
+            color: var(--primary);
+            margin-right: 8px;
+            width: 20px;
+        }
+
+        .form-control {
+            border: 2px solid rgba(117, 194, 246, 0.2);
+            border-radius: 15px;
+            padding: 12px 20px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            width: 100%;
+        }
+
+        .form-control:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(29, 93, 155, 0.1);
+            outline: none;
+        }
+
+        .form-control.is-invalid {
+            border-color: var(--danger);
+        }
+
+        .form-text {
+            font-size: 0.85rem;
+            color: #6c757d;
+            margin-top: 8px;
+        }
+
+        .form-text i {
+            color: var(--primary);
+            margin-right: 5px;
+        }
+
+        .text-danger {
+            color: var(--danger);
+            font-size: 0.9rem;
+            margin-top: 5px;
+            display: block;
+        }
+
+        /* ============ INPUT GROUP BALSAM ============ */
+        .input-group-text {
+            border: 2px solid rgba(117, 194, 246, 0.2);
+            border-radius: 15px 0 0 15px;
+            background: transparent;
+            color: var(--primary);
+        }
+
+        .input-group .form-control {
+            border-left: none;
+            border-radius: 0 15px 15px 0;
+        }
+
+        /* ============ BOUTONS D'ACTION EN HAUT (MARAM) ============ */
+        .action-buttons-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .btn {
+            padding: 12px 30px;
+            border-radius: 50px;
+            font-weight: 700;
+            font-size: 1rem;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+        }
+
+        .btn-outline-secondary {
+            background: transparent;
+            color: var(--primary);
+            border: 2px solid var(--primary);
+        }
+
+        .btn-outline-secondary:hover {
+            background: var(--primary);
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .btn-outline-primary {
+            background: transparent;
+            color: var(--primary);
+            border: 2px solid var(--primary);
+        }
+
+        .btn-outline-primary:hover {
+            background: var(--primary);
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .btn-save {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            box-shadow: 0 8px 25px rgba(29, 93, 155, 0.3);
+        }
+
+        .btn-save:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 35px rgba(29, 93, 155, 0.4);
+            color: white;
+        }
+
+        /* ============ ALERTES ============ */
+        .alert {
+            border-radius: 15px;
+            border: none;
+            border-left: 4px solid;
+            padding: 15px 25px;
+            margin-bottom: 20px;
+            background: white;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+        }
+
+        .alert-success {
+            border-left-color: var(--success);
+        }
+
+        .alert-success i { color: var(--success); }
+
+        .alert-danger {
+            border-left-color: var(--danger);
+        }
+
+        .alert-danger i { color: var(--danger); }
+
+        /* ============ RESPONSIVE ============ */
+        @media (max-width: 768px) {
+            .card-body {
+                padding: 30px 20px;
+            }
+
+            .action-buttons-top {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .info-section {
+                padding: 20px;
+            }
+        }
+
+        /* Animations */
+        .fade-in {
+            animation: fadeIn 0.6s ease forwards;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
     </style>
 </head>
 <body>
-    <!-- Navigation -->
-    <nav class="navbar navbar-expand-lg navbar-dark" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+    <!-- Navigation BALSAM (Premium) -->
+    <nav class="navbar navbar-expand-lg profile-navbar sticky-top">
         <div class="container">
-            <a class="navbar-brand" href="{{ path('app_home') }}">
-                <i class="fas fa-stethoscope me-2"></i>MEDINOVA
+            <a href="{{ path('app_home') }}" class="navbar-brand">
+                <i class="fas fa-heartbeat"></i>
+                SAHTY
             </a>
+            
             <div class="navbar-nav ms-auto">
                 <div class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
-                        <i class="fas fa-user-circle me-2"></i>
-                        {{ app.user.prenom }}
+                    <a href="#" class="nav-link dropdown-toggle d-flex align-items-center" data-bs-toggle="dropdown">
+                        {% if app.user.photoProfil %}
+                            <img src="{{ asset(app.user.photoProfil) }}" alt="Profil" style="width: 35px; height: 35px; border-radius: 50%; object-fit: cover; margin-right: 10px; border: 2px solid white;">
+                        {% else %}
+                            <span style="width: 35px; height: 35px; border-radius: 50%; background: rgba(255,255,255,0.2); color: white; display: flex; align-items: center; justify-content: center; margin-right: 10px;">
+                                <i class="fas fa-user"></i>
+                            </span>
+                        {% endif %}
+                        {{ app.user.prenom|default(app.user.email|split('@')[0]) }}
                     </a>
-                    <ul class="dropdown-menu">
-                        <li><a class="dropdown-item" href="{{ path('app_profile') }}"><i class="fas fa-user me-2"></i>Mon Profil</a></li>
-                        <li><a class="dropdown-item" href="{{ path('app_profile_edit') }}"><i class="fas fa-edit me-2"></i>Modifier Profil</a></li>
-                        <li><a class="dropdown-item" href="{{ path('app_profile_change_password') }}"><i class="fas fa-key me-2"></i>Changer mot de passe</a></li>
-                        <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item" href="{{ path('app_logout') }}"><i class="fas fa-sign-out-alt me-2"></i>Déconnexion</a></li>
-                    </ul>
+                    <div class="dropdown-menu dropdown-menu-end">
+                        <a href="{{ path('app_profile') }}" class="dropdown-item">
+                            <i class="fas fa-user"></i>Mon Profil
+                        </a>
+                        <a href="{{ path('app_profile_edit') }}" class="dropdown-item">
+                            <i class="fas fa-edit"></i>Modifier Profil
+                        </a>
+                        <a href="{{ path('app_profile_change_password') }}" class="dropdown-item">
+                            <i class="fas fa-key"></i>Changer mot de passe
+                        </a>
+                        <div class="dropdown-divider"></div>
+                        <a href="{{ path('app_logout') }}" class="dropdown-item text-danger">
+                            <i class="fas fa-sign-out-alt"></i>Déconnexion
+                        </a>
+                    </div>
                 </div>
             </div>
         </div>
     </nav>
 
-    <div class="container py-5">
+    <div class="container edit-container">
         <div class="row justify-content-center">
             <div class="col-lg-10">
                 <!-- Messages flash -->
                 {% for message in app.flashes('success') %}
-                    <div class="alert alert-success alert-dismissible fade show">
-                        <i class="fas fa-check-circle me-2"></i>{{ message }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    <div class="alert alert-success d-flex align-items-center fade-in">
+                        <i class="fas fa-check-circle me-3 fs-4"></i>
+                        <span>{{ message }}</span>
+                        <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
                     </div>
                 {% endfor %}
                 
                 {% for message in app.flashes('error') %}
-                    <div class="alert alert-danger alert-dismissible fade show">
-                        <i class="fas fa-exclamation-triangle me-2"></i>{{ message }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    <div class="alert alert-danger d-flex align-items-center fade-in">
+                        <i class="fas fa-exclamation-triangle me-3 fs-4"></i>
+                        <span>{{ message }}</span>
+                        <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
                     </div>
                 {% endfor %}
 
-                <!-- Boutons d'action - MAINTENANT EN HAUT -->
-                <div class="d-flex justify-content-between align-items-center mb-4">
+                <!-- Boutons d'action EN HAUT (MARAM) -->
+                <div class="action-buttons-top">
                     <a href="{{ path('app_profile') }}" class="btn btn-outline-secondary">
                         <i class="fas fa-arrow-left me-2"></i>Retour au profil
                     </a>
@@ -80,80 +535,92 @@
                     </div>
                 </div>
 
-                <!-- Carte d'édition du profil -->
-                <div class="card profile-edit-card">
-                    <div class="profile-header p-4">
-                        <div class="d-flex align-items-center justify-content-center">
-                            <h3 class="mb-0"><i class="fas fa-user-edit me-2"></i>Modifier mon profil</h3>
-                        </div>
+                <!-- Carte d'édition du profil (MARAM) -->
+                <div class="profile-edit-card fade-in">
+                    <div class="profile-header">
+                        <h3><i class="fas fa-user-edit"></i>Modifier mon profil</h3>
                     </div>
                     
-                    <div class="card-body p-5">
-                        <!-- Photo de profil et informations en ligne -->
+                    <div class="card-body">
+                        <!-- Photo et infos non modifiables (MIX) -->
                         <div class="row mb-5 align-items-center">
                             <div class="col-md-3 text-center">
-                                <div class="avatar-container mb-3">
+                                <div class="avatar-container">
                                     {% if user.photoProfil %}
-                                        <img src="{{ asset(user.photoProfil) }}" class="profile-avatar" alt="Photo de profil actuelle">
+                                        <img src="{{ asset(user.photoProfil) }}" class="profile-avatar" alt="Photo de profil">
                                     {% else %}
-                                        <div class="profile-avatar d-flex align-items-center justify-content-center bg-light text-primary" style="font-size: 4rem;">
+                                        <div class="profile-avatar-placeholder">
                                             <i class="fas fa-user"></i>
                                         </div>
                                     {% endif %}
-                                    <label for="profile_edit_photoProfil" class="avatar-change-btn">
+                                    <label for="{{ form.photoProfil.vars.id }}" class="avatar-change-btn">
                                         <i class="fas fa-camera"></i>
                                     </label>
                                 </div>
-                                <p class="text-muted small">Cliquez pour changer la photo</p>
+                                <p class="text-muted small mt-2">Cliquez sur l'icône pour changer</p>
                             </div>
                             
                             <div class="col-md-9">
-                                <!-- Informations non modifiables -->
-                                <div class="info-section">
-                                    <h5 class="section-title"><i class="fas fa-info-circle me-2"></i>Informations du compte</h5>
-                                    <div class="row">
-                                        <div class="col-md-4 mb-3">
-                                            <p><strong><i class="fas fa-user-tag me-2"></i>Rôle:</strong><br>
-                                            <span class="text-primary">{{ user.role|capitalize }}</span></p>
+                                <div class="info-section" style="padding: 20px;">
+                                    <h5 class="section-title"><i class="fas fa-info-circle"></i>Informations du compte</h5>
+                                    <div class="info-item">
+                                        <div class="info-icon"><i class="fas fa-user-tag"></i></div>
+                                        <div class="info-content">
+                                            <div class="info-label">Rôle</div>
+                                            <div class="info-value">
+                                                <span class="badge-role">
+                                                    {% if user.role == 'medecin' %}
+                                                        <i class="fas fa-user-md me-1"></i>Médecin
+                                                    {% elseif user.role == 'patient' %}
+                                                        <i class="fas fa-user-injured me-1"></i>Patient
+                                                    {% elseif user.role == 'responsable_labo' %}
+                                                        <i class="fas fa-flask me-1"></i>Responsable Laboratoire
+                                                    {% elseif user.role == 'responsable_para' %}
+                                                        <i class="fas fa-pills me-1"></i>Responsable Pharmacie
+                                                    {% else %}
+                                                        {{ user.role|capitalize }}
+                                                    {% endif %}
+                                                </span>
+                                            </div>
                                         </div>
-                                        <div class="col-md-4 mb-3">
-                                            <p><strong><i class="fas fa-calendar-alt me-2"></i>Date d'inscription:</strong><br>
-                                            <span class="text-muted">{{ user.creeLe|date('d/m/Y') }}</span></p>
-                                        </div>
-                                        <div class="col-md-4 mb-3">
-                                            {% if user.role == 'medecin' %}
-                                                <p><strong><i class="fas fa-stethoscope me-2"></i>Spécialité:</strong><br>
-                                                <span class="text-muted">{{ user.specialite ?: 'Non renseignée' }}</span></p>
-                                            {% elseif user.role == 'patient' %}
-                                                <p><strong><i class="fas fa-tint me-2"></i>Groupe sanguin:</strong><br>
-                                                <span class="text-muted">{{ user.groupeSanguin ?: 'Non renseigné' }}</span></p>
-                                            {% endif %}
+                                    </div>
+                                    <div class="info-item">
+                                        <div class="info-icon"><i class="fas fa-calendar"></i></div>
+                                        <div class="info-content">
+                                            <div class="info-label">Membre depuis</div>
+                                            <div class="info-value">{{ user.creeLe|date('d/m/Y') }}</div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Formulaire - TOUS LES CHAMPS ICI -->
+                        <!-- Formulaire (MARAM) -->
                         {{ form_start(form, {'attr': {'class': 'needs-validation', 'novalidate': 'novalidate', 'id': 'profileForm'}}) }}
                         
                             <!-- Section Informations personnelles -->
-                            <div class="info-section mb-4">
-                                <h5 class="section-title"><i class="fas fa-user-circle me-2"></i>Informations personnelles</h5>
+                            <div class="info-section">
+                                <h5 class="section-title"><i class="fas fa-user-circle"></i>Informations personnelles</h5>
                                 
                                 <div class="row">
                                     <div class="col-md-6">
                                         <div class="form-group">
-                                            {{ form_label(form.prenom) }}
-                                            {{ form_widget(form.prenom, {'attr': {'class': 'form-control'}}) }}
+                                            {{ form_label(form.prenom, null, {'label_attr': {'class': 'form-label'}}) }}
+                                            <div class="input-group">
+                                                <span class="input-group-text"><i class="fas fa-user text-primary"></i></span>
+                                                {{ form_widget(form.prenom, {'attr': {'class': 'form-control', 'placeholder': 'Votre prénom'}}) }}
+                                            </div>
                                             <div class="text-danger">{{ form_errors(form.prenom) }}</div>
                                         </div>
                                     </div>
                                     
                                     <div class="col-md-6">
                                         <div class="form-group">
-                                            {{ form_label(form.nom) }}
-                                            {{ form_widget(form.nom, {'attr': {'class': 'form-control'}}) }}
+                                            {{ form_label(form.nom, null, {'label_attr': {'class': 'form-label'}}) }}
+                                            <div class="input-group">
+                                                <span class="input-group-text"><i class="fas fa-user-tag text-primary"></i></span>
+                                                {{ form_widget(form.nom, {'attr': {'class': 'form-control', 'placeholder': 'Votre nom'}}) }}
+                                            </div>
                                             <div class="text-danger">{{ form_errors(form.nom) }}</div>
                                         </div>
                                     </div>
@@ -162,16 +629,22 @@
                                 <div class="row">
                                     <div class="col-md-6">
                                         <div class="form-group">
-                                            {{ form_label(form.dateNaissance) }}
-                                            {{ form_widget(form.dateNaissance, {'attr': {'class': 'form-control'}}) }}
+                                            {{ form_label(form.dateNaissance, null, {'label_attr': {'class': 'form-label'}}) }}
+                                            <div class="input-group">
+                                                <span class="input-group-text"><i class="fas fa-calendar text-primary"></i></span>
+                                                {{ form_widget(form.dateNaissance, {'attr': {'class': 'form-control'}}) }}
+                                            </div>
                                             <div class="text-danger">{{ form_errors(form.dateNaissance) }}</div>
                                         </div>
                                     </div>
                                     
                                     <div class="col-md-6">
                                         <div class="form-group">
-                                            {{ form_label(form.telephone) }}
-                                            {{ form_widget(form.telephone, {'attr': {'class': 'form-control'}}) }}
+                                            {{ form_label(form.telephone, null, {'label_attr': {'class': 'form-label'}}) }}
+                                            <div class="input-group">
+                                                <span class="input-group-text"><i class="fas fa-phone text-primary"></i></span>
+                                                {{ form_widget(form.telephone, {'attr': {'class': 'form-control', 'placeholder': 'Votre numéro'}}) }}
+                                            </div>
                                             <div class="text-danger">{{ form_errors(form.telephone) }}</div>
                                         </div>
                                     </div>
@@ -179,25 +652,26 @@
                             </div>
 
                             <!-- Section Contact -->
-                            <div class="info-section mb-4">
-                                <h5 class="section-title"><i class="fas fa-envelope me-2"></i>Informations de contact</h5>
+                            <div class="info-section">
+                                <h5 class="section-title"><i class="fas fa-envelope"></i>Informations de contact</h5>
                                 
                                 <div class="form-group">
-                                    {{ form_label(form.email) }}
-                                    {{ form_widget(form.email, {'attr': {'class': 'form-control'}}) }}
+                                    {{ form_label(form.email, null, {'label_attr': {'class': 'form-label'}}) }}
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="fas fa-envelope text-primary"></i></span>
+                                        {{ form_widget(form.email, {'attr': {'class': 'form-control', 'placeholder': 'votre@email.com'}}) }}
+                                    </div>
                                     <div class="text-danger">{{ form_errors(form.email) }}</div>
                                 </div>
                             </div>
 
                             <!-- Section Photo -->
-                            <div class="info-section mb-4">
-                                <h5 class="section-title"><i class="fas fa-image me-2"></i>Photo de profil</h5>
+                            <div class="info-section">
+                                <h5 class="section-title"><i class="fas fa-image"></i>Photo de profil</h5>
                                 
                                 <div class="form-group">
-                                    {{ form_label(form.photoProfil) }}
-                                    <div class="input-group">
-                                        {{ form_widget(form.photoProfil, {'attr': {'class': 'form-control'}}) }}
-                                    </div>
+                                    {{ form_label(form.photoProfil, null, {'label_attr': {'class': 'form-label'}}) }}
+                                    {{ form_widget(form.photoProfil, {'attr': {'class': 'form-control', 'accept': 'image/jpeg,image/png,image/gif,image/webp'}}) }}
                                     <small class="form-text text-muted">
                                         <i class="fas fa-info-circle me-1"></i>Formats acceptés: JPG, PNG, GIF, WebP. Taille max: 1MB
                                     </small>
@@ -212,6 +686,30 @@
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // Aperçu de l'image avant upload
+        document.getElementById('{{ form.photoProfil.vars.id }}')?.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const avatarContainer = document.querySelector('.avatar-container');
+                    const currentAvatar = document.querySelector('.profile-avatar, .profile-avatar-placeholder');
+                    
+                    if (currentAvatar) {
+                        const img = document.createElement('img');
+                        img.src = e.target.result;
+                        img.className = 'profile-avatar';
+                        currentAvatar.replaceWith(img);
+                    }
+                }
+                reader.readAsDataURL(file);
+            }
+        });
+
+        console.log('✏️ SAHTY - Page d\'édition de profil fusionnée avec succès!');
+    </script>
 </body>
 </html>

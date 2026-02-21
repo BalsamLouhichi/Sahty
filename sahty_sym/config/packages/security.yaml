@@ -1,79 +1,79 @@
 security:
-    # https://symfony.com/doc/current/security.html#registering-the-user-hashing-passwords
+    enable_authenticator_manager: true
+
     password_hashers:
         Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface: 'auto'
-        App\Entity\Utilisateur: 'auto'
-    
-    # Role hierarchy - define which roles inherit from others
-    role_hierarchy:
-        ROLE_ADMIN: [ROLE_USER]
-        ROLE_MEDECIN: [ROLE_USER]
-        ROLE_PATIENT: [ROLE_USER]
-        ROLE_RESPONSABLE_LABO: [ROLE_USER]
-        ROLE_RESPONSABLE_PARA: [ROLE_USER]
-    
-    # https://symfony.com/doc/current/security.html#loading-the-user-the-user-provider
+        App\Entity\Utilisateur:
+            algorithm: auto
+
     providers:
-        # Custom user provider for case-insensitive email matching
         app_user_provider:
-            id: App\Security\UtilisateurUserProvider
-    
+            entity:
+                class: App\Entity\Utilisateur
+                property: email
+
     firewalls:
         dev:
             pattern: ^/(_(profiler|wdt)|css|images|js)/
             security: false
-        
+
         main:
+            pattern: ^/
             lazy: true
             provider: app_user_provider
-
-            # Form login configuration
+            user_checker: App\Security\UserChecker
+            
             form_login:
                 login_path: app_login
                 check_path: app_login
-                default_target_path: home
-                always_use_default_target_path: false
-                username_parameter: email
-                password_parameter: password
+                username_parameter: _username
+                password_parameter: _password
+                enable_csrf: true
                 csrf_parameter: _csrf_token
                 csrf_token_id: authenticate
-                use_referer: true
+                default_target_path: app_login_redirect
+                always_use_default_target_path: true
+                failure_path: app_login
             
-            # Logout configuration
             logout:
                 path: app_logout
-                target: app_home
-                invalidate_session: true
-                delete_cookies:
-                    PHPSESSID: ~
+                target: app_home  # ou app_login selon vos préférences
             
-            # remember_me cookie
             remember_me:
                 secret: '%kernel.secret%'
                 lifetime: 604800
                 path: /
-                name: REMEMBERME
+                always_remember_me: false
+                remember_me_parameter: _remember_me
 
-    # Easy way to control access for large sections of your site
-    # Note: Only the first access control that matches will be used
     access_control:
-        # Admin panel for events accessible to non-admin users who can create/manage their own events
-        - { path: ^/admin/evenements, roles: [ROLE_ADMIN, ROLE_MEDECIN, ROLE_RESPONSABLE_LABO, ROLE_RESPONSABLE_PARA, ROLE_PATIENT] }
-        # Strict admin-only access for other admin routes
-        - { path: ^/admin, roles: ROLE_ADMIN }
-        - { path: ^/(inscription/evenement|profile|mes-inscriptions), roles: ROLE_USER }
-
+        # Pages publiques
+        - { path: ^/login$, roles: PUBLIC_ACCESS }
+        - { path: ^/signup$, roles: PUBLIC_ACCESS }
+        - { path: ^/$, roles: PUBLIC_ACCESS }
+        - { path: ^/forgot, roles: PUBLIC_ACCESS }
+        - { path: ^/payments/stripe/webhook$, roles: PUBLIC_ACCESS }
         
+        # Backoffice Admin (EasyAdmin)
+        - { path: ^/admin, roles: ROLE_ADMIN }
+        
+        # Pages protégées par rôle
+        - { path: ^/medecin/, roles: ROLE_MEDECIN }
+        - { path: ^/patient/, roles: ROLE_PATIENT }
+        - { path: ^/responsable-labo, roles: ROLE_RESPONSABLE_LABO }
+        - { path: ^/laboratoire/new$, roles: ROLE_RESPONSABLE_LABO }
+        - { path: ^/laboratoire/, roles: ROLE_PATIENT }
+        - { path: ^/parapharmacie/, roles: ROLE_RESPONSABLE_PARA }
+        - { path: ^/profile, roles: IS_AUTHENTICATED_FULLY }
+        
+        # Toutes les autres pages nécessitent une connexion
+        - { path: ^/, roles: IS_AUTHENTICATED_FULLY }
 
 when@test:
     security:
         password_hashers:
-            # By default, password hashers are resource intensive and take time. This is
-            # important to generate secure password hashes. In tests however, secure hashes
-            # are not important, waste resources and increase test times. The following
-            # reduces the work factor to the lowest possible values.
             Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface:
                 algorithm: auto
-                cost: 4 # Lowest possible value for bcrypt
-                time_cost: 3 # Lowest possible value for argon
-                memory_cost: 10 # Lowest possible value for argon
+                cost: 4
+                time_cost: 3
+                memory_cost: 10

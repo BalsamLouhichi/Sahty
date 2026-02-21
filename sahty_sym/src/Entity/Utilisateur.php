@@ -3,11 +3,7 @@
 namespace App\Entity;
 
 use App\Repository\UtilisateurRepository;
-use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
-use Doctrine\Common\Collections\ArrayCollection;
-use Doctrine\Common\Collections\Collection;
-use App\Entity\GroupeCible;
 use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 
@@ -25,14 +21,12 @@ use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 ])]
 class Utilisateur implements UserInterface, PasswordAuthenticatedUserInterface
 {
-    // Constantes pour les rôles (facilitent l'utilisation dans Symfony)
     public const ROLE_ADMIN = 'ROLE_ADMIN';
     public const ROLE_MEDECIN = 'ROLE_MEDECIN';
     public const ROLE_PATIENT = 'ROLE_PATIENT';
     public const ROLE_RESPONSABLE_LABO = 'ROLE_RESPONSABLE_LABO';
     public const ROLE_RESPONSABLE_PARA = 'ROLE_RESPONSABLE_PARA';
-    
-    // Constantes pour les valeurs simples (optionnel, pour la base de données)
+
     public const ROLE_SIMPLE_ADMIN = 'admin';
     public const ROLE_SIMPLE_MEDECIN = 'medecin';
     public const ROLE_SIMPLE_PATIENT = 'patient';
@@ -47,11 +41,9 @@ class Utilisateur implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(length: 180, unique: true)]
     protected ?string $email = null;
 
-    #[ORM\Column(name: 'password', length: 255)]
+    #[ORM\Column(length: 255)]
     protected ?string $password = null;
 
-    // Stocke le rôle sous forme simple (admin, medecin, patient, etc.)
-    // Facile à manipuler dans les formulaires et logique métier
     #[ORM\Column(length: 30)]
     protected ?string $role = null;
 
@@ -73,21 +65,15 @@ class Utilisateur implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(length: 255, nullable: true)]
     protected ?string $photoProfil = null;
 
-    // SOLUTION 2: Utilisez 'datetime' simple avec \DateTime
-    #[ORM\Column(name: 'cree_le', type: 'datetime')]
+    #[ORM\Column(type: 'datetime')]
     protected \DateTime $creeLe;
-
-    #[ORM\ManyToMany(targetEntity: GroupeCible::class)]
-    #[ORM\JoinTable(name: 'utilisateur_groupe')]
-    private Collection $groupes;
 
     public function __construct()
     {
-        $this->creeLe = new \DateTime(); // Utilisez DateTime
-        $this->groupes = new ArrayCollection();
+        $this->creeLe = new \DateTime();
     }
 
-    /* ================== SECURITY ================== */
+    // ================== UserInterface ==================
 
     public function getUserIdentifier(): string
     {
@@ -96,13 +82,9 @@ class Utilisateur implements UserInterface, PasswordAuthenticatedUserInterface
 
     public function getRoles(): array
     {
-        // Retourne un tableau avec le rôle Symfony (avec préfixe ROLE_)
         return [$this->getRoleSymfony()];
     }
 
-    /**
-     * Récupère le rôle au format Symfony (ROLE_XXX)
-     */
     public function getRoleSymfony(): string
     {
         return match($this->role) {
@@ -113,22 +95,6 @@ class Utilisateur implements UserInterface, PasswordAuthenticatedUserInterface
             self::ROLE_SIMPLE_RESPONSABLE_PARA => self::ROLE_RESPONSABLE_PARA,
             default => 'ROLE_USER',
         };
-    }
-
-    /**
-     * Méthode utilitaire pour vérifier un rôle spécifique
-     */
-    public function hasRole(string $roleSimple): bool
-    {
-        return $this->role === $roleSimple;
-    }
-
-    /**
-     * Vérifie si l'utilisateur a un rôle Symfony spécifique
-     */
-    public function hasRoleSymfony(string $roleSymfony): bool
-    {
-        return $this->getRoleSymfony() === $roleSymfony;
     }
 
     public function getPassword(): string
@@ -143,25 +109,17 @@ class Utilisateur implements UserInterface, PasswordAuthenticatedUserInterface
 
     public function eraseCredentials(): void {}
 
-    public function getUsername(): string
-    {
-        return $this->email;
-    }
-
-    /* ================== GETTERS / SETTERS ================== */
+    // ================== GETTERS / SETTERS ==================
 
     public function getId(): ?int { return $this->id; }
-
     public function getEmail(): ?string { return $this->email; }
     public function setEmail(string $email): self { $this->email = $email; return $this; }
 
     public function setPassword(string $password): self { $this->password = $password; return $this; }
 
     public function getRole(): ?string { return $this->role; }
-    
-    public function setRole(string $role): self 
-    { 
-        // Validation optionnelle du rôle
+    public function setRole(string $role): self
+    {
         $validRoles = [
             self::ROLE_SIMPLE_ADMIN,
             self::ROLE_SIMPLE_MEDECIN,
@@ -169,70 +127,13 @@ class Utilisateur implements UserInterface, PasswordAuthenticatedUserInterface
             self::ROLE_SIMPLE_RESPONSABLE_LABO,
             self::ROLE_SIMPLE_RESPONSABLE_PARA,
         ];
-        
+
         if (!in_array($role, $validRoles)) {
             throw new \InvalidArgumentException(sprintf('Rôle "%s" invalide', $role));
         }
-        
-        $this->role = $role; 
-        return $this; 
-    }
 
-    // Méthodes pour définir des rôles spécifiques (optionnel mais pratique)
-    public function setAdminRole(): self
-    {
-        $this->role = self::ROLE_SIMPLE_ADMIN;
+        $this->role = $role;
         return $this;
-    }
-
-    public function setMedecinRole(): self
-    {
-        $this->role = self::ROLE_SIMPLE_MEDECIN;
-        return $this;
-    }
-
-    public function setPatientRole(): self
-    {
-        $this->role = self::ROLE_SIMPLE_PATIENT;
-        return $this;
-    }
-
-    public function setResponsableLaboRole(): self
-    {
-        $this->role = self::ROLE_SIMPLE_RESPONSABLE_LABO;
-        return $this;
-    }
-
-    public function setResponsableParaRole(): self
-    {
-        $this->role = self::ROLE_SIMPLE_RESPONSABLE_PARA;
-        return $this;
-    }
-
-    // Méthodes pour vérifier des rôles spécifiques (optionnel mais pratique)
-    public function isAdmin(): bool
-    {
-        return $this->hasRole(self::ROLE_SIMPLE_ADMIN);
-    }
-
-    public function isMedecin(): bool
-    {
-        return $this->hasRole(self::ROLE_SIMPLE_MEDECIN);
-    }
-
-    public function isPatient(): bool
-    {
-        return $this->hasRole(self::ROLE_SIMPLE_PATIENT);
-    }
-
-    public function isResponsableLabo(): bool
-    {
-        return $this->hasRole(self::ROLE_SIMPLE_RESPONSABLE_LABO);
-    }
-
-    public function isResponsablePara(): bool
-    {
-        return $this->hasRole(self::ROLE_SIMPLE_RESPONSABLE_PARA);
     }
 
     public function getNom(): ?string { return $this->nom; }
@@ -253,13 +154,11 @@ class Utilisateur implements UserInterface, PasswordAuthenticatedUserInterface
     public function getPhotoProfil(): ?string { return $this->photoProfil; }
     public function setPhotoProfil(?string $photoProfil): self { $this->photoProfil = $photoProfil; return $this; }
 
-    // SOLUTION 2: Méthodes avec \DateTime
     public function getCreeLe(): \DateTime { return $this->creeLe; }
     public function setCreeLe(\DateTime $creeLe): self { $this->creeLe = $creeLe; return $this; }
 
-    /**
-     * Méthode utilitaire pour obtenir le nom complet
-     */
+    // ================== MÉTHODES UTILITAIRES ==================
+
     public function getNomComplet(): string
     {
         return $this->prenom . ' ' . $this->nom;
@@ -267,40 +166,18 @@ class Utilisateur implements UserInterface, PasswordAuthenticatedUserInterface
 
     public function getAge(): ?int
     {
-        if (!$this->getDateNaissance()) {
-            return null;
-        }
-
+        if (!$this->dateNaissance) return null;
         $now = new \DateTime();
-        $interval = $now->diff($this->getDateNaissance());
-        return $interval->y;
+        return $now->diff($this->dateNaissance)->y;
     }
 
-    /**
-     * Groupes cibles auxquels appartient l'utilisateur
-     * @return Collection|GroupeCible[]
-     */
-    public function getGroupes(): Collection
+    public function hasRole(string $roleSimple): bool
     {
-        return $this->groupes;
+        return $this->role === $roleSimple;
     }
 
-    public function addGroupe(GroupeCible $groupe): self
+    public function hasRoleSymfony(string $roleSymfony): bool
     {
-        if (!$this->groupes->contains($groupe)) {
-            $this->groupes->add($groupe);
-        }
-
-        return $this;
+        return $this->getRoleSymfony() === $roleSymfony;
     }
-
-    public function removeGroupe(GroupeCible $groupe): self
-    {
-        if ($this->groupes->contains($groupe)) {
-            $this->groupes->removeElement($groupe);
-        }
-
-        return $this;
-    }
-
 }

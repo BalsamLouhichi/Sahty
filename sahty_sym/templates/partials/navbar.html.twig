@@ -1,155 +1,681 @@
 {# templates/partials/header.html.twig #}
-<!-- Topbar Start -->
-<div class="container-fluid py-2 border-bottom d-none d-lg-block bg-light">
+
+<style>
+    /* ============ PALETTE DE COULEURS SAHTY ============ */
+    :root {
+        --primary: #1D5D9B;
+        --primary-light: #E8F4F8;
+        --primary-dark: #163A5F;
+        --secondary: #304D30;
+        --accent: #75C2F6;
+        --light: #F4F6FF;
+        --dark: #1A2332;
+        --success: #4A7C59;
+        --danger: #C1666B;
+        --danger-light: #F8D7DA;
+        --warning: #D4A574;
+    }
+
+    /* ============ TOPBAR PREMIUM (Balsam) avec vos coordonnées ============ */
+    .sahty-topbar {
+        background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 100%);
+        padding: 12px 0;
+        border-bottom: 3px solid var(--accent);
+        box-shadow: 0 2px 10px rgba(29, 93, 155, 0.15);
+    }
+
+    .topbar-link {
+        color: rgba(255, 255, 255, 0.9);
+        text-decoration: none;
+        font-weight: 500;
+        font-size: 0.9rem;
+        transition: all 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .topbar-link:hover {
+        color: var(--accent);
+        transform: translateY(-2px);
+    }
+
+    .topbar-link i {
+        font-size: 1rem;
+        filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+    }
+
+    .topbar-divider {
+        color: rgba(255, 255, 255, 0.3);
+        margin: 0 15px;
+    }
+
+    .topbar-social a {
+        width: 35px;
+        height: 35px;
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        border-radius: 50%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        transition: all 0.3s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+        margin: 0 5px;
+        border: 2px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .topbar-social a:hover {
+        background: white;
+        color: var(--primary);
+        transform: translateY(-3px) rotate(5deg);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    }
+
+    /* ============ NAVBAR PREMIUM (Balsam) ============ */
+    .sahty-navbar {
+        background: rgba(255, 255, 255, 0.95) !important;
+        backdrop-filter: blur(20px) saturate(180%);
+        box-shadow: 0 8px 32px rgba(29, 93, 155, 0.12);
+        padding: 15px 0;
+        transition: all 0.3s ease;
+        border-bottom: 1px solid rgba(117, 194, 246, 0.2);
+    }
+
+    .sahty-navbar.scrolled {
+        padding: 10px 0;
+        box-shadow: 0 12px 40px rgba(29, 93, 155, 0.18);
+    }
+
+    /* Logo */
+    .navbar-brand {
+        transition: all 0.3s ease;
+    }
+
+    .navbar-brand:hover {
+        transform: scale(1.05);
+    }
+
+    .navbar-brand h1 {
+        font-size: 2rem;
+        font-weight: 900;
+        background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin: 0;
+        letter-spacing: -0.5px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .navbar-brand h1 i {
+        background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        filter: drop-shadow(0 2px 8px rgba(29, 93, 155, 0.3));
+        animation: logoFloat 3s ease-in-out infinite;
+    }
+
+    @keyframes logoFloat {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-5px); }
+    }
+
+    /* Nav Links - Design Premium */
+    .navbar-nav .nav-link {
+        color: var(--dark);
+        font-weight: 600;
+        font-size: 0.95rem;
+        padding: 10px 18px !important;
+        margin: 0 5px;
+        border-radius: 12px;
+        transition: all 0.3s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .navbar-nav .nav-link::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(135deg, var(--primary-light) 0%, rgba(117, 194, 246, 0.2) 100%);
+        transition: left 0.4s ease;
+        z-index: -1;
+        border-radius: 12px;
+    }
+
+    .navbar-nav .nav-link:hover::before {
+        left: 0;
+    }
+
+    .navbar-nav .nav-link:hover {
+        color: var(--primary);
+        transform: translateY(-2px);
+    }
+
+    .navbar-nav .nav-link.active {
+        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+        color: white !important;
+        box-shadow: 0 6px 20px rgba(29, 93, 155, 0.3);
+    }
+
+    .navbar-nav .nav-link.active:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 25px rgba(29, 93, 155, 0.4);
+    }
+
+    .navbar-nav .nav-link i {
+        margin-right: 6px;
+        transition: transform 0.3s ease;
+    }
+
+    .navbar-nav .nav-link:hover i {
+        transform: scale(1.2) rotate(5deg);
+    }
+
+    /* User Badge */
+    .user-badge {
+        font-size: 0.7rem;
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-right: 8px;
+        display: inline-block;
+        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.15);
+        animation: badgePulse 2s ease-in-out infinite;
+    }
+
+    @keyframes badgePulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+    }
+
+    .badge-success {
+        background: linear-gradient(135deg, var(--success) 0%, var(--secondary) 100%);
+        color: white;
+    }
+
+    .badge-primary {
+        background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+        color: white;
+    }
+
+    .badge-danger {
+        background: linear-gradient(135deg, var(--danger) 0%, #B85860 100%);
+        color: white;
+    }
+
+    /* Dropdown Menu - Design Premium */
+    .navbar-nav .dropdown-menu {
+        min-width: 280px;
+        border: none;
+        border-radius: 20px;
+        padding: 15px 0;
+        margin-top: 15px;
+        background: rgba(255, 255, 255, 0.98);
+        backdrop-filter: blur(20px);
+        box-shadow: 
+            0 20px 60px rgba(29, 93, 155, 0.2),
+            inset 0 1px 0 rgba(255, 255, 255, 0.8);
+        border: 2px solid rgba(117, 194, 246, 0.2);
+        animation: dropdownSlideIn 0.4s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+    }
+
+    @keyframes dropdownSlideIn {
+        from {
+            opacity: 0;
+            transform: translateY(-20px) scale(0.95);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+    }
+
+    .dropdown-menu::before {
+        content: '';
+        position: absolute;
+        top: -8px;
+        right: 30px;
+        width: 16px;
+        height: 16px;
+        background: white;
+        border-left: 2px solid rgba(117, 194, 246, 0.2);
+        border-top: 2px solid rgba(117, 194, 246, 0.2);
+        transform: rotate(45deg);
+    }
+
+    .dropdown-item {
+        padding: 12px 25px;
+        font-weight: 600;
+        color: var(--dark);
+        transition: all 0.3s ease;
+        border-radius: 12px;
+        margin: 3px 10px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .dropdown-item:hover {
+        background: linear-gradient(135deg, var(--primary-light) 0%, rgba(117, 194, 246, 0.15) 100%);
+        color: var(--primary);
+        transform: translateX(5px);
+        padding-left: 30px;
+    }
+
+    .dropdown-item.text-danger:hover {
+        background: linear-gradient(135deg, var(--danger-light) 0%, #FFCDD2 100%);
+        color: var(--danger) !important;
+    }
+
+    .dropdown-item i {
+        width: 22px;
+        height: 22px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1rem;
+        opacity: 0.7;
+        transition: all 0.3s ease;
+    }
+
+    .dropdown-item:hover i {
+        opacity: 1;
+        transform: scale(1.2) rotate(5deg);
+    }
+
+    .dropdown-divider {
+        margin: 10px 15px;
+        border-color: rgba(117, 194, 246, 0.2);
+        opacity: 1;
+    }
+
+    /* User Avatar */
+    .user-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 2px solid var(--primary);
+        transition: all 0.3s ease;
+    }
+
+    .user-avatar-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+        color: white;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 2px solid white;
+    }
+
+    .nav-link.dropdown-toggle:hover .user-avatar {
+        transform: scale(1.1);
+        border-color: var(--accent);
+    }
+
+    /* Boutons d'authentification */
+    .btn-inscription {
+        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+        color: white !important;
+        border-radius: 25px;
+        padding: 10px 25px !important;
+        font-weight: 700;
+        border: none;
+        box-shadow: 0 8px 25px rgba(29, 93, 155, 0.3);
+        transition: all 0.4s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+        margin-left: 15px !important;
+    }
+
+    .btn-inscription:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 12px 35px rgba(29, 93, 155, 0.4);
+        color: white !important;
+    }
+
+    .btn-connexion {
+        background: transparent;
+        color: var(--primary) !important;
+        border: 2px solid var(--primary);
+        border-radius: 25px;
+        padding: 10px 25px !important;
+        font-weight: 700;
+        transition: all 0.3s ease;
+    }
+
+    .btn-connexion:hover {
+        background: var(--primary);
+        color: white !important;
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(29, 93, 155, 0.2);
+    }
+
+    /* Responsive */
+    @media (max-width: 991px) {
+        .sahty-topbar {
+            display: none;
+        }
+
+        .navbar-brand h1 {
+            font-size: 1.5rem;
+        }
+
+        .navbar-nav {
+            padding: 15px 0;
+        }
+
+        .navbar-nav .nav-link {
+            margin: 5px 0;
+            padding: 12px 20px !important;
+        }
+
+        .btn-inscription, .btn-connexion {
+            margin: 10px 0 !important;
+            display: block;
+            text-align: center;
+            width: 100%;
+        }
+
+        .dropdown-menu::before {
+            display: none;
+        }
+    }
+
+    /* Navbar Toggler */
+    .navbar-toggler {
+        border: 2px solid var(--primary);
+        border-radius: 12px;
+        padding: 8px 12px;
+        transition: all 0.3s ease;
+    }
+
+    .navbar-toggler:hover {
+        background: var(--primary-light);
+        transform: scale(1.05);
+    }
+
+    .navbar-toggler-icon {
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='%231D5D9B' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+    }
+</style>
+
+<!-- Topbar Premium - VOS COORDONNÉES + DESIGN BALSAM -->
+<div class="sahty-topbar d-none d-lg-block">
     <div class="container">
-        <div class="row">
-            <div class="col-md-6 text-center text-lg-start mb-2 mb-lg-0">
+        <div class="row align-items-center">
+            <div class="col-md-6 text-center text-lg-start">
                 <div class="d-inline-flex align-items-center">
-                    <a class="text-decoration-none text-body pe-3" href="tel:+21670000000">
-                        <i class="bi bi-telephone me-2"></i>+216 70 000 000
+                    <a class="topbar-link" href="tel:+21670000000">
+                        <i class="bi bi-telephone-fill"></i>
+                        <span>+216 70 000 000</span>
                     </a>
-                    <span class="text-body">|</span>
-                    <a class="text-decoration-none text-body px-3" href="mailto:contact@sahty.tn">
-                        <i class="bi bi-envelope me-2"></i>contact@sahty.tn
+                    <span class="topbar-divider">|</span>
+                    <a class="topbar-link" href="mailto:contact@sahty.tn">
+                        <i class="bi bi-envelope-fill"></i>
+                        <span>contact@sahty.tn</span>
                     </a>
                 </div>
             </div>
             <div class="col-md-6 text-center text-lg-end">
-                <div class="d-inline-flex align-items-center">
-                    <a class="text-body px-2" href="#!"><i class="fab fa-facebook-f"></i></a>
-                    <a class="text-body px-2" href="#!"><i class="fab fa-twitter"></i></a>
-                    <a class="text-body px-2" href="#!"><i class="fab fa-linkedin-in"></i></a>
-                    <a class="text-body px-2" href="#!"><i class="fab fa-instagram"></i></a>
-                    <a class="text-body ps-2" href="#!"><i class="fab fa-youtube"></i></a>
+                <div class="topbar-social">
+                    <a href="#" title="Facebook"><i class="fab fa-facebook-f"></i></a>
+                    <a href="#" title="Twitter"><i class="fab fa-twitter"></i></a>
+                    <a href="#" title="LinkedIn"><i class="fab fa-linkedin-in"></i></a>
+                    <a href="#" title="Instagram"><i class="fab fa-instagram"></i></a>
+                    <a href="#" title="YouTube"><i class="fab fa-youtube"></i></a>
                 </div>
             </div>
         </div>
     </div>
 </div>
-<!-- Topbar End -->
 
-<!-- Navbar Start -->
-<div class="container-fluid sticky-top bg-white shadow-sm">
+<!-- Navbar Premium avec TOUS VOS LIENS -->
+<nav class="navbar navbar-expand-lg sahty-navbar sticky-top">
     <div class="container">
-        <nav class="navbar navbar-expand-lg bg-white navbar-light py-3 py-lg-0">
-            <a href="{{ path('app_home') }}" class="navbar-brand">
-                <h1 class="m-0 text-uppercase text-primary">
-                    <i class="fa fa-heartbeat me-2"></i>SAHTY
-                </h1>
-            </a>
-            
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            
-            <div class="collapse navbar-collapse" id="navbarCollapse">
-                {# Main Navigation - Left Side #}
-                <div class="navbar-nav mx-auto py-0">
-                    <a href="{{ path('app_home') }}" class="nav-item nav-link {{ app.current_route == 'app_home' ? 'active' : '' }}">
-                        <i class="fa fa-home me-1"></i>Accueil
-                    </a>
-                    
-                    {# Static pages for all users #}
-                    <a href="{{ path('app_about') }}" class="nav-item nav-link {{ app.current_route starts with 'app_about' ? 'active' : '' }}">
-                        <i class="fa fa-info-circle me-1"></i>À propos
-                    </a>
-                    
-                    <a href="{{ path('app_services') }}" class="nav-item nav-link {{ app.current_route starts with 'app_services' ? 'active' : '' }}">
-                        <i class="fa fa-cogs me-1"></i>Services
-                    </a>
-                    
-                    <a href="{{ path('app_contact') }}" class="nav-item nav-link {{ app.current_route starts with 'app_contact' ? 'active' : '' }}">
-                        <i class="fa fa-envelope me-1"></i>Contact
-                    </a>
-                </div>
+        <a href="{{ path('app_home') }}" class="navbar-brand">
+            <h1>
+                <i class="fas fa-heartbeat"></i>
+                SAHTY
+            </h1>
+        </a>
+        
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        
+        <div class="collapse navbar-collapse" id="navbarCollapse">
+            {# === MAIN NAVIGATION - POUR TOUS === #}
+            <div class="navbar-nav mx-auto py-0">
+                <a href="{{ path('app_home') }}" class="nav-link {{ app.current_route == 'app_home' ? 'active' : '' }}">
+                    <i class="fas fa-home"></i>Accueil
+                </a>
                 
-                {# Right Side - User Specific Menus #}
-                <div class="navbar-nav ms-auto py-0">
-                    {% if app.user %}
-                        {# LOGGED IN USERS #}
+                {# <a href="{{ path('app_about') }}" class="nav-link {{ app.current_route starts with 'app_about' ? 'active' : '' }}">
+                    <i class="fas fa-info-circle"></i>À propos
+                </a>
+                
+                <a href="{{ path('app_services') }}" class="nav-link {{ app.current_route starts with 'app_services' ? 'active' : '' }}">
+                    <i class="fas fa-cogs"></i>Services
+                </a>
+                
+                <a href="{{ path('app_contact') }}" class="nav-link {{ app.current_route starts with 'app_contact' ? 'active' : '' }}">
+                    <i class="fas fa-envelope"></i>Contact
+                </a> #}
+            </div>
+
+            {# === MENUS SPÉCIFIQUES PAR RÔLE === #}
+            <div class="navbar-nav ms-auto py-0">
+                {% if app.user %}
+                    {# === MENU CLIENT (Médecin, Labo, Para, Patient) - VOS LIENS === #}
+                    {% if is_granted('ROLE_MEDECIN') 
+                       or is_granted('ROLE_RESPONSABLE_LABO') 
+                       or is_granted('ROLE_RESPONSABLE_PARA') 
+                       or is_granted('ROLE_PATIENT') %}
                         
-                        {# Client Menu (Médecin, Labo, Para, Patient) #}
-                        {% if is_granted('ROLE_MEDECIN') 
-                           or is_granted('ROLE_RESPONSABLE_LABO') 
-                           or is_granted('ROLE_RESPONSABLE_PARA') 
-                           or is_granted('ROLE_PATIENT') %}
-                            
-                            <a href="{{ path('evenements_client_events') }}" class="nav-item nav-link {{ app.current_route starts with 'evenements_client' ? 'active' : '' }}">
-                                <i class="fas fa-calendar-alt me-1"></i>Événements
-                            </a>
-                            
-                            <a href="{{ path('evenements_client_all_events') }}" class="nav-item nav-link {{ app.current_route == 'evenements_client_all_events' ? 'active' : '' }}">
-                                <i class="fas fa-list me-1"></i>Tous les événements
-                            </a>
-                            
-                            <a href="{{ path('app_inscription_evenement_mes_inscriptions') }}" class="nav-item nav-link {{ app.current_route starts with 'app_inscription_evenement' ? 'active' : '' }}">
-                                <i class="fas fa-ticket-alt me-1"></i>Mes inscriptions
-                            </a>
-                        {% endif %}
-                        
-                        {# Admin Menu #}
-                        {% if is_granted('ROLE_ADMIN') %}
-                            <div class="nav-item dropdown">
-                                <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown">
-                                    <i class="fa fa-calendar-check me-1"></i>Gestion Événements
-                                </a>
-                                <div class="dropdown-menu">
-                                    <a href="{{ path('evenements_evenement_list') }}" class="dropdown-item">
-                                        <i class="fa fa-list me-2"></i>Tous les événements
-                                    </a>
-                                    <a href="{{ path('evenements_admin_demandes_evenements') }}" class="dropdown-item">
-                                        <i class="fa fa-inbox me-2"></i>Demandes
-                                    </a>
-                                </div>
-                            </div>
-                            
-                            <a href="{{ path('dashboard_admin') }}" class="nav-item nav-link {{ app.current_route starts with 'dashboard' ? 'active' : '' }}">
-                                <i class="fa fa-tachometer-alt me-1"></i>Dashboard
-                            </a>
-                            
-                            <a href="{{ path('admin_principal') }}" class="nav-item nav-link {{ app.current_route == 'admin_principal' ? 'active' : '' }}">
-                                <i class="fa fa-shield-alt me-1"></i>Principal Admin
-                            </a>
-                        {% endif %}
-                        
-                        {# User Profile Dropdown #}
                         <div class="nav-item dropdown">
                             <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown">
-                                <i class="fa fa-user-circle me-1"></i>{{ app.user.prenom }} {{ app.user.nom }}
+                                <i class="fas fa-calendar-alt"></i>Événements
                             </a>
-                            <div class="dropdown-menu dropdown-menu-end">
-                                <a href="{{ path('app_profile') }}" class="dropdown-item">
-                                    <i class="fa fa-id-card me-2"></i>Mon Profil
+                            <div class="dropdown-menu">
+                                <a href="{{ path('evenements_client_events') }}" class="dropdown-item {{ app.current_route starts with 'evenements_client' ? 'active' : '' }}">
+                                    <i class="fas fa-calendar-check me-2"></i>Mes Événements
                                 </a>
-                                
-                                {% if is_granted('ROLE_MEDECIN')
-                                   or is_granted('ROLE_RESPONSABLE_LABO')
-                                   or is_granted('ROLE_RESPONSABLE_PARA')
-                                   or is_granted('ROLE_PATIENT') %}
-                                    <a href="{{ path('evenements_client_demande_evenement') }}" class="dropdown-item">
-                                        <i class="fa fa-paper-plane me-2"></i>Demander un événement
-                                    </a>
-                                {% endif %}
-                                
+                                <a href="{{ path('evenements_client_all_events') }}" class="dropdown-item {{ app.current_route == 'evenements_client_all_events' ? 'active' : '' }}">
+                                    <i class="fas fa-list me-2"></i>Tous les événements
+                                </a>
+                                <a href="{{ path('app_inscription_evenement_mes_inscriptions') }}" class="dropdown-item">
+                                    <i class="fas fa-ticket-alt me-2"></i>Mes inscriptions
+                                </a>
                                 <div class="dropdown-divider"></div>
-                                <a href="{{ path('app_logout') }}" class="dropdown-item text-danger">
-                                    <i class="fa fa-sign-out-alt me-2"></i>Déconnexion
+                                <a href="{{ path('evenements_client_demande_evenement') }}" class="dropdown-item">
+                                    <i class="fa fa-paper-plane me-2"></i>Demander un événement
                                 </a>
                             </div>
                         </div>
                         
-                    {% else %}
-                        {# LOGGED OUT USERS #}
-                        <a href="{{ path('app_register') }}" class="nav-item nav-link {{ app.current_route == 'app_register' ? 'active' : '' }}">
-                            <i class="fa fa-user-plus me-1"></i>S'inscrire
+                        {# Menu Laboratoire (pour patients) #}
+                        {% if is_granted('ROLE_PATIENT') %}
+                            <div class="nav-item dropdown">
+                                <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown">
+                                    <i class="fas fa-flask"></i>Laboratoire
+                                </a>
+                                <div class="dropdown-menu">
+                                    <a href="{{ path('admin_responsable_laboratoire_index') }}" class="dropdown-item">
+                                        <i class="fas fa-list me-2"></i>Liste des laboratoires
+                                    </a>
+                                    <a href="{{ path('app_demande_analyse_mes_demandes') }}" class="dropdown-item">
+                                        <i class="fas fa-file-prescription me-2"></i>Mes demandes
+                                    </a>
+                                </div>
+                            </div>
+                        {% endif %}
+                        
+                        {# Menu Rendez-vous pour patients #}
+                        {% if is_granted('ROLE_PATIENT') %}
+                            <a href="{{ path('app_rdv_mes_rdv') }}" class="nav-link {{ app.current_route starts with 'app_rdv' ? 'active' : '' }}">
+                                <i class="fas fa-calendar-check"></i>Mes Rendez-vous
+                            </a>
+                        {% endif %}
+                        
+                        {# Menu Consultations pour médecins #}
+                        {% if is_granted('ROLE_MEDECIN') %}
+                            <a href="{{ path('app_medecin_rdv_liste') }}" class="nav-link {{ app.current_route starts with 'app_medecin_rdv' ? 'active' : '' }}">
+                                <i class="fas fa-stethoscope"></i>Mes Consultations
+                            </a>
+                        {% endif %}
+                        
+                        {# Fiches médicales #}
+                        {% if is_granted('ROLE_PATIENT') or is_granted('ROLE_MEDECIN') %}
+                            <a href="{{ path('app_fiche_medicale_index') }}" class="nav-link {{ app.current_route starts with 'app_fiche_medicale' ? 'active' : '' }}">
+                                <i class="fas fa-file-medical"></i>
+                                {% if is_granted('ROLE_PATIENT') %}Mes Fiches{% else %}Fiches Patients{% endif %}
+                            </a>
+                        {% endif %}
+                    {% endif %}
+                    
+                    {# === MENU ADMIN - VOS LIENS === #}
+                    {% if is_granted('ROLE_ADMIN') %}
+                        <div class="nav-item dropdown">
+                            <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown">
+                                <i class="fa fa-calendar-check"></i>Gestion Événements
+                            </a>
+                            <div class="dropdown-menu">
+                                <a href="{{ path('evenements_evenement_list') }}" class="dropdown-item">
+                                    <i class="fa fa-list me-2"></i>Tous les événements
+                                </a>
+                                <a href="{{ path('evenements_admin_demandes_evenements') }}" class="dropdown-item">
+                                    <i class="fa fa-inbox me-2"></i>Demandes
+                                </a>
+                            </div>
+                        </div>
+                        
+                        <a href="{{ path('dashboard_admin') }}" class="nav-link {{ app.current_route starts with 'dashboard' ? 'active' : '' }}">
+                            <i class="fa fa-tachometer-alt"></i>Dashboard
                         </a>
-                        <a href="{{ path('app_login') }}" class="nav-item nav-link btn btn-primary text-white px-3 ms-2">
-                            <i class="fa fa-sign-in-alt me-1"></i>Se connecter
+                        
+                        <a href="{{ path('admin_principal') }}" class="nav-link {{ app.current_route == 'admin_principal' ? 'active' : '' }}">
+                            <i class="fa fa-shield-alt"></i>Principal Admin
                         </a>
                     {% endif %}
-                </div>
+                    
+                    {# === MENU UTILISATEUR PREMIUM === #}
+                    <div class="nav-item dropdown">
+                        <a href="#" class="nav-link dropdown-toggle d-flex align-items-center gap-2" data-bs-toggle="dropdown">
+                            {% if app.user.photoProfil %}
+                                <img src="{{ asset(app.user.photoProfil) }}" alt="Profil" class="user-avatar">
+                            {% else %}
+                                <span class="user-avatar-icon">
+                                    <i class="fas fa-user"></i>
+                                </span>
+                            {% endif %}
+                            
+                            {% if is_granted('ROLE_MEDECIN') %}
+                                <span class="user-badge badge-success">Dr</span>
+                            {% elseif is_granted('ROLE_ADMIN') %}
+                                <span class="user-badge badge-danger">Admin</span>
+                            {% elseif is_granted('ROLE_PATIENT') %}
+                                <span class="user-badge badge-primary">Patient</span>
+                            {% elseif is_granted('ROLE_RESPONSABLE_LABO') %}
+                                <span class="user-badge badge-primary">Labo</span>
+                            {% elseif is_granted('ROLE_RESPONSABLE_PARA') %}
+                                <span class="user-badge badge-primary">Para</span>
+                            {% endif %}
+                            
+                            <span class="fw-semibold">{{ app.user.prenom }} {{ app.user.nom }}</span>
+                        </a>
+                        <div class="dropdown-menu dropdown-menu-end">
+                            <a href="{{ path('app_profile') }}" class="dropdown-item">
+                                <i class="fa fa-id-card me-2"></i>Mon Profil
+                            </a>
+                            
+                            {% if is_granted('ROLE_MEDECIN')
+                               or is_granted('ROLE_RESPONSABLE_LABO')
+                               or is_granted('ROLE_RESPONSABLE_PARA')
+                               or is_granted('ROLE_PATIENT') %}
+                                <a href="{{ path('evenements_client_demande_evenement') }}" class="dropdown-item">
+                                    <i class="fa fa-paper-plane me-2"></i>Demander un événement
+                                </a>
+                            {% endif %}
+                            
+                            <div class="dropdown-divider"></div>
+                            <a href="{{ path('app_profile_edit') }}" class="dropdown-item">
+                                <i class="fas fa-edit me-2"></i>Modifier mon profil
+                            </a>
+                            <a href="{{ path('app_profile_change_password') }}" class="dropdown-item">
+                                <i class="fas fa-key me-2"></i>Changer mot de passe
+                            </a>
+                            
+                            <div class="dropdown-divider"></div>
+                            <a href="{{ path('app_logout') }}" class="dropdown-item text-danger">
+                                <i class="fa fa-sign-out-alt me-2"></i>Déconnexion
+                            </a>
+                        </div>
+                    </div>
+                    
+                {% else %}
+                    {# === UTILISATEUR NON CONNECTÉ - VOS LIENS AVEC DESIGN PREMIUM === #}
+                    <div class="d-flex align-items-center ms-3">
+                        <a href="{{ path('app_register') }}" class="nav-link btn-inscription {{ app.current_route == 'app_register' ? 'active' : '' }}">
+                            <i class="fas fa-user-plus"></i>S'inscrire
+                        </a>
+                        <a href="{{ path('app_login') }}" class="nav-link btn-connexion ms-2 {{ app.current_route == 'app_login' ? 'active' : '' }}">
+                            <i class="fas fa-sign-in-alt"></i>Se connecter
+                        </a>
+                    </div>
+                {% endif %}
             </div>
-        </nav>
+        </div>
     </div>
-</div>
-<!-- Navbar End -->
+</nav>
+
+<script>
+// Effet scroll sur la navbar
+window.addEventListener('scroll', function() {
+    const navbar = document.querySelector('.sahty-navbar');
+    if (window.scrollY > 50) {
+        navbar.classList.add('scrolled');
+    } else {
+        navbar.classList.remove('scrolled');
+    }
+});
+
+// Animation au chargement
+document.addEventListener('DOMContentLoaded', function() {
+    const navLinks = document.querySelectorAll('.navbar-nav .nav-link');
+    navLinks.forEach((link, index) => {
+        link.style.opacity = '0';
+        link.style.transform = 'translateY(-20px)';
+        setTimeout(() => {
+            link.style.transition = 'all 0.5s ease';
+            link.style.opacity = '1';
+            link.style.transform = 'translateY(0)';
+        }, 50 * index);
+    });
+});
+
+// Gestion des dropdowns au hover (desktop)
+if (window.innerWidth > 991) {
+    document.querySelectorAll('.navbar-nav .dropdown').forEach(dropdown => {
+        dropdown.addEventListener('mouseenter', function() {
+            this.querySelector('.dropdown-toggle').classList.add('show');
+            this.querySelector('.dropdown-menu').classList.add('show');
+        });
+        dropdown.addEventListener('mouseleave', function() {
+            this.querySelector('.dropdown-toggle').classList.remove('show');
+            this.querySelector('.dropdown-menu').classList.remove('show');
+        });
+    });
+}
+
+console.log('🏥 SAHTY - Navbar Premium chargée avec succès!');
+</script>

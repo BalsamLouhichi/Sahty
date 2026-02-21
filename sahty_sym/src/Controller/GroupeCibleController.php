@@ -44,8 +44,8 @@ public function new(
         $this->addFlash('success', 'Groupe cible créé avec succès !');
 
         
-        if ($referrer === 'admin_evenement_add') {
-            return $this->redirectToRoute('admin_evenement_add');
+        if ($referrer === 'evenements_evenement_add') {
+            return $this->redirectToRoute('evenements_evenement_add');
         } elseif ($referrer === 'admin_evenement_update' && $eventId) {
             return $this->redirectToRoute('admin_evenement_update', ['id' => $eventId]);
         }
