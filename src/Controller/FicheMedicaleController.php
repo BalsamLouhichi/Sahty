@@ -464,7 +464,7 @@ public function searchAjax(
         int $rdvId,
         EntityManagerInterface $entityManager
     ): Response {
-        // Récupérer le rendez-vous
+        // Récupérer le rendez-vous tous les rdv 
         $rdv = $entityManager->getRepository(RendezVous::class)->find($rdvId);
         
         if (!$rdv) {
