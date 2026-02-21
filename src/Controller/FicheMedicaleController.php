@@ -301,7 +301,7 @@ class FicheMedicaleController extends AbstractController
     }
     
     /**
-     * 📄 EXPORT PDF - TOUTES LES FICHES tous tous les fichier
+     * 📄 EXPORT PDF - TOUTES LES FICHES 
      */
     #[Route('/export-all-pdf', name: 'app_fiche_medicale_export_all_pdf', methods: ['GET'])]
     public function exportAllPdf(
@@ -331,7 +331,7 @@ class FicheMedicaleController extends AbstractController
     }
     
     /**
-     * 🔍 AJAX SEARCH avec permissions - CORRIGÉ
+     * 🔍 AJAX SEARCH avec permissions - CORRIGÉ 
      */
     /**
  * 🔍 AJAX SEARCH avec permissions - CORRIGÉ
@@ -377,7 +377,7 @@ public function searchAjax(
 
     
     /**
-     * ✅ REDIRECTIONS pour les anciennes routes
+     * ✅ REDIRECTIONS pour les anciennes route
      */
     #[Route('/new', name: 'app_fiche_medicale_new', methods: ['GET', 'POST'])]
     public function newRedirect(): Response
