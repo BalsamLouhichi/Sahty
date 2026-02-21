@@ -290,7 +290,7 @@ class FicheMedicaleController extends AbstractController
             }
         }
         
-        // Recalculer l'IMC si nécessaire oui oui
+        // Recalculer l'IMC si nécessaire 
         if (!$fiche->getImc() && $fiche->getTaille() && $fiche->getPoids()) {
             $fiche->calculerImc();
         }
@@ -301,7 +301,7 @@ class FicheMedicaleController extends AbstractController
     }
     
     /**
-     * 📄 EXPORT PDF - TOUTES LES FICHES
+     * 📄 EXPORT PDF - TOUTES LES FICHES tous tous les fichier
      */
     #[Route('/export-all-pdf', name: 'app_fiche_medicale_export_all_pdf', methods: ['GET'])]
     public function exportAllPdf(
