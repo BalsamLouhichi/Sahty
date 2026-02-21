@@ -23,7 +23,7 @@ class DictationTranscriptionService
         $rawEndpoint = (string) ($_ENV['APP_DICTATION_ENDPOINT'] ?? $_ENV['APP_AI_RESULTAT_ENDPOINT'] ?? 'https://api.openai.com/v1/audio/transcriptions');
         $endpoint = $this->normalizeEndpoint($rawEndpoint);
         if ($endpoint === '' && $provider === 'huggingface') {
-            $endpoint = 'https://api-inference.huggingface.co/models/openai/whisper-large-v3-turbo';
+            $endpoint = 'https://router.huggingface.co/hf-inference/models/openai/whisper-large-v3-turbo';
         }
         if ($endpoint === '' && $provider === 'openai') {
             $endpoint = 'https://api.openai.com/v1/audio/transcriptions';
@@ -159,7 +159,11 @@ class DictationTranscriptionService
                 ]);
 
                 $statusCode = $response->getStatusCode();
-                $data = $response->toArray(false);
+                $rawBody = $response->getContent(false);
+                $data = json_decode($rawBody, true);
+                if (!is_array($data)) {
+                    $data = [];
+                }
 
                 if (($statusCode === 429 || $statusCode === 503 || $statusCode >= 500) && $attempt < $attempts) {
                     $delaySeconds = min($attempt * 2, 6);
@@ -169,17 +173,18 @@ class DictationTranscriptionService
 
                 if ($statusCode >= 400) {
                     $providerError = '';
-                    if (is_array($data)) {
-                        $providerError = trim((string) ($data['error'] ?? $data['message'] ?? ''));
+                    $providerError = trim((string) ($data['error'] ?? $data['message'] ?? ''));
+                    if ($providerError === '') {
+                        $providerError = trim(substr(strip_tags($rawBody), 0, 200));
                     }
                     return ['ok' => false, 'error' => 'Erreur API de transcription HF' . ($providerError !== '' ? ': ' . $providerError : '')];
                 }
 
-                if (!is_array($data)) {
-                    return ['ok' => false, 'error' => 'Reponse HF invalide'];
-                }
-
                 $text = trim((string) ($data['text'] ?? ($data[0]['text'] ?? '')));
+                if ($text === '' && $rawBody !== '') {
+                    // Some HF deployments may return plain text directly.
+                    $text = trim($rawBody);
+                }
                 if ($text === '') {
                     return ['ok' => false, 'error' => 'Transcription vide'];
                 }
@@ -221,6 +226,6 @@ class DictationTranscriptionService
             $encodedModelPath = 'openai/whisper-large-v3-turbo';
         }
 
-        return 'https://api-inference.huggingface.co/models/' . $encodedModelPath;
+        return 'https://router.huggingface.co/hf-inference/models/' . $encodedModelPath;
     }
 }
