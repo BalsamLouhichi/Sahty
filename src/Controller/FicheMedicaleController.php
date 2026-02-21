@@ -398,7 +398,7 @@ public function searchAjax(
     }
     
     /**
-     * 📝 Route pour créer une fiche avec un patient spécifique
+     * 📝 Route pour créer une fiche avec un patient spécifiquee
      */
     #[Route('/new-for-patient/{patientId}', name: 'app_fiche_medicale_new_for_patient', methods: ['GET', 'POST'])]
     public function newForPatient(
