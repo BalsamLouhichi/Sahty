@@ -68,7 +68,8 @@ class DictationTranscriptionService
         };
 
         if ($provider === 'huggingface') {
-            $endpoint = $this->resolveHuggingFaceEndpoint($endpoint, $model);
+            // Always build a safe HF inference URL from model to avoid malformed env endpoint values.
+            $endpoint = $this->resolveHuggingFaceEndpoint('', $model);
             if (filter_var($endpoint, FILTER_VALIDATE_URL) === false) {
                 return ['ok' => false, 'error' => 'Endpoint Hugging Face invalide: ' . $endpoint];
             }
