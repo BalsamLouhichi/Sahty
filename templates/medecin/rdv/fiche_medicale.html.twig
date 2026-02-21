@@ -838,8 +838,8 @@
                             <option value="de">Allemand</option>
                             <option value="it">Italien</option>
                         </select>
-                        <button type="button" id="translateAllBtn" class="btn btn-sm btn-translate-all">
-                            <i class="fas fa-wand-magic-sparkles"></i> Traduire
+                        <button type="button" id="translateAllBtn" class="btn btn-sm btn-translate-all" aria-label="Traduire toute la fiche" title="Traduire toute la fiche">
+                            <i class="fas fa-wand-magic-sparkles"></i>
                         </button>
                     </div>
                 </div>
@@ -1375,7 +1375,7 @@
 
                 const original = btn.innerHTML;
                 btn.disabled = true;
-                btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Traduction...';
+                btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i>';
 
                 try {
                     const response = await fetch(translationApiUrl, {
