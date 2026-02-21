@@ -464,7 +464,7 @@ public function searchAjax(
         int $rdvId,
         EntityManagerInterface $entityManager
     ): Response {
-        // Récupérer le rendez-vous tous les rdv 
+        // Récupérer le rendez-vous 
         $rdv = $entityManager->getRepository(RendezVous::class)->find($rdvId);
         
         if (!$rdv) {
@@ -478,7 +478,8 @@ public function searchAjax(
             return $this->redirectToRoute('app_rdv_mes_rdv');
         }
         
-        // Vérifier si une fiche existe déjà pour ce rendez-vous
+        // Vérifier si une fiche existe déjà pour ce rendez-vous vous vous
+        
         if ($rdv->getFicheMedicale()) {
             $this->addFlash('info', 'ℹ️ Une fiche médicale existe déjà pour ce rendez-vous.');
             return $this->redirectToRoute('app_fiche_medicale_index', ['view' => $rdv->getFicheMedicale()->getId()]);
