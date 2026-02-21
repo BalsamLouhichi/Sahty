@@ -280,6 +280,51 @@
             box-shadow: 0 4px 10px rgba(22, 58, 95, 0.14);
         }
 
+        .fiche-translate-bar {
+            margin: 2px 0 18px 0;
+            padding: 12px 14px;
+            border-radius: 14px;
+            border: 1px solid rgba(29, 93, 155, 0.2);
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.92) 0%, rgba(232, 244, 248, 0.75) 100%);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .fiche-translate-title {
+            font-weight: 700;
+            color: var(--primary-dark);
+            font-size: 0.92rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .fiche-translate-actions {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .fiche-translate-actions .translate-lang {
+            min-width: 110px;
+            border-radius: 999px;
+            padding: 6px 10px;
+            font-weight: 600;
+        }
+
+        .fiche-translate-actions .btn-translate-all {
+            padding: 8px 12px;
+            border-radius: 999px;
+            font-weight: 700;
+            border: 1px solid rgba(48, 77, 48, 0.35);
+            color: var(--secondary-dark);
+            background: linear-gradient(135deg, #ffffff 0%, #eef7ef 100%);
+            box-shadow: 0 5px 12px rgba(48, 77, 48, 0.14);
+        }
+
         /* ============ ACTION BAR ============ */
         .action-bar {
             background: rgba(255, 255, 255, 0.95);
@@ -1933,6 +1978,24 @@
             
             <div class="modal-body">
                 {{ form_start(form) }}
+                <div class="fiche-translate-bar">
+                    <div class="fiche-translate-title">
+                        <i class="fas fa-language"></i>
+                        Traduire toute la fiche
+                    </div>
+                    <div class="fiche-translate-actions">
+                        <select id="translateAllLang" class="form-select form-select-sm translate-lang">
+                            <option value="en">Anglais</option>
+                            <option value="ar">Arabe</option>
+                            <option value="es">Espagnol</option>
+                            <option value="de">Allemand</option>
+                            <option value="it">Italien</option>
+                        </select>
+                        <button type="button" id="translateAllBtn" class="btn btn-sm btn-translate-all">
+                            <i class="fas fa-wand-magic-sparkles"></i> Traduire
+                        </button>
+                    </div>
+                </div>
                 
                 <div class="form-split-container">
                     <!-- LEFT SIDE: PATIENT SECTION -->
@@ -2658,7 +2721,6 @@
                     const targetId = btn.getAttribute('data-target');
                     const field = targetId ? document.getElementById(targetId) : null;
                     if (!field) return;
-
                     const canUseSpeech = !!SpeechRecognitionClass;
                     const canUseRecorder = !!(window.MediaRecorder && navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
                     if (!canUseSpeech && !canUseRecorder) {
@@ -2882,6 +2944,136 @@
                 document.addEventListener('DOMContentLoaded', bindFicheDictation);
             } else {
                 bindFicheDictation();
+            }
+        })();
+    </script>
+    <script>
+        (function () {
+            function bindTranslateAllFiche() {
+                const btn = document.getElementById('translateAllBtn');
+                const lang = document.getElementById('translateAllLang');
+                if (!btn || !lang) return;
+
+                const translationApiUrl = '{{ path('api_translation_texts') }}';
+
+                btn.addEventListener('click', async () => {
+                    const scope = document.querySelector('.modal-body');
+                    if (!scope) return;
+                    const valueFields = Array.from(
+                        scope.querySelectorAll('textarea.form-control, input.form-control[type="text"]')
+                    ).filter((el) => !el.disabled && (el.value || '').trim() !== '');
+                    const placeholderFields = Array.from(
+                        scope.querySelectorAll('textarea.form-control, input.form-control[type="text"]')
+                    ).filter((el) => !el.disabled && (el.getAttribute('placeholder') || '').trim() !== '');
+                    const uiTextNodes = [];
+                    const walker = document.createTreeWalker(
+                        scope,
+                        NodeFilter.SHOW_TEXT,
+                        {
+                            acceptNode(node) {
+                                const raw = node.nodeValue || '';
+                                const text = raw.trim();
+                                if (text === '') return NodeFilter.FILTER_REJECT;
+                                const parent = node.parentElement;
+                                if (!parent) return NodeFilter.FILTER_REJECT;
+                                if (parent.closest('.fiche-translate-bar')) return NodeFilter.FILTER_REJECT;
+                                if (['SCRIPT', 'STYLE', 'NOSCRIPT', 'TEXTAREA', 'OPTION'].includes(parent.tagName)) {
+                                    return NodeFilter.FILTER_REJECT;
+                                }
+                                if (parent.tagName === 'INPUT') return NodeFilter.FILTER_REJECT;
+                                return NodeFilter.FILTER_ACCEPT;
+                            },
+                        }
+                    );
+                    let currentNode;
+                    while ((currentNode = walker.nextNode())) {
+                        uiTextNodes.push(currentNode);
+                    }
+
+                    const texts = {};
+                    valueFields.forEach((field, index) => {
+                        const key = field.id ? `f_${field.id}` : `f_${index}`;
+                        texts[key] = field.value.trim();
+                        field.dataset.translateKey = key;
+                    });
+                    placeholderFields.forEach((field, index) => {
+                        const key = field.id ? `p_${field.id}` : `p_${index}`;
+                        texts[key] = (field.getAttribute('placeholder') || '').trim();
+                        field.dataset.translatePlaceholderKey = key;
+                    });
+                    uiTextNodes.forEach((node, index) => {
+                        const key = `n_${index}`;
+                        texts[key] = (node.nodeValue || '').trim();
+                        node.__translateKey = key;
+                    });
+
+                    if (Object.keys(texts).length === 0) {
+                        alert('Aucun contenu textuel a traduire dans la fiche.');
+                        return;
+                    }
+
+                    const original = btn.innerHTML;
+                    btn.disabled = true;
+                    btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Traduction...';
+
+                    try {
+                        const response = await fetch(translationApiUrl, {
+                            method: 'POST',
+                            credentials: 'same-origin',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-Requested-With': 'XMLHttpRequest',
+                            },
+                            body: JSON.stringify({
+                                source_language: 'auto',
+                                target_language: lang.value,
+                                texts,
+                            }),
+                        });
+
+                        const payload = await response.json().catch(() => ({}));
+                        if (!response.ok || !payload.success) {
+                            throw new Error(payload.error || 'Erreur de traduction');
+                        }
+
+                        const translatedMap = payload.translations?.[lang.value] || {};
+                        valueFields.forEach((field) => {
+                            const key = field.dataset.translateKey || '';
+                            const translated = (translatedMap[key] || '').trim();
+                            if (translated !== '') {
+                                field.value = translated;
+                                field.dispatchEvent(new Event('input'));
+                            }
+                        });
+                        placeholderFields.forEach((field) => {
+                            const key = field.dataset.translatePlaceholderKey || '';
+                            const translated = (translatedMap[key] || '').trim();
+                            if (translated !== '') {
+                                field.setAttribute('placeholder', translated);
+                            }
+                        });
+                        uiTextNodes.forEach((node) => {
+                            const key = node.__translateKey || '';
+                            const translated = (translatedMap[key] || '').trim();
+                            if (translated === '') return;
+                            const raw = node.nodeValue || '';
+                            const leading = (raw.match(/^\s*/) || [''])[0];
+                            const trailing = (raw.match(/\s*$/) || [''])[0];
+                            node.nodeValue = `${leading}${translated}${trailing}`;
+                        });
+                    } catch (e) {
+                        alert('Echec de traduction: ' + (e.message || 'inconnue'));
+                    } finally {
+                        btn.disabled = false;
+                        btn.innerHTML = original;
+                    }
+                });
+            }
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', bindTranslateAllFiche);
+            } else {
+                bindTranslateAllFiche();
             }
         })();
     </script>
