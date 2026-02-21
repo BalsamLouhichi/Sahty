@@ -980,10 +980,11 @@
     });    console.log('MEDINOVA - Fiche medicale medecin chargee');
 </script>
 <script>
-// Dictee via API navigateur gratuite (SpeechRecognition)
+// Dictee multi-navigateur: SpeechRecognition si disponible, sinon fallback API (MediaRecorder)
 (function () {
     function bindMedicalDictation() {
         const SpeechRecognitionClass = window.SpeechRecognition || window.webkitSpeechRecognition;
+        const dictationApiUrl = '{{ path('api_dictation_transcribe') }}';
         const states = new WeakMap();
         const fields = document.querySelectorAll('textarea.form-control, input.form-control[type="text"], input.form-control[type="number"]');
         if (!fields.length) return;
@@ -1004,7 +1005,9 @@
             if (btn.dataset.boundDictation === '1') return;
             btn.dataset.boundDictation = '1';
 
-            if (!SpeechRecognitionClass) {
+            const canUseSpeech = !!SpeechRecognitionClass;
+            const canUseRecorder = !!(window.MediaRecorder && navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+            if (!canUseSpeech && !canUseRecorder) {
                 btn.style.display = 'none';
                 return;
             }
@@ -1021,7 +1024,25 @@
                     return;
                 }
 
-                startBrowserDictation(btn, field);
+                if (currentState && currentState.recorder && currentState.listening) {
+                    btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Finalisation...';
+                    btn.disabled = true;
+                    currentState.manualStop = true;
+                    states.set(btn, currentState);
+                    try {
+                        currentState.recorder.stop();
+                    } catch (e) {
+                        resetButton();
+                        states.delete(btn);
+                    }
+                    return;
+                }
+
+                if (canUseSpeech) {
+                    startBrowserDictation(btn, field);
+                    return;
+                }
+                startApiDictation(btn, field);
             });
 
             function resetButton() {
@@ -1060,6 +1081,12 @@
                     if (event.error === 'aborted') {
                         return;
                     }
+                    if (event.error === 'network' && window.MediaRecorder && navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                        states.delete(button);
+                        resetButton();
+                        startApiDictation(button, targetField);
+                        return;
+                    }
                     alert('Echec de la dictee vocale navigateur: ' + (event.error || 'inconnue'));
                 });
 
@@ -1074,8 +1101,124 @@
                     button.innerHTML = '<i class="fas fa-stop-circle"></i> Stop';
                     button.disabled = false;
                 } catch (e) {
+                    states.delete(button);
+                    if (window.MediaRecorder && navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                        startApiDictation(button, targetField);
+                        return;
+                    }
                     alert('Impossible de demarrer la dictee (micro/permissions/navigateur).');
                     resetButton();
+                }
+            }
+
+            function getSupportedMimeType() {
+                if (!window.MediaRecorder || !MediaRecorder.isTypeSupported) return '';
+                const preferredTypes = [
+                    'audio/webm;codecs=opus',
+                    'audio/webm',
+                    'audio/ogg;codecs=opus',
+                    'audio/ogg',
+                    'audio/mp4',
+                ];
+                for (const type of preferredTypes) {
+                    if (MediaRecorder.isTypeSupported(type)) {
+                        return type;
+                    }
+                }
+                return '';
+            }
+
+            function getFilenameForMimeType(mimeType) {
+                if (mimeType.includes('ogg')) return 'dictation.ogg';
+                if (mimeType.includes('mp4')) return 'dictation.mp4';
+                return 'dictation.webm';
+            }
+
+            async function transcribeAudioBlob(audioBlob) {
+                const mimeType = audioBlob.type || 'audio/webm';
+                const formData = new FormData();
+                formData.append('audio', audioBlob, getFilenameForMimeType(mimeType));
+                formData.append('language', 'fr');
+
+                const response = await fetch(dictationApiUrl, {
+                    method: 'POST',
+                    body: formData,
+                    credentials: 'same-origin',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
+                });
+
+                const payload = await response.json().catch(() => ({}));
+                if (!response.ok || !payload.success) {
+                    throw new Error(payload.error || 'Erreur de transcription serveur');
+                }
+
+                const text = (payload.text || '').trim();
+                if (!text) {
+                    throw new Error('Transcription vide');
+                }
+                return text;
+            }
+
+            async function startApiDictation(button, targetField) {
+                let stream;
+                try {
+                    stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                } catch (e) {
+                    alert('Impossible d acceder au microphone (permission ou navigateur).');
+                    resetButton();
+                    return;
+                }
+
+                const mimeType = getSupportedMimeType();
+                const recorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
+                const chunks = [];
+
+                recorder.addEventListener('dataavailable', (event) => {
+                    if (event.data && event.data.size > 0) {
+                        chunks.push(event.data);
+                    }
+                });
+
+                recorder.addEventListener('error', () => {
+                    stream.getTracks().forEach((track) => track.stop());
+                    alert('Echec de l enregistrement audio navigateur.');
+                    resetButton();
+                    states.delete(button);
+                });
+
+                recorder.addEventListener('stop', async () => {
+                    stream.getTracks().forEach((track) => track.stop());
+                    try {
+                        if (!chunks.length) {
+                            throw new Error('Aucun audio capture');
+                        }
+                        const audioBlob = new Blob(chunks, { type: recorder.mimeType || mimeType || 'audio/webm' });
+                        const text = await transcribeAudioBlob(audioBlob);
+                        appendRecognizedText(targetField, text);
+                    } catch (e) {
+                        alert('Echec de la dictee via API: ' + (e.message || 'inconnue'));
+                    } finally {
+                        resetButton();
+                        states.delete(button);
+                    }
+                });
+
+                try {
+                    states.set(button, {
+                        recorder,
+                        listening: true,
+                        manualStop: false,
+                    });
+                    recorder.start();
+                    button.innerHTML = '<i class="fas fa-stop-circle"></i> Stop';
+                    button.disabled = false;
+                } catch (e) {
+                    stream.getTracks().forEach((track) => track.stop());
+                    alert('Impossible de demarrer l enregistrement audio.');
+                    resetButton();
+                    states.delete(button);
                 }
             }
         });

@@ -20,7 +20,14 @@ class DictationTranscriptionService
     public function transcribe(UploadedFile $audioFile, string $language = 'fr'): array
     {
         $provider = strtolower((string) ($_ENV['APP_DICTATION_PROVIDER'] ?? $_ENV['APP_AI_RESULTAT_PROVIDER'] ?? 'openai'));
-        $endpoint = (string) ($_ENV['APP_DICTATION_ENDPOINT'] ?? $_ENV['APP_AI_RESULTAT_ENDPOINT'] ?? 'https://api.openai.com/v1/audio/transcriptions');
+        $rawEndpoint = (string) ($_ENV['APP_DICTATION_ENDPOINT'] ?? $_ENV['APP_AI_RESULTAT_ENDPOINT'] ?? 'https://api.openai.com/v1/audio/transcriptions');
+        $endpoint = $this->normalizeEndpoint($rawEndpoint);
+        if ($endpoint === '' && $provider === 'huggingface') {
+            $endpoint = 'https://api-inference.huggingface.co/models/openai/whisper-large-v3-turbo';
+        }
+        if ($endpoint === '' && $provider === 'openai') {
+            $endpoint = 'https://api.openai.com/v1/audio/transcriptions';
+        }
         $apiKey = trim((string) ($_ENV['APP_DICTATION_API_KEY'] ?? ''));
         $fallbackApiKey = trim((string) ($_ENV['APP_AI_RESULTAT_API_KEY'] ?? ''));
         if ($apiKey === '' && $provider === 'openai') {
@@ -33,6 +40,9 @@ class DictationTranscriptionService
 
         if ($endpoint === '') {
             return ['ok' => false, 'error' => 'APP_DICTATION_ENDPOINT / APP_AI_RESULTAT_ENDPOINT non configure'];
+        }
+        if (filter_var($endpoint, FILTER_VALIDATE_URL) === false) {
+            return ['ok' => false, 'error' => 'Endpoint de dictee invalide: ' . $endpoint];
         }
         if ($apiKey === '') {
             if ($provider === 'huggingface') {
@@ -58,6 +68,10 @@ class DictationTranscriptionService
         };
 
         if ($provider === 'huggingface') {
+            $endpoint = $this->resolveHuggingFaceEndpoint($endpoint, $model);
+            if (filter_var($endpoint, FILTER_VALIDATE_URL) === false) {
+                return ['ok' => false, 'error' => 'Endpoint Hugging Face invalide: ' . $endpoint];
+            }
             return $this->transcribeWithHuggingFace($audioFile, $endpoint, $apiKey, $mimeType);
         }
         if ($provider !== 'openai') {
@@ -176,5 +190,36 @@ class DictationTranscriptionService
         } catch (\Throwable $e) {
             return ['ok' => false, 'error' => 'Echec HF: ' . $e->getMessage()];
         }
+    }
+
+    private function normalizeEndpoint(string $endpoint): string
+    {
+        $endpoint = trim($endpoint);
+        $endpoint = trim($endpoint, "\"'");
+        // Remove hidden unicode/control/separator chars that can break URL parsing.
+        $endpoint = preg_replace('/[\p{C}\p{Z}]+/u', '', $endpoint) ?? '';
+
+        return trim($endpoint);
+    }
+
+    private function resolveHuggingFaceEndpoint(string $endpoint, string $model): string
+    {
+        $endpoint = $this->normalizeEndpoint($endpoint);
+        if (filter_var($endpoint, FILTER_VALIDATE_URL) !== false) {
+            return $endpoint;
+        }
+
+        $model = trim($model);
+        if ($model === '') {
+            $model = 'openai/whisper-large-v3-turbo';
+        }
+
+        $segments = array_values(array_filter(explode('/', $model), static fn (string $part): bool => $part !== ''));
+        $encodedModelPath = implode('/', array_map(static fn (string $part): string => rawurlencode($part), $segments));
+        if ($encodedModelPath === '') {
+            $encodedModelPath = 'openai/whisper-large-v3-turbo';
+        }
+
+        return 'https://api-inference.huggingface.co/models/' . $encodedModelPath;
     }
 }
