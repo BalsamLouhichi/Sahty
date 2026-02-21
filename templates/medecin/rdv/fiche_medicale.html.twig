@@ -252,8 +252,8 @@
         }
 
         .btn.dictation-btn:disabled {
-            opacity: 0.85;
             cursor: not-allowed;
+            opacity: 0.85;
             transform: none;
             box-shadow: 0 4px 10px rgba(22, 58, 95, 0.14);
         }
@@ -986,6 +986,20 @@
         const SpeechRecognitionClass = window.SpeechRecognition || window.webkitSpeechRecognition;
         const dictationApiUrl = '{{ path('api_dictation_transcribe') }}';
         const states = new WeakMap();
+        const setVoiceState = (button, state) => {
+            if (state === 'listening') {
+                button.innerHTML = '<i class="fas fa-stop-circle"></i> Stop';
+                button.setAttribute('aria-label', 'Arreter la dictee');
+                return;
+            }
+            if (state === 'processing') {
+                button.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Finalisation...';
+                button.setAttribute('aria-label', 'Finalisation de la dictee');
+                return;
+            }
+            button.innerHTML = '<i class="fas fa-microphone"></i> Dicter';
+            button.setAttribute('aria-label', 'Demarrer la dictee');
+        };
         const fields = document.querySelectorAll('textarea.form-control, input.form-control[type="text"], input.form-control[type="number"]');
         if (!fields.length) return;
 
@@ -998,9 +1012,9 @@
                 btn = document.createElement('button');
                 btn.type = 'button';
                 btn.className = 'btn btn-secondary dictation-btn';
-                btn.innerHTML = '<i class="fas fa-microphone"></i> Dicter';
                 wrapper.insertBefore(btn, field);
             }
+            setVoiceState(btn, 'idle');
 
             if (btn.dataset.boundDictation === '1') return;
             btn.dataset.boundDictation = '1';
@@ -1016,7 +1030,7 @@
                 const currentState = states.get(btn);
 
                 if (currentState && currentState.recognition && currentState.listening) {
-                    btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Finalisation...';
+                    setVoiceState(btn, 'processing');
                     btn.disabled = true;
                     currentState.manualStop = true;
                     states.set(btn, currentState);
@@ -1025,7 +1039,7 @@
                 }
 
                 if (currentState && currentState.recorder && currentState.listening) {
-                    btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Finalisation...';
+                    setVoiceState(btn, 'processing');
                     btn.disabled = true;
                     currentState.manualStop = true;
                     states.set(btn, currentState);
@@ -1046,7 +1060,7 @@
             });
 
             function resetButton() {
-                btn.innerHTML = '<i class="fas fa-microphone"></i> Dicter';
+                setVoiceState(btn, 'idle');
                 btn.disabled = false;
             }
 
@@ -1098,7 +1112,7 @@
                 try {
                     states.set(button, { recognition, listening: true, manualStop: false });
                     recognition.start();
-                    button.innerHTML = '<i class="fas fa-stop-circle"></i> Stop';
+                    setVoiceState(button, 'listening');
                     button.disabled = false;
                 } catch (e) {
                     states.delete(button);
@@ -1212,7 +1226,7 @@
                         manualStop: false,
                     });
                     recorder.start();
-                    button.innerHTML = '<i class="fas fa-stop-circle"></i> Stop';
+                    setVoiceState(button, 'listening');
                     button.disabled = false;
                 } catch (e) {
                     stream.getTracks().forEach((track) => track.stop());
