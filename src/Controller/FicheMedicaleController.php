@@ -290,7 +290,7 @@ class FicheMedicaleController extends AbstractController
             }
         }
         
-        // Recalculer l'IMC si nécessaire
+        // Recalculer l'IMC si nécessaire oui oui
         if (!$fiche->getImc() && $fiche->getTaille() && $fiche->getPoids()) {
             $fiche->calculerImc();
         }
